@@ -2,7 +2,7 @@
 
 # 🎓 Alumni — Istanbul University Alumni Network
 
-**A platform that keeps Istanbul University graduates connected — to each other, and to their university.**
+**A social network for Istanbul University graduates — part directory, part feed, entirely closed to everyone else.**
 
 [![Status](https://img.shields.io/badge/status-early%20development-orange)](https://github.com/rabizd/alumni)
 [![Go](https://img.shields.io/badge/backend-Go-00ADD8?logo=go&logoColor=white)](https://go.dev)
@@ -18,6 +18,7 @@
 
 - [About](#about)
 - [Why This Project](#why-this-project)
+- [The Social Layer](#the-social-layer)
 - [Planned Features](#planned-features)
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
@@ -37,12 +38,27 @@
 
 Alumni brings that network back into one place. It collects graduate profiles, career histories, and the institutions they work at, then makes that information **searchable, discoverable, and genuinely useful** — whether you are a recent graduate looking for a mentor, a senior professional hiring from your own faculty, or the university itself trying to stay in touch with the people it educated.
 
+But a list of names is not a community. On top of the directory sits a feed where graduates post, reply, and follow each other — see [The Social Layer](#the-social-layer).
+
 ## Why This Project
 
 - **The network already exists — it is just invisible.** Thousands of Istanbul University graduates work across the country and the world. Alumni makes that reality legible.
 - **Careers move fast; contact lists do not.** Profiles that graduates maintain themselves stay alive without anyone curating a spreadsheet.
 - **Mentorship needs a starting point.** Finding "someone from my department who does what I want to do" should take one search, not six months of luck.
 - **Institutional memory has value.** A university that knows where its graduates went can advise the students who have not left yet.
+
+## The Social Layer
+
+Alumni is not only a searchable directory. A directory is something you visit twice — once when you sign up, once when you need a favour. What keeps a network alive is people having somewhere to *talk*.
+
+So the platform has a social side, shaped for graduates rather than for the general public:
+
+- **A shared feed.** Graduates post news, job openings, questions, and announcements. A senior developer posting "we are hiring two juniors, my department first" is worth more here than on any public job board, because everyone reading it went to the same school.
+- **Faculty and department circles.** The Faculty of Science feed and the Law feed are different conversations. Graduates follow the circles they belong to, plus anyone whose career they want to keep up with.
+- **Reactions, comments, and follows.** The ordinary social vocabulary — because it is the vocabulary people already know, and because a post with fifteen replies is how a job opening actually reaches someone.
+- **Class-year nostalgia.** "Who else graduated in 2019?" is a legitimate feature, not a joke. Shared years and shared classrooms are the strongest reason two strangers on this platform will talk to each other.
+
+The difference from a public social network is the door: **everyone in the feed is a verified Istanbul University graduate.** That single constraint is what makes the conversation worth having — no bots, no strangers, no noise. It also means the feed must be built on top of verification, not before it.
 
 ## Planned Features
 
@@ -55,13 +71,21 @@ Alumni brings that network back into one place. It collects graduate profiles, c
 - 📝 **Career timeline** — positions and promotions added over time, so a profile ages well
 - 🛡️ **Privacy controls** — every graduate decides which fields are public, which are visible to other verified alumni, and which stay private
 
-**Later — valuable, but only once the core works**
+**Social — what makes people come back after signing up**
+
+- 📰 **Shared feed** — posts, announcements, and questions from verified graduates
+- 🏛️ **Faculty & department circles** — follow the conversations you actually belong to
+- 👥 **Follows, reactions, and comments** — the ordinary social vocabulary, inside a closed network
+- 💼 **Job & internship board** — openings posted by graduates, for graduates
+- ✉️ **Direct messaging** — reach another graduate without exposing private contact details
+- 🎓 **Class-year pages** — find the people you sat next to
+
+**Later — valuable, but only once the core and the feed work**
 
 - 🏢 **Company & institution directory** — see who works where, at a glance
-- ✉️ **Direct messaging** — reach another graduate without exposing private contact details
 - 🤝 **Mentorship matching** — connect students and juniors with graduates in their field
 - 📅 **Events & reunions** — announcements for faculty meetups and alumni gatherings
-- 📊 **Admin dashboard** — review verification requests and platform statistics
+- 📊 **Admin dashboard** — review verification requests, moderate reported posts, and read platform statistics
 
 ## Tech Stack
 
@@ -83,7 +107,7 @@ The frontend is deliberately undecided. The API is being designed first so that 
           └──────┬───────┘
                  │ HTTPS / JSON
           ┌──────▼───────┐
-          │    Go API    │   auth · profiles · search · verification
+          │    Go API    │   auth · profiles · search · feed · messaging
           └───┬──────┬───┘
               │      │
    ┌──────────▼─┐  ┌─▼───────────┐
@@ -93,7 +117,9 @@ The frontend is deliberately undecided. The API is being designed first so that 
    └────────────┘  └─────────────┘
 ```
 
-PostgreSQL is the single source of truth: every profile, employment record, and verification decision lives there and survives a restart. Redis holds only data that can be rebuilt — sessions, cached search results, rate-limit counters — so losing the cache degrades speed, never correctness.
+PostgreSQL is the single source of truth: every profile, employment record, post, and verification decision lives there and survives a restart. Redis holds only data that can be rebuilt — sessions, cached search results, assembled feed pages, rate-limit counters — so losing the cache degrades speed, never correctness.
+
+The feed is the one place where that split really earns itself. Building a graduate's timeline means reading from everyone they follow, on every page load, for every user at once — exactly the query that gets expensive first. Caching assembled pages in Redis keeps the feed fast, and because the posts themselves still live in Postgres, a flushed cache costs a few slow requests rather than a lost conversation.
 
 ## Data Model
 
@@ -106,6 +132,11 @@ The initial schema sketch. It will change as the code is written.
 | `faculties` / `departments` | the university's own structure | reference data, seeded once |
 | `employments` | company, title, start/end date | many per profile — this is the career timeline |
 | `verifications` | proof submitted, reviewer, decision | an audit trail, not a single boolean |
+| `posts` | body, author, optional faculty/department circle | the feed; a job opening is a post with a type |
+| `comments` | body, author, parent post | threaded replies come later, flat first |
+| `reactions` | who reacted to what, and how | one row per (user, post) pair |
+| `follows` | follower → followed (a person or a circle) | what a graduate's feed is assembled from |
+| `reports` | reported post, reporter, reason | moderation needs a queue, not ad-hoc deletes |
 
 ## Open Design Questions
 
@@ -114,6 +145,8 @@ Honest unknowns, written down so they are decided deliberately rather than by ac
 - **How is "is this person really a graduate?" answered?** Student email addresses (`@ogr.iu.edu.tr`) stop working after graduation, so email-domain verification alone cannot work for the people this platform is for. Candidate answers: diploma/transcript upload reviewed by an admin, a one-time invite code from the university, or vouching by already-verified graduates.
 - **Who may see contact details?** Open to every verified graduate, or only after both sides accept a connection?
 - **What happens to a profile its owner abandons?** Stale career data is worse than no career data.
+- **How is the feed ordered?** Newest-first is honest and trivial to build. Any ranking beyond that needs a reason, and ranking a small network too aggressively just hides most of it.
+- **Who moderates the feed?** A closed, verified network needs far less moderation than a public one — but "far less" is not "none", and one unhandled report is enough to make people stop posting.
 - **KVKK / personal data.** Personal data of real people is involved; consent, retention, and deletion need to be designed in, not bolted on.
 
 ## Getting Started
@@ -192,9 +225,16 @@ alumni/
 - [ ] Graduate verification flow
 - [ ] Search and filtering
 
-**Phase 3 — the network effects**
-- [ ] Company / institution directory
+**Phase 3 — the social layer**
+- [ ] Posts and a newest-first feed
+- [ ] Follows, reactions, and comments
+- [ ] Faculty / department circles and class-year pages
+- [ ] Job & internship board
 - [ ] Direct messaging
+- [ ] Reporting and moderation queue
+
+**Phase 4 — the network effects**
+- [ ] Company / institution directory
 - [ ] Mentorship matching
 - [ ] Events and reunions
 - [ ] Admin dashboard
