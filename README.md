@@ -23,6 +23,7 @@
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
 - [Data Model](#data-model)
+- [Prior Art](#prior-art)
 - [Open Design Questions](#open-design-questions)
 - [Getting Started](#getting-started)
 - [Configuration](#configuration)
@@ -69,6 +70,7 @@ The difference from a public social network is the door: **everyone in the feed 
 - ✅ **Graduate verification** — a profile is only trustworthy if the person really graduated (see [Open Design Questions](#open-design-questions))
 - 🔍 **Search & filtering** — by name, faculty, department, graduation year, city, or employer
 - 📝 **Career timeline** — positions and promotions added over time, so a profile ages well
+- 🙋 **"Open to helping" flag** — searchable, and specific: CV review, mock interview, a short career chat
 - 🛡️ **Privacy controls** — every graduate decides which fields are public, which are visible to other verified alumni, and which stay private
 
 **Social — what makes people come back after signing up**
@@ -136,13 +138,36 @@ The initial schema sketch. It will change as the code is written.
 | `comments` | body, author, parent post | threaded replies come later, flat first |
 | `reactions` | who reacted to what, and how | one row per (user, post) pair |
 | `follows` | follower → followed (a person or a circle) | what a graduate's feed is assembled from |
+| `help_offers` | what a graduate is willing to do: CV review, mock interview, a coffee | small, explicit asks are the ones people say yes to |
 | `reports` | reported post, reporter, reason | moderation needs a queue, not ad-hoc deletes |
+
+## Prior Art
+
+Almost every serious university already runs something in this space. What they do — and where they stop — is the clearest specification available.
+
+| Institution | What it does well | Where it stops |
+| --- | --- | --- |
+| **Istanbul University** — [Mezun Bilgi Sistemi](https://mezun.istanbul.edu.tr) & [Mezun Doğrulama Sistemi](https://dogrulama.istanbul.edu.tr) | Official graduate records, profile and CV fields, and a real diploma-verification service backed by YÖKSİS | A records system, not a community: graduates have no reason to return after filling the form once |
+| **METU** ([mezun.metu.edu.tr](https://mezun.metu.edu.tr/en/)) | The alumni card is a genuine reason to register — library, cafeteria, sports facilities, campus access, partner discounts. Mentoring and speed-networking events | Networking largely happens at physical events, not continuously online |
+| **Boğaziçi** ([mbs.boun.edu.tr](https://mbs.boun.edu.tr/)) | A lifelong `@alumni.bogazici.edu.tr` address that doubles as the login, plus LinkedIn sign-in; digital alumni card | Closed portal; little public evidence of an ongoing feed |
+| **İTÜ** ([mezun.itu.edu.tr](https://mezun.itu.edu.tr/)) | Alumni card, İTÜ Day, e-bulletin, and links to the alumni foundations and associations | Events and newsletters — one-way communication, no job board or mentoring in the portal |
+| **Stanford** ([alumni.stanford.edu](https://alumni.stanford.edu/help/directory/)) | The strongest directory design: filters by class-year range, area of study, region, industry, skills, employer, and *whether the person is open to helping* — plus per-profile privacy that hides you from search entirely | Closed to non-alumni by design |
+| **Harvard** ([alumni.harvard.edu](https://alumni.harvard.edu/community/alumni-services)) | 50+ Shared Interest Groups organised around purpose rather than class or faculty; "flash mentoring" — one mock interview or one CV review, not a six-month commitment | Heavy institutional infrastructure behind it |
+| **MIT** ([Infinite Connection](https://alum.mit.edu/about/benefits-and-offerings/infinite-connection)) | Email-for-life at `@alum.mit.edu`, an alumni job board, and a directory searchable by region, industry, course, and living group — one account for everything | — |
+
+**What this project takes from them**
+
+1. **Give people a reason to register that is not altruism.** Every Turkish system above is built around the alumni card. A benefit you can hold is what converts a graduate into a user; the social features only matter afterwards.
+2. **Verification is the foundation, not a feature.** MIT and Boğaziçi turn it into a lifelong email address, so the credential and the benefit are the same object.
+3. **"Open to helping" belongs in the schema.** Stanford filters on it, Harvard sizes the ask down to a single CV review. Cheap for the mentor, decisive for the student.
+4. **Interest groups beat class years alone.** Harvard's SIGs exist because graduates have more in common than a graduation date.
+5. **The gap worth filling.** Turkish alumni systems are records and event announcements — one-way. None of them is a place where graduates talk to each other daily. That is exactly where this project aims.
 
 ## Open Design Questions
 
 Honest unknowns, written down so they are decided deliberately rather than by accident:
 
-- **How is "is this person really a graduate?" answered?** Student email addresses (`@ogr.iu.edu.tr`) stop working after graduation, so email-domain verification alone cannot work for the people this platform is for. Candidate answers: diploma/transcript upload reviewed by an admin, a one-time invite code from the university, or vouching by already-verified graduates.
+- **How is "is this person really a graduate?" answered?** Student addresses (`@ogr.iu.edu.tr`) stop working after graduation, so email-domain checks alone cannot work for the people this platform is for. The realistic options, cheapest first: a graduation document from **e-Devlet**, whose verification code anyone can re-check; the university's own [Mezun Doğrulama Sistemi](https://dogrulama.istanbul.edu.tr), which validates a diploma against YÖKSİS records (manual web form today — no public API, so a human reviewer sits in the loop until the university offers an integration); a lifelong `@alumni.istanbul.edu.tr` address, which would be the best answer but needs the university to issue it; or vouching by already-verified graduates, which bootstraps quickly and decays quickly.
 - **Who may see contact details?** Open to every verified graduate, or only after both sides accept a connection?
 - **What happens to a profile its owner abandons?** Stale career data is worse than no career data.
 - **How is the feed ordered?** Newest-first is honest and trivial to build. Any ranking beyond that needs a reason, and ranking a small network too aggressively just hides most of it.
