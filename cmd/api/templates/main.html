@@ -1,42 +1,270 @@
 <!doctype html>
-<html lang="en">
+<html lang="tr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Alumni</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+<title>Alumni — İstanbul Üniversitesi Mezun Ağı</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  main { max-width: 46rem; }
-  td:last-child { color: var(--pico-muted-color); }
+  :root{
+    --ink:#211c18;
+    --paper:#e9e4d8;
+    --paper-deep:#ddd6c4;
+    --maroon:#4a0e1a;
+    --maroon-deep:#320a12;
+    --gold:#a9832d;
+    --line: rgba(33,28,24,0.16);
+    --radius: 3px;
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter', system-ui, sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3, .display{
+    font-family:'Spectral', Georgia, serif;
+    font-weight:500;
+    line-height:1.15;
+    margin:0;
+  }
+  a{ color:var(--maroon); }
+  a:focus-visible, button:focus-visible, summary:focus-visible{
+    outline:2px solid var(--maroon);
+    outline-offset:3px;
+  }
+  .wrap{ max-width:56rem; margin:0 auto; padding:0 1.5rem; }
+
+  /* --- nav --- */
+  nav.top{
+    border-bottom:1px solid var(--line);
+  }
+  nav.top .wrap{
+    display:flex; align-items:center; justify-content:space-between;
+    padding-top:1.1rem; padding-bottom:1.1rem;
+  }
+  .brand{
+    font-family:'Spectral', serif;
+    font-size:1.05rem;
+    letter-spacing:0.02em;
+    color:var(--ink);
+    text-decoration:none;
+  }
+  .brand b{ color:var(--maroon); font-weight:600; }
+  nav.top ul{ display:flex; gap:1.6rem; list-style:none; margin:0; padding:0; font-size:0.92rem; }
+  nav.top a{ color:var(--ink); text-decoration:none; }
+  nav.top a:hover{ color:var(--maroon); }
+
+  /* --- hero --- */
+  .hero{ padding:4.5rem 0 3.5rem; }
+  .hero .kicker{
+    display:flex; align-items:center; gap:0.6rem;
+    color:var(--maroon); font-size:0.85rem; margin-bottom:1.1rem;
+  }
+  .hero .kicker .dot{
+    width:6px; height:6px; border-radius:50%; background:var(--maroon);
+    display:inline-block;
+  }
+  .hero h1{ font-size:2.7rem; max-width:22ch; }
+  .hero h1 em{ font-style:italic; color:var(--maroon); }
+  .hero p.lede{
+    font-size:1.1rem; max-width:38rem; margin-top:1.2rem; color:#453e37;
+  }
+  .founding{
+    margin-top:2.3rem;
+    display:flex; align-items:baseline; gap:1rem;
+    border-top:1px solid var(--line);
+    padding-top:1.3rem;
+  }
+  .founding .year{
+    font-family:'Spectral', serif; font-size:2.6rem; color:var(--maroon-deep);
+    font-weight:600;
+  }
+  .founding p{ margin:0; font-size:0.9rem; color:#5b5248; max-width:30rem; }
+
+  /* --- ledger sections (registry style, no cards) --- */
+  section{ padding:3rem 0; border-top:1px solid var(--line); }
+  section > h2{ font-size:1.5rem; margin-bottom:0.4rem; }
+  section > p.section-lede{ color:#5b5248; max-width:36rem; margin:0 0 2rem; }
+
+  .ledger{ list-style:none; margin:0; padding:0; }
+  .ledger li{
+    display:grid; grid-template-columns: 2.4rem 1fr; gap:0.9rem;
+    padding:1.15rem 0; border-top:1px solid var(--line);
+  }
+  .ledger li:first-child{ border-top:none; }
+  .ledger .mark{
+    font-family:'Spectral', serif; color:var(--gold); font-size:1.1rem; font-style:italic;
+  }
+  .ledger h3{ font-size:1.02rem; font-weight:600; margin-bottom:0.25rem; }
+  .ledger p{ margin:0; color:#5b5248; font-size:0.95rem; }
+
+  /* --- the one bold moment --- */
+  .closed-network{ border-top:none; padding:2.5rem 0; }
+  .closed-network .panel{
+    background:var(--maroon);
+    color:#f2e9df;
+    border-radius:22px;
+    padding:3rem 3rem;
+  }
+  .closed-network h2{ color:#f2e9df; font-size:1.9rem; max-width:24ch; }
+  .closed-network p{
+    margin-top:1.1rem; max-width:38rem; color:#e7d3ce; font-size:1.05rem;
+  }
+  .closed-network .signature{
+    margin-top:1.6rem; font-family:'Spectral', serif; font-style:italic; color:var(--gold); font-size:0.95rem;
+  }
+  @media (max-width:640px){
+    .closed-network .panel{ padding:2.2rem 1.6rem; border-radius:16px; }
+  }
+
+  /* --- dev drawer --- */
+  details.dev{
+    border-top:1px solid var(--line);
+  }
+  details.dev summary{
+    cursor:pointer; padding:1.4rem 0; font-size:0.9rem; color:#5b5248;
+    list-style:none; display:flex; align-items:center; gap:0.5rem;
+  }
+  details.dev summary::-webkit-details-marker{ display:none; }
+  details.dev summary::before{
+    content:'▸'; color:var(--gold); transition:transform 0.15s ease;
+  }
+  details.dev[open] summary::before{ transform:rotate(90deg); }
+  .routes{
+    width:100%; border-collapse:collapse; font-family:ui-monospace, 'SF Mono', Consolas, monospace;
+    font-size:0.85rem; margin-bottom:2rem;
+  }
+  .routes th{ text-align:left; color:#5b5248; font-weight:500; padding:0.4rem 0; border-bottom:1px solid var(--line); }
+  .routes td{ padding:0.5rem 0; border-bottom:1px solid var(--line); }
+  .routes td:last-child{ color:#5b5248; }
+  .routes a{ text-decoration:none; }
+  .routes a:hover{ text-decoration:underline; }
+
+  footer{ border-top:1px solid var(--line); padding:2rem 0; }
+  footer .wrap{ display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.6rem; font-size:0.85rem; color:#5b5248; }
+
+  @media (max-width:640px){
+    .hero h1{ font-size:2.1rem; }
+    .ledger li{ grid-template-columns: 1.8rem 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
+    *{ transition:none !important; }
+  }
 </style>
 </head>
 <body>
-<main class="container">
-  <hgroup>
-    <h1>🎓 Alumni</h1>
-    <p>Istanbul University alumni network — development server</p>
-  </hgroup>
 
-  <h2>Routes</h2>
-  <table>
-    <thead>
-      <tr><th scope="col">Route</th><th scope="col">Response</th></tr>
-    </thead>
-    <tbody>
-      <tr><td><a href="/">/</a></td><td>OK</td></tr>
-      <tr><td><a href="/hello">/hello</a></td><td>Hello, World!</td></tr>
-      <tr><td><a href="/hello/emre">/hello/{name}</a></td><td>greets the name in the path</td></tr>
-      <tr><td><a href="/sum/7/35">/sum/{number1}/{number2}</a></td><td>adds the two numbers</td></tr>
-      <tr><td><a href="/temporary">/temporary</a></td><td>temporary redirect back to this page</td></tr>
-      <tr><td><a href="/about">/about</a></td><td>about page (placeholder)</td></tr>
-      <tr><td><a href="/alumni">GET /alumni</a></td><td>every graduate, as JSON</td></tr>
-      <tr><td>POST /alumni</td><td>create a graduate from a JSON body</td></tr>
-    </tbody>
-  </table>
+<nav class="top">
+  <div class="wrap">
+    <a class="brand" href="/main"><b>İ.Ü.</b> Alumni</a>
+    <ul>
+      <li><a href="/about">Hakkında</a></li>
+      <li><a href="https://github.com/rabizd/alumni">Kaynak kod</a></li>
+    </ul>
+  </div>
+</nav>
 
-  <footer>
-    <small>Built for the graduates of Istanbul University · <a href="https://github.com/rabizd/alumni">source</a></small>
-  </footer>
-</main>
+<header class="hero">
+  <div class="wrap">
+    <p class="kicker"><span class="dot"></span> geliştirme aşamasında</p>
+    <h1>Mezuniyet bir son değil, <em>yeni bir sicilin</em> başlangıcıdır.</h1>
+    <p class="lede">
+      Alumni, İstanbul Üniversitesi mezunlarını tek bir yerde toplayan bir ağ:
+      bir yandan aranabilir bir mezun rehberi, bir yandan da yalnızca doğrulanmış
+      mezunların konuştuğu kapalı bir akış.
+    </p>
+    <div class="founding">
+      <span class="year">1453</span>
+      <p>İstanbul Üniversitesi'nin kuruluş yılı — bu platform, o köklü camianın
+      dağınık grup sohbetlerine ve eski Excel tablolarına bıraktığı boşluğu doldurmak için var.</p>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <h2>Neler kuruluyor</h2>
+    <p class="section-lede">İlk sürüm henüz bunların hepsini yapmıyor — aşağıdaki liste, üzerinde çalışılan çekirdek.</p>
+    <ul class="ledger">
+      <li>
+        <span class="mark">I.</span>
+        <div>
+          <h3>Mezun profilleri</h3>
+          <p>Fakülte, bölüm, mezuniyet yılı, şehir ve güncel pozisyon — tek bir sayfada.</p>
+        </div>
+      </li>
+      <li>
+        <span class="mark">II.</span>
+        <div>
+          <h3>Mezuniyet doğrulaması</h3>
+          <p>Bir profil ancak gerçekten mezun olduğu doğrulandığında güvenilirdir.</p>
+        </div>
+      </li>
+      <li>
+        <span class="mark">III.</span>
+        <div>
+          <h3>Arama ve filtreleme</h3>
+          <p>İsme, bölüme, mezuniyet yılına, şehre ya da çalıştığı kuruma göre.</p>
+        </div>
+      </li>
+      <li>
+        <span class="mark">IV.</span>
+        <div>
+          <h3>Fakülte ve bölüm çevreleri</h3>
+          <p>Herkes kendi okuduğu fakültenin akışını takip eder, sohbet oradan başlar.</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<section class="closed-network">
+  <div class="wrap">
+    <div class="panel">
+      <h2>Akıştaki herkes, doğrulanmış bir İ.Ü. mezunu.</h2>
+      <p>
+        Bu tek kısıtlama, konuşmayı değerli kılan şey: bot yok, yabancı yok, gürültü yok.
+        Bir kıdemli mezunun "bölümümden iki stajyer arıyoruz" paylaşımı, herhangi bir
+        iş ilanı sitesindekinden daha anlamlı — çünkü okuyan herkes aynı okuldan.
+      </p>
+      <p class="signature">— aynı sıralarda oturmuş olmanın verdiği güven</p>
+    </div>
+  </div>
+</section>
+
+<details class="dev">
+  <summary>Geliştirici notu — çalışan route'lar</summary>
+  <div class="wrap" style="padding:0;">
+    <table class="routes">
+      <thead><tr><th>Route</th><th>Yanıt</th></tr></thead>
+      <tbody>
+        <tr><td><a href="/">/</a></td><td>bu sayfa (ana sayfa)</td></tr>
+        <tr><td><a href="/hello">/hello</a></td><td>Hello, World!</td></tr>
+        <tr><td><a href="/hello/emre">/hello/{name}</a></td><td>isme selam verir</td></tr>
+        <tr><td><a href="/sum/7/35">/sum/{number1}/{number2}</a></td><td>iki sayıyı toplar</td></tr>
+        <tr><td><a href="/temporary">/temporary</a></td><td>bu sayfaya geçici yönlendirme</td></tr>
+        <tr><td><a href="/about">/about</a></td><td>hakkında sayfası</td></tr>
+        <tr><td><a href="/alumni">GET /alumni</a></td><td>tüm mezunlar, JSON olarak</td></tr>
+        <tr><td>POST /alumni</td><td>JSON gövdeden yeni mezun oluşturur</td></tr>
+      </tbody>
+    </table>
+  </div>
+</details>
+
+<footer>
+  <div class="wrap">
+    <span>İstanbul Üniversitesi mezunları için inşa edildi</span>
+    <a href="https://github.com/rabizd/alumni">kaynak kod →</a>
+  </div>
+</footer>
+
 </body>
 </html>

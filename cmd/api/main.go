@@ -22,7 +22,7 @@ var templates = template.Must(template.ParseFS(templateFiles, "templates/*.html"
 func main() {
 	mux := http.NewServeMux()
 
-	// 1. GET / -> OK
+	// 1. GET / -> the landing page
 	mux.HandleFunc("GET /{$}", handleRoot)
 
 	// 2. GET /hello -> Hello, World!
@@ -60,7 +60,7 @@ func main() {
 }
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "OK")
+	render(w, "main.html")
 }
 
 func handleHello(w http.ResponseWriter, r *http.Request) {

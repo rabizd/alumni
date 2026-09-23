@@ -1,36 +1,123 @@
 <!doctype html>
-<html lang="en">
+<html lang="tr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>About · Alumni</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+<title>Hakkında · Alumni</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  main { max-width: 46rem; }
+  :root{
+    --ink:#211c18;
+    --paper:#e9e4d8;
+    --maroon:#4a0e1a;
+    --maroon-deep:#320a12;
+    --gold:#a9832d;
+    --line: rgba(33,28,24,0.16);
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'Inter', system-ui, sans-serif; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,.display{ font-family:'Spectral', Georgia, serif; font-weight:500; line-height:1.2; margin:0; }
+  a{ color:var(--maroon); }
+  a:focus-visible{ outline:2px solid var(--maroon); outline-offset:3px; }
+  .wrap{ max-width:38rem; margin:0 auto; padding:0 1.5rem; }
+
+  nav.top{ border-bottom:1px solid var(--line); }
+  nav.top .wrap{ display:flex; align-items:center; justify-content:space-between; padding:1.1rem 1.5rem; max-width:56rem; }
+  .brand{ font-family:'Spectral', serif; font-size:1.05rem; color:var(--ink); text-decoration:none; }
+  .brand b{ color:var(--maroon); font-weight:600; }
+  nav.top a.back{ color:var(--ink); text-decoration:none; font-size:0.92rem; }
+  nav.top a.back:hover{ color:var(--maroon); }
+
+  main{ padding:3.5rem 0 4rem; }
+  header.page{ margin-bottom:2.5rem; border-bottom:1px solid var(--line); padding-bottom:2rem; }
+  header.page p.kicker{ color:var(--maroon); font-size:0.85rem; margin:0 0 0.8rem; }
+  h1{ font-size:2.2rem; }
+
+  main p{ font-size:1.05rem; color:#3a332c; margin:0 0 1.3rem; }
+  main strong{ color:var(--ink); }
+
+  .stack{ display:flex; flex-direction:column; gap:0; margin:2.2rem 0; }
+  .stack .row{
+    display:grid; grid-template-columns: 8rem 1fr; gap:1rem;
+    padding:1rem 0; border-top:1px solid var(--line); font-size:0.95rem;
+  }
+  .stack .row:first-child{ border-top:none; }
+  .stack .row .label{ font-family:'Spectral', serif; font-style:italic; color:var(--gold); }
+  .stack .row .val{ color:#3a332c; }
+
+  .open-question{
+    background:var(--maroon); color:#f2e9df;
+    padding:1.8rem 1.9rem; border-radius:18px; margin:2.5rem 0;
+  }
+  .open-question p{ color:#e7d3ce; margin:0; font-size:0.98rem; }
+  .open-question .label{ font-family:'Spectral', serif; font-style:italic; color:var(--gold); font-size:0.9rem; display:block; margin-bottom:0.5rem; }
+
+  footer{ border-top:1px solid var(--line); padding:2rem 0; }
+  footer .wrap{ max-width:56rem; display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.6rem; font-size:0.85rem; color:#5b5248; }
 </style>
 </head>
 <body>
-<main class="container">
-  <hgroup>
-    <h1>About</h1>
-    <p>Placeholder page — the real content is still being written.</p>
-  </hgroup>
 
-  <p>
-    <strong>Alumni</strong> is a social network for the graduates of Istanbul University:
-    part searchable directory, part shared feed, closed to everyone who did not study here.
-  </p>
+<nav class="top">
+  <div class="wrap">
+    <a class="brand" href="/main"><b>İ.Ü.</b> Alumni</a>
+    <a class="back" href="/main">← ana sayfa</a>
+  </div>
+</nav>
 
-  <p>
-    The backend is written in Go, with PostgreSQL as the source of truth and Redis for
-    sessions and caching. The project is in early development.
-  </p>
+<main>
+  <div class="wrap">
+    <header class="page">
+      <p class="kicker">hakkında</p>
+      <h1>Bir sicil defteri, bir de akış.</h1>
+    </header>
 
-  <p><a href="/main">← Back to the main page</a></p>
+    <p>
+      <strong>Alumni</strong>, İstanbul Üniversitesi mezunları için kurulan bir platform.
+      Mezuniyet, yıllarca inşa edilen bir topluluğun sonu olmamalı — asıl büyük olanın
+      başlangıcı olmalı. Ama pratikte, öğrenciler Beyazıt kapısından çıktığı anda
+      o ağ sessizce dağınık grup sohbetlerine ve güncelliğini yitirmiş tablolara dönüşüyor.
+    </p>
+    <p>
+      Bu platform o ağı tek bir yerde topluyor: mezun profilleri, kariyer geçmişleri
+      ve çalışılan kurumlar — aranabilir, keşfedilebilir hale getiriliyor. Ama bir
+      isim listesi bir topluluk değildir; rehberin üstünde mezunların paylaştığı,
+      yorumladığı ve birbirini takip ettiği bir akış var.
+    </p>
 
-  <footer>
-    <small>Built for the graduates of Istanbul University · <a href="https://github.com/rabizd/alumni">source</a></small>
-  </footer>
+    <div class="stack">
+      <div class="row"><span class="label">Sunucu</span><span class="val">Go, standart kütüphane ile yazıldı</span></div>
+      <div class="row"><span class="label">Veri</span><span class="val">PostgreSQL — kalıcı kayıtların tek doğru kaynağı</span></div>
+      <div class="row"><span class="label">Önbellek</span><span class="val">Redis — oturumlar ve hızlı akış sayfaları için</span></div>
+      <div class="row"><span class="label">Durum</span><span class="val">erken geliştirme — mezunlar şu anda bellekte tutuluyor</span></div>
+    </div>
+
+    <div class="open-question">
+      <span class="label">açık soru</span>
+      <p>
+        Birinin gerçekten mezun olduğu nasıl doğrulanır? Öğrenci e-postaları mezuniyetten
+        sonra kapanıyor, tek başına yeterli değil. Şimdilik olası cevaplar: e-Devlet üzerinden
+        diploma doğrulaması, üniversitenin kendi doğrulama sistemi, ya da zaten doğrulanmış
+        mezunların referans olması.
+      </p>
+    </div>
+
+    <p><a href="/main">← Ana sayfaya dön</a></p>
+  </div>
 </main>
+
+<footer>
+  <div class="wrap">
+    <span>İstanbul Üniversitesi mezunları için inşa edildi</span>
+    <a href="https://github.com/rabizd/alumni">kaynak kod →</a>
+  </div>
+</footer>
+
 </body>
 </html>
