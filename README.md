@@ -12,7 +12,7 @@
 
 </div>
 
-> ⚠️ **Early development.** No application code has been written yet — this README describes the project that is being built. Everything below marked *planned* is a design decision, not a shipped feature.
+> ⚠️ **Early development.** A first slice of the API runs — see [What Works Today](#what-works-today). Everything below marked *planned* is a design decision, not a shipped feature.
 
 ## Table of Contents
 
@@ -22,12 +22,13 @@
 - [Planned Features](#planned-features)
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
+- [What Works Today](#what-works-today)
 - [Data Model](#data-model)
 - [Prior Art](#prior-art)
 - [Open Design Questions](#open-design-questions)
 - [Getting Started](#getting-started)
 - [Configuration](#configuration)
-- [Planned Project Structure](#planned-project-structure)
+- [Project Structure](#project-structure)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [License](#license)
@@ -123,6 +124,30 @@ PostgreSQL is the single source of truth: every profile, employment record, post
 
 The feed is the one place where that split really earns itself. Building a graduate's timeline means reading from everyone they follow, on every page load, for every user at once — exactly the query that gets expensive first. Caching assembled pages in Redis keeps the feed fast, and because the posts themselves still live in Postgres, a flushed cache costs a few slow requests rather than a lost conversation.
 
+## What Works Today
+
+The API skeleton runs on `http://localhost:8080` (`go run ./cmd/api`). Alumni are held in
+memory for now, so anything created is lost when the server restarts — PostgreSQL replaces
+that next.
+
+| Route | Response |
+| --- | --- |
+| `GET /` | `OK` — a health check |
+| `GET /main` | HTML page listing every route |
+| `GET /about` | HTML about page (placeholder content) |
+| `GET /alumni` | every graduate, as a JSON array |
+| `POST /alumni` | creates a graduate; `201` with the assigned id |
+| `GET /hello`, `GET /hello/{name}` | greeting, from the lecture exercises |
+| `GET /sum/{number1}/{number2}` | the sum, or `400` on non-numeric input |
+| `GET /temporary` | `307` temporary redirect to `/main` |
+
+Routing uses the Go 1.22 standard-library `ServeMux` — no third-party router. HTML lives in
+`cmd/api/templates/`, embedded into the binary with `go:embed` and rendered through
+`html/template`; styling is [Pico.css](https://picocss.com), so the markup stays plain HTML.
+
+`requests.http` at the repository root fires every endpoint, including the error cases, from
+the VS Code REST Client extension.
+
 ## Data Model
 
 The initial schema sketch. It will change as the code is written.
@@ -176,73 +201,69 @@ Honest unknowns, written down so they are decided deliberately rather than by ac
 
 ## Getting Started
 
-> ⏳ The commands below describe the intended setup. They will not work until the API skeleton exists — see the [Roadmap](#roadmap).
-
 ### Prerequisites
 
-- [Go](https://go.dev/dl/) 1.22 or newer
-- [Docker](https://www.docker.com/) and Docker Compose — the easiest way to get PostgreSQL and Redis running
-- Or, without Docker: [PostgreSQL](https://www.postgresql.org/download/) 15+ and [Redis](https://redis.io/download/) 7+ installed locally
+- [Go](https://go.dev/dl/) 1.22 or newer — the only thing needed right now
+- [Docker](https://www.docker.com/) and Docker Compose — *later*, once PostgreSQL and Redis are wired in
 
-### Installation
+### Run it
 
 ```bash
-# Clone the repository
 git clone https://github.com/rabizd/alumni.git
 cd alumni
-
-# Start PostgreSQL and Redis
-docker compose up -d
-
-# Copy the example environment file and fill in your values
-cp .env.example .env
-
-# Download Go dependencies and run the API
-go mod download
 go run ./cmd/api
 ```
 
-The API will be available at `http://localhost:8080`.
+Then open <http://localhost:8080/main>. There are no dependencies to download yet and nothing
+to configure — the server has no database behind it so far.
 
 ## Configuration
 
-Configuration is read from environment variables (see `.env.example`, once it exists):
+`APP_PORT` is read today; the rest arrive with the database work:
 
 | Variable | Description | Example |
 | --- | --- | --- |
-| `APP_PORT` | Port the API listens on | `8080` |
+| `APP_PORT` | Port the API listens on (default `8080`) | `8080` |
 | `DATABASE_URL` | PostgreSQL connection string | `postgres://user:pass@localhost:5432/alumni?sslmode=disable` |
 | `REDIS_URL` | Redis connection string | `redis://localhost:6379/0` |
 | `JWT_SECRET` | Secret used to sign access tokens | *(a long random string)* |
 
 > 🔒 Never commit your `.env` file. Only `.env.example` belongs in version control.
 
-## Planned Project Structure
+## Project Structure
 
-None of these directories exist yet; this is the layout the code is heading toward.
+What exists today, and where it is heading. Directories marked *planned* are not there yet.
 
 ```
 alumni/
 ├── cmd/
-│   └── api/            # Application entry point
-├── internal/
-│   ├── handler/        # HTTP handlers (routing layer)
-│   ├── service/        # Business logic
-│   ├── repository/     # PostgreSQL and Redis access
-│   └── model/          # Domain types
-├── migrations/         # SQL schema migrations
-├── docker-compose.yml  # PostgreSQL + Redis for local development
-├── .env.example
+│   └── api/
+│       ├── main.go         # routes, HTML pages, server start-up
+│       ├── alumni.go       # the Alumni type, in-memory store, JSON handlers
+│       └── templates/      # main.html, about.html (embedded with go:embed)
+├── requests.http           # every endpoint, for the VS Code REST Client
+├── go.mod
 ├── README.md
-└── LICENSE
+├── LICENSE
+│
+├── internal/               # planned — handler / service / repository / model
+├── migrations/             # planned — SQL schema migrations
+├── docker-compose.yml      # planned — PostgreSQL + Redis for local development
+└── .env.example            # planned
 ```
+
+Everything lives in `cmd/api` while the surface is small. It moves into `internal/` when the
+database arrives and handlers stop being one-liners.
 
 ## Roadmap
 
 **Phase 1 — foundations**
+- [x] Go module and an HTTP server with routing
+- [x] `GET /` as a health check, and HTML main / about pages
+- [x] `GET` and `POST /alumni` against an in-memory store
 - [ ] `docker-compose.yml` for PostgreSQL and Redis
-- [ ] Go module, configuration loading, and a `/health` endpoint
 - [ ] Database schema and migrations
+- [ ] Move the in-memory store onto PostgreSQL
 
 **Phase 2 — a usable core**
 - [ ] Sign-up, sign-in, and Redis-backed sessions
