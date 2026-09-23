@@ -1,13 +1,23 @@
 package main
 
 import (
+	"embed"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"unicode"
 )
+
+// The HTML lives in its own files; go:embed bakes them into the binary at
+// build time, so the server stays a single executable with no loose files.
+//
+//go:embed templates/*.html
+var templateFiles embed.FS
+
+var templates = template.Must(template.ParseFS(templateFiles, "templates/*.html"))
 
 func main() {
 	mux := http.NewServeMux()
@@ -87,46 +97,8 @@ func handleTemporary(w http.ResponseWriter, r *http.Request) {
 
 func handleMain(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprint(w, mainPage)
+	if err := templates.ExecuteTemplate(w, "main.html", nil); err != nil {
+		log.Printf("rendering main.html: %v", err)
+	}
 }
 
-const mainPage = `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Alumni</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-<style>
-  main { max-width: 46rem; }
-  td:last-child { color: var(--pico-muted-color); }
-</style>
-</head>
-<body>
-<main class="container">
-  <hgroup>
-    <h1>🎓 Alumni</h1>
-    <p>Istanbul University alumni network — development server</p>
-  </hgroup>
-
-  <h2>Routes</h2>
-  <table>
-    <thead>
-      <tr><th scope="col">Route</th><th scope="col">Response</th></tr>
-    </thead>
-    <tbody>
-      <tr><td><a href="/">/</a></td><td>OK</td></tr>
-      <tr><td><a href="/hello">/hello</a></td><td>Hello, World!</td></tr>
-      <tr><td><a href="/hello/emre">/hello/{name}</a></td><td>greets the name in the path</td></tr>
-      <tr><td><a href="/sum/7/35">/sum/{number1}/{number2}</a></td><td>adds the two numbers</td></tr>
-      <tr><td><a href="/temporary">/temporary</a></td><td>temporary redirect back to this page</td></tr>
-    </tbody>
-  </table>
-
-  <footer>
-    <small>Built for the graduates of Istanbul University · <a href="https://github.com/rabizd/alumni">source</a></small>
-  </footer>
-</main>
-</body>
-</html>
-`

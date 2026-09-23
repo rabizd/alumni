@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alumni</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+<style>
+  main { max-width: 46rem; }
+  td:last-child { color: var(--pico-muted-color); }
+</style>
+</head>
+<body>
+<main class="container">
+  <hgroup>
+    <h1>🎓 Alumni</h1>
+    <p>Istanbul University alumni network — development server</p>
+  </hgroup>
+
+  <h2>Routes</h2>
+  <table>
+    <thead>
+      <tr><th scope="col">Route</th><th scope="col">Response</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><a href="/">/</a></td><td>OK</td></tr>
+      <tr><td><a href="/hello">/hello</a></td><td>Hello, World!</td></tr>
+      <tr><td><a href="/hello/emre">/hello/{name}</a></td><td>greets the name in the path</td></tr>
+      <tr><td><a href="/sum/7/35">/sum/{number1}/{number2}</a></td><td>adds the two numbers</td></tr>
+      <tr><td><a href="/temporary">/temporary</a></td><td>temporary redirect back to this page</td></tr>
+    </tbody>
+  </table>
+
+  <footer>
+    <small>Built for the graduates of Istanbul University · <a href="https://github.com/rabizd/alumni">source</a></small>
+  </footer>
+</main>
+</body>
+</html>
