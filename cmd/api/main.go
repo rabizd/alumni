@@ -43,6 +43,10 @@ func main() {
 	// 6. GET /about -> a temporary about page
 	mux.HandleFunc("GET /about", handleAbout)
 
+	// The alumni resource itself.
+	mux.HandleFunc("GET /alumni", handleListAlumni)
+	mux.HandleFunc("POST /alumni", handleCreateAlumni)
+
 	port := os.Getenv("APP_PORT")
 	if port == "" {
 		port = "8080"
