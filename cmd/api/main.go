@@ -40,6 +40,9 @@ func main() {
 	// The main page the temporary redirect points at.
 	mux.HandleFunc("GET /main", handleMain)
 
+	// 6. GET /about -> a temporary about page
+	mux.HandleFunc("GET /about", handleAbout)
+
 	port := os.Getenv("APP_PORT")
 	if port == "" {
 		port = "8080"
@@ -96,9 +99,16 @@ func handleTemporary(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleMain(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := templates.ExecuteTemplate(w, "main.html", nil); err != nil {
-		log.Printf("rendering main.html: %v", err)
-	}
+	render(w, "main.html")
 }
 
+func handleAbout(w http.ResponseWriter, r *http.Request) {
+	render(w, "about.html")
+}
+
+func render(w http.ResponseWriter, page string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := templates.ExecuteTemplate(w, page, nil); err != nil {
+		log.Printf("rendering %s: %v", page, err)
+	}
+}
