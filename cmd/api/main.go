@@ -96,25 +96,37 @@ const mainPage = `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Alumni</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 4rem auto; padding: 0 1rem; line-height: 1.6; }
-  h1 { margin-bottom: 0.25rem; }
-  p.sub { color: #666; margin-top: 0; }
-  li { margin: 0.35rem 0; }
-  code { background: #f2f2f2; padding: 0.1rem 0.3rem; border-radius: 3px; }
+  main { max-width: 46rem; }
+  td:last-child { color: var(--pico-muted-color); }
 </style>
 </head>
 <body>
-  <h1>Alumni</h1>
-  <p class="sub">Istanbul University alumni network — development server</p>
+<main class="container">
+  <hgroup>
+    <h1>🎓 Alumni</h1>
+    <p>Istanbul University alumni network — development server</p>
+  </hgroup>
+
   <h2>Routes</h2>
-  <ul>
-    <li><a href="/">/</a> — <code>OK</code></li>
-    <li><a href="/hello">/hello</a> — <code>Hello, World!</code></li>
-    <li><a href="/hello/emre">/hello/{name}</a> — greets the name in the path</li>
-    <li><a href="/sum/7/35">/sum/{number1}/{number2}</a> — adds the two numbers</li>
-    <li><a href="/temporary">/temporary</a> — temporary redirect back to this page</li>
-  </ul>
+  <table>
+    <thead>
+      <tr><th scope="col">Route</th><th scope="col">Response</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><a href="/">/</a></td><td>OK</td></tr>
+      <tr><td><a href="/hello">/hello</a></td><td>Hello, World!</td></tr>
+      <tr><td><a href="/hello/emre">/hello/{name}</a></td><td>greets the name in the path</td></tr>
+      <tr><td><a href="/sum/7/35">/sum/{number1}/{number2}</a></td><td>adds the two numbers</td></tr>
+      <tr><td><a href="/temporary">/temporary</a></td><td>temporary redirect back to this page</td></tr>
+    </tbody>
+  </table>
+
+  <footer>
+    <small>Built for the graduates of Istanbul University · <a href="https://github.com/rabizd/alumni">source</a></small>
+  </footer>
+</main>
 </body>
 </html>
 `
