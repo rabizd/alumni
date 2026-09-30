@@ -48,6 +48,81 @@ POST {{host}}/api/health
 
 
 ##############################################
+# Users  (in memory - no database yet)
+##############################################
+
+### List every user
+GET {{host}}/api/users
+
+### Create a user -> 201 Created, with the id the server assigned
+POST {{host}}/api/users
+Content-Type: application/json
+
+{
+  "name": "Elif Kaya",
+  "email": "elif@example.com"
+}
+
+### PUT replaces the WHOLE user, so every field is required -> 200
+PUT {{host}}/api/users/1
+Content-Type: application/json
+
+{
+  "name": "Ayse Yilmaz",
+  "email": "ayse.yilmaz@example.com"
+}
+
+### PATCH changes only what you send; the name stays as it was -> 200
+PATCH {{host}}/api/users/1
+Content-Type: application/json
+
+{
+  "email": "yeni.adres@example.com"
+}
+
+### PUT without every field -> 400 (this is what makes PUT different from PATCH)
+PUT {{host}}/api/users/1
+Content-Type: application/json
+
+{
+  "email": "eksik@example.com"
+}
+
+### PATCH with nothing to change -> 400
+PATCH {{host}}/api/users/1
+Content-Type: application/json
+
+{}
+
+### An id that does not exist -> 404
+PATCH {{host}}/api/users/999
+Content-Type: application/json
+
+{
+  "name": "Yok"
+}
+
+### An id that is not a number -> 400
+PATCH {{host}}/api/users/abc
+Content-Type: application/json
+
+{
+  "name": "Yok"
+}
+
+### Missing email -> 400
+POST {{host}}/api/users
+Content-Type: application/json
+
+{
+  "name": "Sadece isim"
+}
+
+### DELETE is not implemented -> 405
+DELETE {{host}}/api/users
+
+
+##############################################
 # Alumni resource
 ##############################################
 

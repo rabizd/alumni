@@ -46,6 +46,12 @@ func main() {
 	// GET /api/health -> a JSON health check
 	mux.HandleFunc("GET /api/health", handleHealth)
 
+	// The users resource, kept in memory for now.
+	mux.HandleFunc("GET /api/users", handleListUsers)
+	mux.HandleFunc("POST /api/users", handleCreateUser)
+	mux.HandleFunc("PUT /api/users/{id}", handleReplaceUser)
+	mux.HandleFunc("PATCH /api/users/{id}", handlePatchUser)
+
 	// The alumni resource itself.
 	mux.HandleFunc("GET /alumni", handleListAlumni)
 	mux.HandleFunc("POST /alumni", handleCreateAlumni)

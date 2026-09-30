@@ -134,6 +134,10 @@ that next.
 | --- | --- |
 | `GET /` | the HTML landing page |
 | `GET /api/health` | `{"status":"ok"}` — is the server up? |
+| `GET /api/users` | every user, as a JSON array |
+| `POST /api/users` | creates a user; `201` with the assigned id |
+| `PUT /api/users/{id}` | replaces the whole user; every field required |
+| `PATCH /api/users/{id}` | changes only the fields the body mentions |
 | `GET /main` | HTML page listing every route |
 | `GET /about` | HTML about page (placeholder content) |
 | `GET /alumni` | every graduate, as a JSON array |
@@ -262,6 +266,7 @@ database arrives and handlers stop being one-liners.
 - [x] Go module and an HTTP server with routing
 - [x] HTML landing / about pages, and `GET /api/health` as a JSON health check
 - [x] `GET` and `POST /alumni` against an in-memory store
+- [x] `/api/users` with `GET`, `POST`, `PUT` and `PATCH`, still in memory
 - [ ] `docker-compose.yml` for PostgreSQL and Redis
 - [ ] Database schema and migrations
 - [ ] Move the in-memory store onto PostgreSQL
