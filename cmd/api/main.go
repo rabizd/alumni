@@ -49,6 +49,8 @@ func main() {
 	// The users resource, kept in memory for now.
 	mux.HandleFunc("GET /api/users", handleListUsers)
 	mux.HandleFunc("POST /api/users", handleCreateUser)
+	mux.HandleFunc("GET /api/users/{id}", handleGetUser)
+	mux.HandleFunc("DELETE /api/users/{id}", handleDeleteUser)
 	mux.HandleFunc("PUT /api/users/{id}", handleReplaceUser)
 	mux.HandleFunc("PATCH /api/users/{id}", handlePatchUser)
 

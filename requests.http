@@ -63,6 +63,12 @@ Content-Type: application/json
   "email": "elif@example.com"
 }
 
+### One user by id
+GET {{host}}/api/users/1
+
+### An id that does not exist -> 404
+GET {{host}}/api/users/999
+
 ### PUT replaces the WHOLE user, so every field is required -> 200
 PUT {{host}}/api/users/1
 Content-Type: application/json
@@ -118,7 +124,13 @@ Content-Type: application/json
   "name": "Sadece isim"
 }
 
-### DELETE is not implemented -> 405
+### Delete a user -> 204 No Content, with an empty body
+DELETE {{host}}/api/users/2
+
+### Deleting the same id again -> 404
+DELETE {{host}}/api/users/2
+
+### DELETE needs an id; the collection itself does not accept it -> 405
 DELETE {{host}}/api/users
 
 

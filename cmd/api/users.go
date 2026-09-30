@@ -54,6 +54,31 @@ func (s *userStore) add(u User) User {
 	return u
 }
 
+// find returns the user with the given id. The bool reports whether it existed.
+func (s *userStore) find(id int) (User, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, u := range s.items {
+		if u.ID == id {
+			return u, true
+		}
+	}
+	return User{}, false
+}
+
+// remove deletes the user with the given id, reporting whether it existed.
+func (s *userStore) remove(id int) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, u := range s.items {
+		if u.ID == id {
+			s.items = append(s.items[:i], s.items[i+1:]...)
+			return true
+		}
+	}
+	return false
+}
+
 // replace overwrites every field of the user with the given id. The bool
 // reports whether such a user existed.
 func (s *userStore) replace(id int, u User) (User, bool) {
@@ -91,6 +116,38 @@ func (s *userStore) patch(id int, p userPatch) (User, bool) {
 // GET /api/users -> every user, as a JSON array
 func handleListUsers(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, users.list())
+}
+
+// GET /api/users/{id} -> one user, or 404
+func handleGetUser(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r)
+	if !ok {
+		return
+	}
+
+	u, found := users.find(id)
+	if !found {
+		http.Error(w, "no user with that id", http.StatusNotFound)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, u)
+}
+
+// DELETE /api/users/{id} -> 204 with an empty body, or 404
+func handleDeleteUser(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r)
+	if !ok {
+		return
+	}
+
+	if !users.remove(id) {
+		http.Error(w, "no user with that id", http.StatusNotFound)
+		return
+	}
+
+	// 204 No Content: it worked, and there is nothing left to send back.
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // POST /api/users -> create a user; 201 with the id the server assigned
