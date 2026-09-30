@@ -1,0 +1,214 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Alumni API",
+    "description": "İstanbul Üniversitesi mezun ağı. Kullanıcılar şimdilik bellekte tutuluyor, veritabanı henüz yok: sunucu yeniden başlayınca her şey sıfırlanır.",
+    "version": "0.1.0"
+  },
+  "servers": [
+    { "url": "http://localhost:8080", "description": "Yerel geliştirme" }
+  ],
+  "tags": [
+    { "name": "health", "description": "Sunucu ayakta mı?" },
+    { "name": "users", "description": "Kullanıcılar (bellekte)" }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Sağlık kontrolü",
+        "description": "Bu uç noktaya ulaşabilmek zaten kontrolün kendisidir: süreç ayakta ve yönlendirme doğru kurulmuş demektir.",
+        "responses": {
+          "200": {
+            "description": "Sunucu ayakta",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Health" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "tags": ["users"],
+        "summary": "Bütün kullanıcıları listele",
+        "responses": {
+          "200": {
+            "description": "Kullanıcı dizisi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/User" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["users"],
+        "summary": "Yeni kullanıcı oluştur",
+        "description": "id alanını sunucu verir; gövdede göndermeye çalışma.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NewUser" },
+              "example": { "name": "Elif Kaya", "email": "elif@example.com" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Oluşturuldu",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/users/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "Kullanıcının id'si",
+          "schema": { "type": "integer", "example": 1 }
+        }
+      ],
+      "get": {
+        "tags": ["users"],
+        "summary": "Tek bir kullanıcıyı getir",
+        "responses": {
+          "200": {
+            "description": "Kullanıcı bulundu",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["users"],
+        "summary": "Kullanıcıyı bütünüyle değiştir",
+        "description": "PUT kaydın yeni hâlinin tamamıdır, bu yüzden her alan zorunludur. Eksik alan gönderirsen 400 alırsın. Yalnızca bir alanı değiştirmek istiyorsan PATCH kullan.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NewUser" },
+              "example": { "name": "Ayşe Yıldız", "email": "ayse.yildiz@example.com" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Değiştirildi",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "patch": {
+        "tags": ["users"],
+        "summary": "Kullanıcının yalnızca gönderilen alanlarını değiştir",
+        "description": "Gövdede anmadığın alanlar olduğu gibi kalır. En az bir alan göndermelisin.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserPatch" },
+              "example": { "email": "yeni@example.com" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Güncellendi",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/User" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "delete": {
+        "tags": ["users"],
+        "summary": "Kullanıcıyı sil",
+        "responses": {
+          "204": { "description": "Silindi; geri gönderilecek gövde yok" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "example": "ok" }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "readOnly": true, "example": 1 },
+          "name": { "type": "string", "example": "Ayşe Yılmaz" },
+          "email": { "type": "string", "example": "ayse@example.com" }
+        }
+      },
+      "NewUser": {
+        "type": "object",
+        "required": ["name", "email"],
+        "properties": {
+          "name": { "type": "string", "example": "Elif Kaya" },
+          "email": { "type": "string", "example": "elif@example.com" }
+        }
+      },
+      "UserPatch": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "name": { "type": "string", "example": "Elif Kaya" },
+          "email": { "type": "string", "example": "yeni@example.com" }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "İstek hatalı: bozuk JSON, eksik alan ya da sayı olmayan id",
+        "content": {
+          "text/plain": { "schema": { "type": "string" }, "example": "name is required" }
+        }
+      },
+      "NotFound": {
+        "description": "Bu id'ye sahip kullanıcı yok",
+        "content": {
+          "text/plain": { "schema": { "type": "string" }, "example": "no user with that id" }
+        }
+      }
+    }
+  }
+}

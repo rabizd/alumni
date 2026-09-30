@@ -46,6 +46,10 @@ func main() {
 	// GET /api/health -> a JSON health check
 	mux.HandleFunc("GET /api/health", handleHealth)
 
+	// GET /api/swagger -> the API documentation, generated from openapi.json
+	mux.HandleFunc("GET /api/swagger", handleSwagger)
+	mux.HandleFunc("GET /api/swagger.json", handleSwaggerSpec)
+
 	// The users resource, kept in memory for now.
 	mux.HandleFunc("GET /api/users", handleListUsers)
 	mux.HandleFunc("POST /api/users", handleCreateUser)

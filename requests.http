@@ -48,6 +48,17 @@ POST {{host}}/api/health
 
 
 ##############################################
+# API documentation
+##############################################
+
+### Swagger UI - open this one in a browser, not the REST Client
+GET {{host}}/api/swagger
+
+### The OpenAPI document behind it
+GET {{host}}/api/swagger.json
+
+
+##############################################
 # Users  (in memory - no database yet)
 ##############################################
 

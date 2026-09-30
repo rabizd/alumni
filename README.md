@@ -140,6 +140,8 @@ that next.
 | `DELETE /api/users/{id}` | removes a user; `204` with an empty body |
 | `PUT /api/users/{id}` | replaces the whole user; every field required |
 | `PATCH /api/users/{id}` | changes only the fields the body mentions |
+| `GET /api/swagger` | Swagger UI, rendered from the OpenAPI document |
+| `GET /api/swagger.json` | the OpenAPI document itself |
 | `GET /main` | HTML page listing every route |
 | `GET /about` | HTML about page (placeholder content) |
 | `GET /alumni` | every graduate, as a JSON array |
@@ -154,6 +156,20 @@ Routing uses the Go 1.22 standard-library `ServeMux` — no third-party router. 
 
 `requests.http` at the repository root fires every endpoint, including the error cases, from
 the VS Code REST Client extension.
+
+### Keep the API documentation current
+
+`cmd/api/openapi.json` describes the API in the [OpenAPI 3](https://swagger.io/specification/)
+format, and `GET /api/swagger` renders it as a Swagger UI page you can send requests from.
+
+**Every pull request that changes an endpoint must update `openapi.json` in the same commit.**
+That means a new route, a removed one, a renamed field, a different status code — anything a
+caller would notice. Documentation that is updated "later" is documentation that quietly starts
+lying, and a wrong API description is worse than none: it is believed. Treat the spec as part of
+the endpoint, not as a chore that follows it.
+
+A quick way to check yourself before opening a PR: open `/api/swagger`, press **Try it out** on
+each endpoint you touched, and confirm the real response matches what the page promises.
 
 ## Data Model
 
@@ -269,6 +285,7 @@ database arrives and handlers stop being one-liners.
 - [x] HTML landing / about pages, and `GET /api/health` as a JSON health check
 - [x] `GET` and `POST /alumni` against an in-memory store
 - [x] `/api/users` with `GET`, `POST`, `PUT`, `PATCH` and `DELETE`, still in memory
+- [x] OpenAPI document and a Swagger UI page at `/api/swagger`
 - [ ] `docker-compose.yml` for PostgreSQL and Redis
 - [ ] Database schema and migrations
 - [ ] Move the in-memory store onto PostgreSQL
@@ -302,6 +319,9 @@ Contributions are welcome — this project grows faster with more hands.
 3. Commit your changes: `git commit -m "Add your feature"`
 4. Push the branch: `git push origin feature/your-feature`
 5. Open a **Pull Request**.
+
+Before step 5, make sure `cmd/api/openapi.json` reflects any endpoint you added or changed —
+see [Keep the API documentation current](#keep-the-api-documentation-current).
 
 ## License
 
