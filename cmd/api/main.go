@@ -43,6 +43,9 @@ func main() {
 	// 6. GET /about -> a temporary about page
 	mux.HandleFunc("GET /about", handleAbout)
 
+	// GET /api/health -> a JSON health check
+	mux.HandleFunc("GET /api/health", handleHealth)
+
 	// The alumni resource itself.
 	mux.HandleFunc("GET /alumni", handleListAlumni)
 	mux.HandleFunc("POST /alumni", handleCreateAlumni)

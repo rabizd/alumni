@@ -132,7 +132,8 @@ that next.
 
 | Route | Response |
 | --- | --- |
-| `GET /` | `OK` — a health check |
+| `GET /` | the HTML landing page |
+| `GET /api/health` | `{"status":"ok"}` — is the server up? |
 | `GET /main` | HTML page listing every route |
 | `GET /about` | HTML about page (placeholder content) |
 | `GET /alumni` | every graduate, as a JSON array |
@@ -259,7 +260,7 @@ database arrives and handlers stop being one-liners.
 
 **Phase 1 — foundations**
 - [x] Go module and an HTTP server with routing
-- [x] `GET /` as a health check, and HTML main / about pages
+- [x] HTML landing / about pages, and `GET /api/health` as a JSON health check
 - [x] `GET` and `POST /alumni` against an in-memory store
 - [ ] `docker-compose.yml` for PostgreSQL and Redis
 - [ ] Database schema and migrations

@@ -37,6 +37,17 @@ GET {{host}}/bilinmeyen
 
 
 ##############################################
+# Health check
+##############################################
+
+### Is the server up? -> 200 {"status":"ok"}
+GET {{host}}/api/health
+
+### Wrong method on the health check -> 405
+POST {{host}}/api/health
+
+
+##############################################
 # Alumni resource
 ##############################################
 
