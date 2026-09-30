@@ -37,6 +37,115 @@ GET {{host}}/bilinmeyen
 
 
 ##############################################
+# Health check
+##############################################
+
+### Is the server up? -> 200 {"status":"ok"}
+GET {{host}}/api/health
+
+### Wrong method on the health check -> 405
+POST {{host}}/api/health
+
+
+##############################################
+# API documentation
+##############################################
+
+### Swagger UI - open this one in a browser, not the REST Client
+GET {{host}}/api/swagger
+
+### The OpenAPI document behind it
+GET {{host}}/api/swagger.json
+
+
+##############################################
+# Users  (in memory - no database yet)
+##############################################
+
+### List every user
+GET {{host}}/api/users
+
+### Create a user -> 201 Created, with the id the server assigned
+POST {{host}}/api/users
+Content-Type: application/json
+
+{
+  "name": "Elif Kaya",
+  "email": "elif@example.com"
+}
+
+### One user by id
+GET {{host}}/api/users/1
+
+### An id that does not exist -> 404
+GET {{host}}/api/users/999
+
+### PUT replaces the WHOLE user, so every field is required -> 200
+PUT {{host}}/api/users/1
+Content-Type: application/json
+
+{
+  "name": "Ayse Yilmaz",
+  "email": "ayse.yilmaz@example.com"
+}
+
+### PATCH changes only what you send; the name stays as it was -> 200
+PATCH {{host}}/api/users/1
+Content-Type: application/json
+
+{
+  "email": "yeni.adres@example.com"
+}
+
+### PUT without every field -> 400 (this is what makes PUT different from PATCH)
+PUT {{host}}/api/users/1
+Content-Type: application/json
+
+{
+  "email": "eksik@example.com"
+}
+
+### PATCH with nothing to change -> 400
+PATCH {{host}}/api/users/1
+Content-Type: application/json
+
+{}
+
+### An id that does not exist -> 404
+PATCH {{host}}/api/users/999
+Content-Type: application/json
+
+{
+  "name": "Yok"
+}
+
+### An id that is not a number -> 400
+PATCH {{host}}/api/users/abc
+Content-Type: application/json
+
+{
+  "name": "Yok"
+}
+
+### Missing email -> 400
+POST {{host}}/api/users
+Content-Type: application/json
+
+{
+  "name": "Sadece isim"
+}
+
+### Delete a user -> 204 No Content, with an empty body
+DELETE {{host}}/api/users/2
+
+### Deleting the same id again -> 404
+DELETE {{host}}/api/users/2
+
+### DELETE needs an id; the collection itself does not accept it -> 405
+DELETE {{host}}/api/users
+
+
+##############################################
 # Alumni resource
 ##############################################
 

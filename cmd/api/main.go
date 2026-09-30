@@ -43,6 +43,21 @@ func main() {
 	// 6. GET /about -> a temporary about page
 	mux.HandleFunc("GET /about", handleAbout)
 
+	// GET /api/health -> a JSON health check
+	mux.HandleFunc("GET /api/health", handleHealth)
+
+	// GET /api/swagger -> the API documentation, generated from openapi.json
+	mux.HandleFunc("GET /api/swagger", handleSwagger)
+	mux.HandleFunc("GET /api/swagger.json", handleSwaggerSpec)
+
+	// The users resource, kept in memory for now.
+	mux.HandleFunc("GET /api/users", handleListUsers)
+	mux.HandleFunc("POST /api/users", handleCreateUser)
+	mux.HandleFunc("GET /api/users/{id}", handleGetUser)
+	mux.HandleFunc("DELETE /api/users/{id}", handleDeleteUser)
+	mux.HandleFunc("PUT /api/users/{id}", handleReplaceUser)
+	mux.HandleFunc("PATCH /api/users/{id}", handlePatchUser)
+
 	// The alumni resource itself.
 	mux.HandleFunc("GET /alumni", handleListAlumni)
 	mux.HandleFunc("POST /alumni", handleCreateAlumni)
