@@ -151,6 +151,12 @@ that next.
 | `GET /users/{id}/edit` | HTML form filled in with the user's current values |
 | `POST /users/{id}` | saves the edit form, then redirects to `/users/{id}` |
 | `POST /users/{id}/delete` | removes the user, then redirects to `/users` |
+| `GET /announcements` | HTML page listing every announcement (newest first), with a form that posts to `POST /announcements` |
+| `GET /announcements/new`, `GET /announcements/{id}`, `GET /announcements/{id}/edit` | empty form, one announcement, edit form |
+| `POST /announcements`, `POST /announcements/{id}`, `POST /announcements/{id}/delete` | create, save an edit, delete; each redirects (`303`) |
+| `GET /api/announcements`, `GET /api/announcements/{id}` | every announcement, or one, as JSON |
+| `POST /api/announcements` | creates an announcement; `201` with the id and `createdAt` the server assigned |
+| `PUT /api/announcements/{id}`, `DELETE /api/announcements/{id}` | replaces title, body and author; deletes (`204`) |
 | `GET /alumni` | every graduate, as a JSON array |
 | `POST /alumni` | creates a graduate; `201` with the assigned id |
 | `GET /hello`, `GET /hello/{name}` | greeting, from the lecture exercises |
@@ -312,11 +318,12 @@ alumni/
 │
 ├── internal/                   # the application, split into the three MVC layers
 │   ├── routes/                 # ROUTES: which URL goes to which controller
-│   │   ├── web.go              #   Web(): pages + UserController at /users  (HTML)
-│   │   └── api.go              #   API(): ApiUserController at /api/users, health, swagger, /alumni  (JSON)
+│   │   ├── web.go              #   Web(): pages, UserController at /users, AnnouncementController at /announcements  (HTML)
+│   │   └── api.go              #   API(): ApiUserController, ApiAnnouncementController, health, swagger, /alumni  (JSON)
 │   │
 │   ├── model/                  # MODEL
 │   │   ├── user.go             #   User (+ department, years, ÇAP, yandal, advisor, prep exemption) + Validate(), UserPatch, UserStore (List/Add/Find/Remove/Replace/Patch)
+│   │   ├── announcement.go     #   Announcement + Validate(), AnnouncementStore (List/Add/Find/Replace/Remove)
 │   │   ├── alumni.go           #   Alumni + Validate(), AlumniStore (List/Add)
 │   │   └── health.go           #   Health, the {"status":"ok"} shape
 │   │
@@ -327,7 +334,10 @@ alumni/
 │   │       ├── main.html       #     landing page, lists every route
 │   │       ├── about.html      #     about page
 │   │       ├── swagger.html    #     Swagger UI, loads /api/swagger.json
-│   │       ├── users_layout.html #   shared top and bottom of the /users pages
+│   │       ├── layout.html     #     shared top and bottom of every page, and the form fields of both resources
+│   │       ├── announcements.html #  announcement list + create form
+│   │       ├── announcement.html #   one announcement
+│   │       ├── announcement_form.html # create and edit form
 │   │       ├── users.html      #     user list
 │   │       ├── user.html       #     one user
 │   │       └── user_form.html  #     create and edit form
@@ -336,6 +346,8 @@ alumni/
 │       ├── pages.go            #   Root, Main, About, Hello, HelloName, Sum, Temporary
 │       ├── api_user_controller.go # ApiUserController: JSON at /api/users  (Index, Show, Store, Update, Patch, Destroy)
 │       ├── user_controller.go  #   UserController: HTML at /users  (Index, Show, Create, Store, Edit, Update, Destroy)
+│       ├── api_announcement_controller.go # ApiAnnouncementController: JSON at /api/announcements  (Index, Show, Store, Update, Destroy)
+│       ├── announcement_controller.go     # AnnouncementController: HTML at /announcements  (Index, Show, Create, Store, Edit, Update, Destroy)
 │       ├── alumni.go           #   ListAlumni, CreateAlumni
 │       ├── api.go              #   Health, Swagger, SwaggerSpec
 │       └── request.go          #   shared helpers: pathID (reads {id}), decodeJSON (strict body parsing)
@@ -415,6 +427,23 @@ A PATCH is applied first and the patched user is validated as a whole, so changi
 `graduationYear` to a year before the existing `startYear` is still rejected. Because the data lives in memory,
 a server restart brings back the two sample users and loses everything else.
 
+### Announcements: the same pattern again
+
+`internal/model/announcement.go` is the Announcement model. It has a title, a body, an author,
+and a `createdAt` time that the server sets. Like the users, it has no database: `model.Announcements`
+keeps the announcements in memory and starts with two samples. `List()` returns the newest first.
+
+| CRUD | Model (`model.Announcements`) | `ApiAnnouncementController` (JSON) | `AnnouncementController` (HTML, the management interface) |
+| --- | --- | --- | --- |
+| **Create** | `Add` | `Store` — `POST /api/announcements` → `201` | `Create` — `GET /announcements/new`; `Store` — `POST /announcements` |
+| **Read** | `List`, `Find` | `Index` — `GET /api/announcements`; `Show` — `GET /api/announcements/{id}` | `Index` — `GET /announcements`; `Show` — `GET /announcements/{id}` |
+| **Update** | `Replace` (keeps the id and `createdAt`) | `Update` — `PUT /api/announcements/{id}` | `Edit` — `GET /announcements/{id}/edit`; `Update` — `POST /announcements/{id}` |
+| **Delete** | `Remove` | `Destroy` — `DELETE /api/announcements/{id}` → `204` | `Destroy` — `POST /announcements/{id}/delete` |
+
+Title, body and author are required; `Announcement.Validate()` trims them and rejects any that
+are empty. The management interface is at `/announcements`, and the navigation bar on every
+`/users` and `/announcements` page links to both.
+
 ### What is still on the way
 
 - **The model has no database.** The stores are slices in memory, so restarting the server
@@ -431,6 +460,7 @@ a server restart brings back the two sample users and loses everything else.
 - [x] `/api/users` with `GET`, `POST`, `PUT`, `PATCH` and `DELETE`, still in memory
 - [x] OpenAPI document and a Swagger UI page at `/api/swagger`
 - [x] Code split into `internal/model`, `internal/view`, and `internal/controller` (MVC)
+- [x] Announcements: in-memory model, `AnnouncementController` + `ApiAnnouncementController`, and a management interface at `/announcements`
 - [ ] `docker-compose.yml` for PostgreSQL and Redis
 - [ ] Database schema and migrations
 - [ ] Move the in-memory store onto PostgreSQL

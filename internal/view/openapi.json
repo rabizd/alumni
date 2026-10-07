@@ -11,7 +11,9 @@
   "tags": [
     { "name": "health", "description": "Sunucu ayakta mı?" },
     { "name": "ApiUserController", "description": "Kullanıcılar, JSON olarak (/api/users) — programlar için. Bellekte tutulur." },
-    { "name": "UserController", "description": "Kullanıcılar, HTML sayfası olarak (/users) — tarayıcıdaki insanlar için. Formlar yalnızca GET ve POST gönderebildiğinden güncelleme ve silme burada POST'tur. Başarılı bir POST 303 ile yönlendirir; Swagger yönlendirmeyi takip edip varılan sayfayı gösterir." }
+    { "name": "UserController", "description": "Kullanıcılar, HTML sayfası olarak (/users) — tarayıcıdaki insanlar için. Formlar yalnızca GET ve POST gönderebildiğinden güncelleme ve silme burada POST'tur. Başarılı bir POST 303 ile yönlendirir; Swagger yönlendirmeyi takip edip varılan sayfayı gösterir." },
+    { "name": "ApiAnnouncementController", "description": "Duyurular, JSON olarak (/api/announcements) — programlar için. Bellekte tutulur; en yeni duyuru en üstte." },
+    { "name": "AnnouncementController", "description": "Duyuruları yönetme arayüzü, HTML sayfası olarak (/announcements). Güncelleme ve silme POST'tur; başarılı bir POST 303 ile yönlendirir." }
   ],
   "paths": {
     "/api/health": {
@@ -267,10 +269,196 @@
           "404": { "$ref": "#/components/responses/NotFound" }
         }
       }
+    },
+    "/api/announcements": {
+      "get": {
+        "tags": ["ApiAnnouncementController"],
+        "operationId": "ApiAnnouncementController.Index",
+        "summary": "Bütün duyuruları listele (en yeni en üstte)",
+        "responses": {
+          "200": {
+            "description": "Duyuru dizisi",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Announcement" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["ApiAnnouncementController"],
+        "operationId": "ApiAnnouncementController.Store",
+        "summary": "Yeni duyuru oluştur",
+        "description": "id ve createdAt alanlarını sunucu verir; gövdede gönderilirse yok sayılır.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NewAnnouncement" },
+              "example": { "title": "Kütüphane saatleri", "body": "Sınav haftası boyunca kütüphane 24 saat açık.", "author": "Kütüphane" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Oluşturuldu",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Announcement" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/announcements/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/AnnouncementID" }],
+      "get": {
+        "tags": ["ApiAnnouncementController"],
+        "operationId": "ApiAnnouncementController.Show",
+        "summary": "Tek bir duyuruyu getir",
+        "responses": {
+          "200": {
+            "description": "Duyuru bulundu",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Announcement" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/AnnouncementNotFound" }
+        }
+      },
+      "put": {
+        "tags": ["ApiAnnouncementController"],
+        "operationId": "ApiAnnouncementController.Update",
+        "summary": "Duyuruyu bütünüyle değiştir",
+        "description": "Başlık, metin ve yapan kişi zorunludur. id ve createdAt değişmez.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NewAnnouncement" },
+              "example": { "title": "Mezunlar buluşması ertelendi", "body": "Buluşma 22 Kasım'a ertelendi.", "author": "Mezunlar Ofisi" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Değiştirildi",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Announcement" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/AnnouncementNotFound" }
+        }
+      },
+      "delete": {
+        "tags": ["ApiAnnouncementController"],
+        "operationId": "ApiAnnouncementController.Destroy",
+        "summary": "Duyuruyu sil",
+        "responses": {
+          "204": { "description": "Silindi; geri gönderilecek gövde yok" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/AnnouncementNotFound" }
+        }
+      }
+    },
+    "/announcements": {
+      "get": {
+        "tags": ["AnnouncementController"],
+        "operationId": "AnnouncementController.Index",
+        "summary": "Duyuru listesi ve altında yeni duyuru formu",
+        "responses": { "200": { "$ref": "#/components/responses/HtmlPage" } }
+      },
+      "post": {
+        "tags": ["AnnouncementController"],
+        "operationId": "AnnouncementController.Store",
+        "summary": "Formdan yeni duyuru oluştur",
+        "requestBody": {
+          "required": true,
+          "content": { "application/x-www-form-urlencoded": { "schema": { "$ref": "#/components/schemas/NewAnnouncement" } } }
+        },
+        "responses": {
+          "303": {
+            "description": "Tamam; tarayıcı duyuru listesine (/announcements) gönderilir",
+            "headers": { "Location": { "schema": { "type": "string", "example": "/announcements" } } }
+          },
+          "400": { "$ref": "#/components/responses/FormWithError" }
+        }
+      }
+    },
+    "/announcements/new": {
+      "get": {
+        "tags": ["AnnouncementController"],
+        "operationId": "AnnouncementController.Create",
+        "summary": "Boş \"yeni duyuru\" formu",
+        "responses": { "200": { "$ref": "#/components/responses/HtmlPage" } }
+      }
+    },
+    "/announcements/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/AnnouncementID" }],
+      "get": {
+        "tags": ["AnnouncementController"],
+        "operationId": "AnnouncementController.Show",
+        "summary": "Tek bir duyurunun sayfası",
+        "responses": {
+          "200": { "$ref": "#/components/responses/HtmlPage" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/AnnouncementNotFound" }
+        }
+      },
+      "post": {
+        "tags": ["AnnouncementController"],
+        "operationId": "AnnouncementController.Update",
+        "summary": "Düzenleme formunu kaydet",
+        "requestBody": {
+          "required": true,
+          "content": { "application/x-www-form-urlencoded": { "schema": { "$ref": "#/components/schemas/NewAnnouncement" } } }
+        },
+        "responses": {
+          "303": {
+            "description": "Kaydedildi; tarayıcı duyurunun sayfasına (/announcements/{id}) gönderilir",
+            "headers": { "Location": { "schema": { "type": "string", "example": "/announcements/1" } } }
+          },
+          "400": { "$ref": "#/components/responses/FormWithError" },
+          "404": { "$ref": "#/components/responses/AnnouncementNotFound" }
+        }
+      }
+    },
+    "/announcements/{id}/edit": {
+      "parameters": [{ "$ref": "#/components/parameters/AnnouncementID" }],
+      "get": {
+        "tags": ["AnnouncementController"],
+        "operationId": "AnnouncementController.Edit",
+        "summary": "Mevcut değerlerle doldurulmuş düzenleme formu",
+        "responses": {
+          "200": { "$ref": "#/components/responses/HtmlPage" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/AnnouncementNotFound" }
+        }
+      }
+    },
+    "/announcements/{id}/delete": {
+      "parameters": [{ "$ref": "#/components/parameters/AnnouncementID" }],
+      "post": {
+        "tags": ["AnnouncementController"],
+        "operationId": "AnnouncementController.Destroy",
+        "summary": "Duyuruyu sil",
+        "responses": {
+          "303": {
+            "description": "Silindi; tarayıcı duyuru listesine (/announcements) gönderilir",
+            "headers": { "Location": { "schema": { "type": "string", "example": "/announcements" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/AnnouncementNotFound" }
+        }
+      }
     }
   },
   "components": {
     "parameters": {
+      "AnnouncementID": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Duyurunun id'si",
+        "schema": { "type": "integer", "example": 1 }
+      },
       "UserID": {
         "name": "id",
         "in": "path",
@@ -331,9 +519,34 @@
           "advisor": { "type": "string", "example": "Prof. Dr. Ahmet Kaya", "description": "Danışman; yoksa boş" },
           "prepExempt": { "type": "boolean", "example": true, "description": "İngilizce hazırlıktan muaf mı?" }
         }
+      },
+      "Announcement": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "readOnly": true, "example": 1 },
+          "title": { "type": "string", "example": "Mezunlar buluşması" },
+          "body": { "type": "string", "example": "Bu yılki mezunlar buluşması 15 Kasım'da Beyazıt kampüsünde." },
+          "author": { "type": "string", "example": "Mezunlar Ofisi" },
+          "createdAt": { "type": "string", "format": "date-time", "readOnly": true, "example": "2026-10-01T10:00:00+03:00" }
+        }
+      },
+      "NewAnnouncement": {
+        "type": "object",
+        "required": ["title", "body", "author"],
+        "properties": {
+          "title": { "type": "string", "example": "Kütüphane saatleri" },
+          "body": { "type": "string", "example": "Sınav haftası boyunca kütüphane 24 saat açık." },
+          "author": { "type": "string", "example": "Kütüphane" }
+        }
       }
     },
     "responses": {
+      "AnnouncementNotFound": {
+        "description": "Bu id'ye sahip duyuru yok",
+        "content": {
+          "text/plain": { "schema": { "type": "string" }, "example": "no announcement with that id" }
+        }
+      },
       "BadRequest": {
         "description": "İstek hatalı: bozuk JSON, eksik alan, kurala uymayan yıl ya da sayı olmayan id",
         "content": {

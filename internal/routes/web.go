@@ -9,7 +9,7 @@ import (
 	"github.com/rabizd/alumni/internal/controller"
 )
 
-// Web registers the HTML routes: the pages and the /users screens.
+// Web registers the HTML routes: the pages, and the /users and /announcements screens.
 func Web(mux *http.ServeMux) {
 	// Lecture exercises and plain pages.
 	mux.HandleFunc("GET /{$}", controller.Root)
@@ -30,4 +30,14 @@ func Web(mux *http.ServeMux) {
 	mux.HandleFunc("GET /users/{id}/edit", user.Edit)
 	mux.HandleFunc("POST /users/{id}", user.Update)
 	mux.HandleFunc("POST /users/{id}/delete", user.Destroy)
+
+	// Announcements as HTML pages: the interface to manage them.
+	announcement := controller.AnnouncementController{}
+	mux.HandleFunc("GET /announcements", announcement.Index)
+	mux.HandleFunc("GET /announcements/new", announcement.Create)
+	mux.HandleFunc("POST /announcements", announcement.Store)
+	mux.HandleFunc("GET /announcements/{id}", announcement.Show)
+	mux.HandleFunc("GET /announcements/{id}/edit", announcement.Edit)
+	mux.HandleFunc("POST /announcements/{id}", announcement.Update)
+	mux.HandleFunc("POST /announcements/{id}/delete", announcement.Destroy)
 }

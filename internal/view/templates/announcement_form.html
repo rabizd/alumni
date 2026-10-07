@@ -2,10 +2,10 @@
 <h1>{{.Title}}</h1>
 {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
 <form method="post" action="{{.Action}}">
-  {{template "user_fields" .User}}
+  {{template "announcement_fields" .Announcement}}
   <div class="row">
     <button type="submit">Kaydet</button>
-    <a href="/users">Vazgeç</a>
+    <a href="/announcements">Vazgeç</a>
   </div>
 </form>
 {{template "page_bottom"}}

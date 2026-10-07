@@ -1,11 +1,12 @@
-{{/* Shared parts of the /users pages: users_top and users_bottom wrap every
-page, and user_fields is the set of inputs both user forms use. */}}
-{{define "users_top"}}<!doctype html>
+{{/* Shared parts of the /users and /announcements pages: page_top and
+page_bottom wrap every page; user_fields and announcement_fields are the
+inputs each resource's create and edit forms share. */}}
+{{define "page_top"}}<!doctype html>
 <html lang="tr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kullanıcılar · Alumni</title>
+<title>Alumni</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -49,11 +50,14 @@ page, and user_fields is the set of inputs both user forms use. */}}
   dd{ margin:0; }
 
   label{ display:block; font-size:0.9rem; color:var(--muted); margin-bottom:0.3rem; }
-  input[type=text], input[type=email], input[type=number]{
+  input[type=text], input[type=email], input[type=number], textarea{
     width:100%; padding:0.6rem 0.7rem; margin-bottom:1.1rem;
     font:inherit; color:var(--ink); background:#f6f2ea;
     border:1px solid var(--line); border-radius:3px;
   }
+  textarea{ min-height:8rem; resize:vertical; }
+  .body{ white-space:pre-line; margin:0 0 2rem; }
+  .meta{ color:var(--muted); font-size:0.9rem; margin:-1rem 0 1.5rem; }
   .pair{ display:grid; grid-template-columns:1fr 1fr; gap:0 1rem; }
   fieldset{ border:1px solid var(--line); border-radius:3px; padding:1rem 1rem 0.2rem; margin:0 0 1.2rem; }
   legend{ color:var(--muted); font-size:0.85rem; padding:0 0.4rem; }
@@ -74,14 +78,17 @@ page, and user_fields is the set of inputs both user forms use. */}}
 <nav class="top">
   <div class="wrap">
     <a class="brand" href="/main"><b>İ.Ü.</b> Alumni</a>
-    <a class="link" href="/users">Kullanıcılar</a>
+    <span class="row">
+      <a class="link" href="/users">Kullanıcılar</a>
+      <a class="link" href="/announcements">Duyurular</a>
+    </span>
   </div>
 </nav>
 <main>
   <div class="wrap">
 {{end}}
 
-{{define "users_bottom"}}
+{{define "page_bottom"}}
   </div>
 </main>
 </body>
@@ -118,4 +125,13 @@ page, and user_fields is the set of inputs both user forms use. */}}
     <label for="advisor">Danışman</label>
     <input type="text" id="advisor" name="advisor" value="{{.Advisor}}">
   </fieldset>
+{{end}}
+
+{{define "announcement_fields"}}
+  <label for="title">Başlık</label>
+  <input type="text" id="title" name="title" value="{{.Title}}" required>
+  <label for="body">Metin</label>
+  <textarea id="body" name="body" required>{{.Body}}</textarea>
+  <label for="author">Duyuruyu yapan</label>
+  <input type="text" id="author" name="author" value="{{.Author}}" required>
 {{end}}

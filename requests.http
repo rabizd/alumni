@@ -242,3 +242,62 @@ name=Ayşe Yılmaz&email=ayse.yilmaz@example.com&department=Bilgisayar Mühendis
 
 ### Delete -> 303 redirect to /users
 POST {{host}}/users/2/delete
+
+##############################################
+# Announcements  (in memory - no database yet)
+##############################################
+
+### List every announcement, newest first
+GET {{host}}/api/announcements
+
+### One announcement
+GET {{host}}/api/announcements/1
+
+### Create -> 201, the server sets id and createdAt
+POST {{host}}/api/announcements
+Content-Type: application/json
+
+{
+  "title": "Kütüphane saatleri",
+  "body": "Sınav haftası boyunca kütüphane 24 saat açık.",
+  "author": "Kütüphane"
+}
+
+### Missing body -> 400
+POST {{host}}/api/announcements
+Content-Type: application/json
+
+{
+  "title": "Eksik",
+  "author": "Kütüphane"
+}
+
+### Replace -> 200, id and createdAt stay the same
+PUT {{host}}/api/announcements/1
+Content-Type: application/json
+
+{
+  "title": "Mezunlar buluşması ertelendi",
+  "body": "Buluşma 22 Kasım'a ertelendi.",
+  "author": "Mezunlar Ofisi"
+}
+
+### Delete -> 204
+DELETE {{host}}/api/announcements/2
+
+### --- /announcements: the management interface (AnnouncementController). Easiest in a browser: {{host}}/announcements
+
+### Create from the form -> 303 redirect to /announcements
+POST {{host}}/announcements
+Content-Type: application/x-www-form-urlencoded
+
+title=Kariyer günü&body=Yarın saat 14:00'te konferans salonunda.&author=Kariyer Merkezi
+
+### Save the edit form -> 303 redirect to /announcements/1
+POST {{host}}/announcements/1
+Content-Type: application/x-www-form-urlencoded
+
+title=Mezunlar buluşması&body=Yeni tarih: 22 Kasım.&author=Mezunlar Ofisi
+
+### Delete -> 303 redirect to /announcements
+POST {{host}}/announcements/1/delete
