@@ -24,10 +24,12 @@ var templates = template.Must(template.ParseFS(templateFiles, "templates/*.html"
 //go:embed openapi.json
 var openAPISpec []byte
 
-// HTML renders one page from templates/.
-func HTML(w http.ResponseWriter, page string) {
+// HTML renders one page from templates/ with the given status code. data is
+// what the page shows; pages that show nothing take nil.
+func HTML(w http.ResponseWriter, status int, page string, data any) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := templates.ExecuteTemplate(w, page, nil); err != nil {
+	w.WriteHeader(status)
+	if err := templates.ExecuteTemplate(w, page, data); err != nil {
 		log.Printf("rendering %s: %v", page, err)
 	}
 }

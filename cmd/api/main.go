@@ -41,13 +41,24 @@ func main() {
 	mux.HandleFunc("GET /api/swagger", controller.Swagger)
 	mux.HandleFunc("GET /api/swagger.json", controller.SwaggerSpec)
 
-	// The users resource, kept in memory for now.
-	mux.HandleFunc("GET /api/users", controller.ListUsers)
-	mux.HandleFunc("POST /api/users", controller.CreateUser)
-	mux.HandleFunc("GET /api/users/{id}", controller.GetUser)
-	mux.HandleFunc("DELETE /api/users/{id}", controller.DeleteUser)
-	mux.HandleFunc("PUT /api/users/{id}", controller.ReplaceUser)
-	mux.HandleFunc("PATCH /api/users/{id}", controller.PatchUser)
+	// The users resource, kept in memory for now, served two ways: JSON for
+	// programs under /api/users, HTML pages for people under /users.
+	api := controller.ApiUserController{}
+	mux.HandleFunc("GET /api/users", api.Index)
+	mux.HandleFunc("POST /api/users", api.Store)
+	mux.HandleFunc("GET /api/users/{id}", api.Show)
+	mux.HandleFunc("PUT /api/users/{id}", api.Update)
+	mux.HandleFunc("PATCH /api/users/{id}", api.Patch)
+	mux.HandleFunc("DELETE /api/users/{id}", api.Destroy)
+
+	web := controller.UserController{}
+	mux.HandleFunc("GET /users", web.Index)
+	mux.HandleFunc("GET /users/new", web.Create)
+	mux.HandleFunc("POST /users", web.Store)
+	mux.HandleFunc("GET /users/{id}", web.Show)
+	mux.HandleFunc("GET /users/{id}/edit", web.Edit)
+	mux.HandleFunc("POST /users/{id}", web.Update)
+	mux.HandleFunc("POST /users/{id}/delete", web.Destroy)
 
 	// The alumni resource itself.
 	mux.HandleFunc("GET /alumni", controller.ListAlumni)

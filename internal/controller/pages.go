@@ -11,17 +11,17 @@ import (
 
 // GET / -> the landing page
 func Root(w http.ResponseWriter, r *http.Request) {
-	view.HTML(w, "main.html")
+	view.HTML(w, http.StatusOK, "main.html", nil)
 }
 
 // GET /main -> the page the temporary redirect points at
 func Main(w http.ResponseWriter, r *http.Request) {
-	view.HTML(w, "main.html")
+	view.HTML(w, http.StatusOK, "main.html", nil)
 }
 
 // GET /about -> a temporary about page
 func About(w http.ResponseWriter, r *http.Request) {
-	view.HTML(w, "about.html")
+	view.HTML(w, http.StatusOK, "about.html", nil)
 }
 
 // GET /hello -> Hello, World!

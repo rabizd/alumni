@@ -1,0 +1,26 @@
+{{template "users_top"}}
+<h1>Kullanıcılar</h1>
+{{if .}}
+<table>
+  <thead><tr><th>#</th><th>Ad</th><th>E-posta</th><th></th></tr></thead>
+  <tbody>
+  {{range .}}
+    <tr>
+      <td>{{.ID}}</td>
+      <td><a href="/users/{{.ID}}">{{.Name}}</a></td>
+      <td>{{.Email}}</td>
+      <td class="actions">
+        <a class="btn ghost" href="/users/{{.ID}}/edit">Düzenle</a>
+        <form method="post" action="/users/{{.ID}}/delete">
+          <button class="ghost" type="submit">Sil</button>
+        </form>
+      </td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+{{else}}
+<p class="empty">Henüz kullanıcı yok.</p>
+{{end}}
+<a class="btn" href="/users/new">Yeni kullanıcı</a>
+{{template "users_bottom"}}

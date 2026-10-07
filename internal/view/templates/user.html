@@ -1,0 +1,14 @@
+{{template "users_top"}}
+<h1>{{.Name}}</h1>
+<dl>
+  <dt>Numara</dt><dd>{{.ID}}</dd>
+  <dt>E-posta</dt><dd>{{.Email}}</dd>
+</dl>
+<div class="row">
+  <a class="btn" href="/users/{{.ID}}/edit">Düzenle</a>
+  <form method="post" action="/users/{{.ID}}/delete">
+    <button class="ghost" type="submit">Sil</button>
+  </form>
+  <a href="/users">← tüm kullanıcılar</a>
+</div>
+{{template "users_bottom"}}

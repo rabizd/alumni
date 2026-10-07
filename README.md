@@ -144,6 +144,13 @@ that next.
 | `GET /api/swagger.json` | the OpenAPI document itself |
 | `GET /main` | HTML page listing every route |
 | `GET /about` | HTML about page (placeholder content) |
+| `GET /users` | HTML page listing every user, with edit and delete buttons |
+| `GET /users/new` | HTML form for a new user |
+| `POST /users` | creates a user from the form, then redirects (`303`) to `/users` |
+| `GET /users/{id}` | HTML page for one user, or `404` |
+| `GET /users/{id}/edit` | HTML form filled in with the user's current values |
+| `POST /users/{id}` | saves the edit form, then redirects to `/users/{id}` |
+| `POST /users/{id}/delete` | removes the user, then redirects to `/users` |
 | `GET /alumni` | every graduate, as a JSON array |
 | `POST /alumni` | creates a graduate; `201` with the assigned id |
 | `GET /hello`, `GET /hello/{name}` | greeting, from the lecture exercises |
@@ -276,8 +283,8 @@ and starts the server.
 └───────────────────┬───────────────────┘
                     ▼
 ┌───────────────────────────────────────┐
-│ Controller  internal/controller/      │  controller.GetUser: read {id},
-│             users.go                  │  400 if it is not a number
+│ Controller  internal/controller/      │  ApiUserController.Show: read {id},
+│             api_user_controller.go    │  400 if it is not a number
 └───────────────────┬───────────────────┘
                     ▼
 ┌───────────────────────────────────────┐
@@ -310,16 +317,21 @@ alumni/
 │   │   └── health.go           #   Health, the {"status":"ok"} shape
 │   │
 │   ├── view/                   # VIEW
-│   │   ├── view.go             #   HTML() renders a template, JSON() writes a JSON body, OpenAPI() serves the spec
+│   │   ├── view.go             #   HTML() renders a template with data, JSON() writes a JSON body, OpenAPI() serves the spec
 │   │   ├── openapi.json        #   the API description (embedded with go:embed)
 │   │   └── templates/          #   HTML pages (embedded with go:embed)
 │   │       ├── main.html       #     landing page, lists every route
 │   │       ├── about.html      #     about page
-│   │       └── swagger.html    #     Swagger UI, loads /api/swagger.json
+│   │       ├── swagger.html    #     Swagger UI, loads /api/swagger.json
+│   │       ├── users_layout.html #   shared top and bottom of the /users pages
+│   │       ├── users.html      #     user list
+│   │       ├── user.html       #     one user
+│   │       └── user_form.html  #     create and edit form
 │   │
 │   └── controller/             # CONTROLLER
 │       ├── pages.go            #   Root, Main, About, Hello, HelloName, Sum, Temporary
-│       ├── users.go            #   ListUsers, GetUser, CreateUser, ReplaceUser, PatchUser, DeleteUser
+│       ├── api_user_controller.go # ApiUserController: JSON at /api/users  (Index, Show, Store, Update, Patch, Destroy)
+│       ├── user_controller.go  #   UserController: HTML at /users  (Index, Show, Create, Store, Edit, Update, Destroy)
 │       ├── alumni.go           #   ListAlumni, CreateAlumni
 │       ├── api.go              #   Health, Swagger, SwaggerSpec
 │       └── request.go          #   shared helpers: pathID (reads {id}), decodeJSON (strict body parsing)
@@ -342,7 +354,7 @@ The layers are the app's own parts, not a library for other projects.
 | --- | --- | --- | --- |
 | **Model** | `internal/model` | Structs (`User`, `UserPatch`, `Alumni`, `Health`), their `Validate()` rules (trimming spaces, required fields, the PATCH checks), and in-memory stores guarded by a mutex. The store assigns ids; a request body never does. | Touch `http.Request`, write a response, or know about HTML |
 | **View** | `internal/view` | `HTML()` for pages, `JSON()` for API bodies, `OpenAPI()` for the spec, plus the templates and `openapi.json` | Check input or read and change the stores |
-| **Controller** | `internal/controller` | One exported function per route. It returns `400` on bad input and `404` on a missing id, and otherwise calls the model and then a view. | Hold data itself, or build HTML or JSON by hand |
+| **Controller** | `internal/controller` | One function per route; the two user controllers are structs whose methods are the CRUD actions. It returns `400` on bad input and `404` on a missing id, and otherwise calls the model and then a view. | Hold data itself, or build HTML or JSON by hand |
 
 ### The User model: CRUD without a database
 
@@ -358,6 +370,23 @@ operation is one method:
 | **Update** | `Replace(id int, u User) (User, bool)` | overwrites every field, keeps the id | `PUT /api/users/{id}` |
 | **Update** | `Patch(id int, p UserPatch) (User, bool)` | changes only the fields that were sent | `PATCH /api/users/{id}` |
 | **Delete** | `Remove(id int) bool` | deletes the user; `false` if the id does not exist | `DELETE /api/users/{id}` |
+
+### Two controllers for the same model
+
+The users are served two ways, by two controllers in `internal/controller`. Both call the same
+`model.Users` methods; only the input and the output differ.
+
+| CRUD | `ApiUserController` (JSON, for programs) | `UserController` (HTML, for people) |
+| --- | --- | --- |
+| **Create** | `Store` — `POST /api/users` → `201` + JSON | `Create` — `GET /users/new` shows the form; `Store` — `POST /users` saves it |
+| **Read** | `Index` — `GET /api/users`; `Show` — `GET /api/users/{id}` | `Index` — `GET /users`; `Show` — `GET /users/{id}` |
+| **Update** | `Update` — `PUT /api/users/{id}`; `Patch` — `PATCH /api/users/{id}` | `Edit` — `GET /users/{id}/edit` shows the form; `Update` — `POST /users/{id}` saves it |
+| **Delete** | `Destroy` — `DELETE /api/users/{id}` → `204` | `Destroy` — `POST /users/{id}/delete` |
+
+`ApiUserController` reads a JSON body and answers with JSON. `UserController` reads an HTML
+form and answers with a page, or with a `303` redirect after a successful POST so that reloading
+the page does not submit the form twice. HTML forms can only send `GET` and `POST`, which is why
+the HTML side uses `POST` where the API uses `PUT`, `PATCH` and `DELETE`.
 
 Before Create and Update, the controller calls `User.Validate()` or `UserPatch.Validate()`.
 These trim spaces and reject a missing name or email. Because the data lives in memory,
