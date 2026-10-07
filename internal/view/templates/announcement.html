@@ -1,0 +1,12 @@
+{{template "page_top"}}
+<h1>{{.Title}}</h1>
+<p class="meta">{{.Author}} · {{.CreatedAt.Format "02.01.2006 15:04"}}</p>
+<p class="body">{{.Body}}</p>
+<div class="row">
+  <a class="btn" href="/announcements/{{.ID}}/edit">Düzenle</a>
+  <form method="post" action="/announcements/{{.ID}}/delete">
+    <button class="ghost" type="submit">Sil</button>
+  </form>
+  <a href="/announcements">← tüm duyurular</a>
+</div>
+{{template "page_bottom"}}

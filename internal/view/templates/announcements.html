@@ -1,0 +1,30 @@
+{{template "page_top"}}
+<h1>Duyurular</h1>
+{{if .Announcements}}
+<table>
+  <thead><tr><th>Tarih</th><th>Başlık</th><th>Yapan</th><th></th></tr></thead>
+  <tbody>
+  {{range .Announcements}}
+    <tr>
+      <td>{{.CreatedAt.Format "02.01.2006"}}</td>
+      <td><a href="/announcements/{{.ID}}">{{.Title}}</a></td>
+      <td>{{.Author}}</td>
+      <td class="actions">
+        <a class="btn ghost" href="/announcements/{{.ID}}/edit">Düzenle</a>
+        <form method="post" action="/announcements/{{.ID}}/delete">
+          <button class="ghost" type="submit">Sil</button>
+        </form>
+      </td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+{{else}}
+<p class="empty">Henüz duyuru yok.</p>
+{{end}}
+<h2>Yeni duyuru</h2>
+<form method="post" action="/announcements">
+  {{template "announcement_fields" .New}}
+  <button type="submit">Yayınla</button>
+</form>
+{{template "page_bottom"}}
