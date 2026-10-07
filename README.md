@@ -28,7 +28,7 @@
 - [Open Design Questions](#open-design-questions)
 - [Getting Started](#getting-started)
 - [Configuration](#configuration)
-- [Project Structure](#project-structure)
+- [Project Structure (MVC)](#project-structure-mvc)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [License](#license)
@@ -253,30 +253,106 @@ to configure — the server has no database behind it so far.
 
 > 🔒 Never commit your `.env` file. Only `.env.example` belongs in version control.
 
-## Project Structure
+## Project Structure (MVC)
 
-What exists today, and where it is heading. Directories marked *planned* are not there yet.
+The code follows the **Model–View–Controller** pattern. Each part has one job:
+
+- **Model** — the data and the rules that protect it: what a user or a graduate *is*, and how they are stored, found, changed, and removed.
+- **View** — what the client receives: an HTML page or a JSON body. A view shows data and decides nothing.
+- **Controller** — the code in between. It reads the request (URL, path values, JSON body), checks it, asks the model for data, and passes the result to a view.
+
+### How one request moves through the app
+
+```
+  Client
+    │  GET /api/users/1
+    ▼
+┌──────────────────────────┐
+│ Router        (main.go)  │  ServeMux matches method + path → handler
+└────────────┬─────────────┘
+             ▼
+┌──────────────────────────┐
+│ Controller   (users.go)  │  handleGetUser: read {id}, validate it
+└────────────┬─────────────┘
+             ▼
+┌──────────────────────────┐
+│ Model        (users.go)  │  users.find(1) → User, found?
+└────────────┬─────────────┘
+             ▼
+┌──────────────────────────┐
+│ View                     │  writeJSON(...)  → {"id":1,"name":...}
+│                          │  render(...)     → templates/*.html
+└────────────┬─────────────┘
+             ▼
+          Client
+```
+
+### Directories and files
 
 ```
 alumni/
 ├── cmd/
-│   └── api/
-│       ├── main.go         # routes, HTML pages, server start-up
-│       ├── alumni.go       # the Alumni type, in-memory store, JSON handlers
-│       └── templates/      # main.html, about.html (embedded with go:embed)
-├── requests.http           # every endpoint, for the VS Code REST Client
-├── go.mod
-├── README.md
-├── LICENSE
+│   └── api/                    # the whole web server: package main
+│       ├── main.go             # CONTROLLER  router (every route → handler), server start-up,
+│       │                       #             page handlers: /, /main, /about, /hello, /sum, /temporary
+│       │                       # VIEW        render() — fills an HTML template and sends it
+│       ├── users.go            # MODEL       User, userPatch, userStore (list/add/find/remove/replace/patch)
+│       │                       # CONTROLLER  handleListUsers, handleGetUser, handleCreateUser,
+│       │                       #             handleReplaceUser, handlePatchUser, handleDeleteUser,
+│       │                       #             plus pathID, decodeJSON, validateUser
+│       ├── alumni.go           # MODEL       Alumni, store (list/add)
+│       │                       # CONTROLLER  handleListAlumni, handleCreateAlumni
+│       │                       # VIEW        writeJSON() — the JSON view every API route answers with
+│       ├── health.go           # MODEL       health (the {"status":"ok"} shape)
+│       │                       # CONTROLLER  handleHealth
+│       ├── swagger.go          # CONTROLLER  handleSwagger, handleSwaggerSpec
+│       ├── openapi.json        # API description that the Swagger view reads (embedded with go:embed)
+│       └── templates/          # VIEW        HTML views, embedded into the binary with go:embed
+│           ├── main.html       #             landing page, lists every route
+│           ├── about.html      #             about page
+│           └── swagger.html    #             Swagger UI, loads /api/swagger.json
 │
-├── internal/               # planned — handler / service / repository / model
-├── migrations/             # planned — SQL schema migrations
-├── docker-compose.yml      # planned — PostgreSQL + Redis for local development
-└── .env.example            # planned
+├── requests.http               # every endpoint, for the VS Code REST Client (manual testing)
+├── Dockerfile                  # two-stage build: compile in golang, run in a small alpine image
+├── docker-compose.yml          # runs the app container on port 8080
+├── .dockerignore               # files kept out of the Docker build
+├── go.mod                      # Go module: github.com/rabizd/alumni, Go 1.22, no dependencies
+├── README.md
+└── LICENSE
 ```
 
-Everything lives in `cmd/api` while the surface is small. It moves into `internal/` when the
-database arrives and handlers stop being one-liners.
+### The same thing, layer by layer
+
+| Layer | Where it lives today | What it contains |
+| --- | --- | --- |
+| **Model** | `users.go`, `alumni.go`, `health.go` | Structs (`User`, `Alumni`, `health`) and in-memory stores guarded by a mutex. The store assigns ids; a request body never does. |
+| **View** | `templates/*.html`, `render()` in `main.go`, `writeJSON()` in `alumni.go` | HTML pages for people, JSON bodies for programs. Neither one checks input or touches the store. |
+| **Controller** | the `handle…` functions in every `.go` file, routes in `main.go` | One function per route. It reads the request, returns `400` on bad input and `404` on a missing id, and otherwise calls the model and then a view. |
+
+### What is not separated yet
+
+The surface is still small, so everything is in one Go package (`main`) and a file groups
+**by resource** (`users.go` holds the User model *and* its controllers) rather than **by layer**.
+Two honest gaps:
+
+- **Validation sits in the controller.** `validateUser` and the PATCH checks are rules about
+  the data, so they belong to the model; they move there once the model is its own package.
+- **The model has no database.** The stores are slices in memory; restarting the server resets them.
+
+When PostgreSQL arrives, the layers get their own directories:
+
+```
+internal/
+├── model/        # MODEL       User, Alumni, and their validation rules
+├── store/        # MODEL       PostgreSQL queries, replacing the in-memory stores
+├── handler/      # CONTROLLER  the handle… functions
+└── view/         # VIEW        writeJSON, render, and the templates/ folder
+migrations/       # SQL schema migrations      (planned)
+.env.example      # configuration template     (planned)
+```
+
+`cmd/api/main.go` then keeps only what a `main` should: read the configuration, connect to the
+database, register the routes, and start the server.
 
 ## Roadmap
 
