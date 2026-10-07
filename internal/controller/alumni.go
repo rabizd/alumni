@@ -2,7 +2,6 @@ package controller
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/rabizd/alumni/internal/model"
 	"github.com/rabizd/alumni/internal/view"
@@ -20,7 +19,6 @@ func CreateAlumni(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Name = strings.TrimSpace(a.Name)
 	if err := a.Validate(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

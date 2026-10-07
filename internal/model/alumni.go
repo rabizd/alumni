@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"strings"
 	"sync"
 )
 
@@ -14,8 +15,9 @@ type Alumni struct {
 	GraduationYear int    `json:"graduationYear"`
 }
 
-// Validate reports the first required field that is missing.
-func (a Alumni) Validate() error {
+// Validate trims the name and reports it if it is missing.
+func (a *Alumni) Validate() error {
+	a.Name = strings.TrimSpace(a.Name)
 	if a.Name == "" {
 		return errors.New("name is required")
 	}

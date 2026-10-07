@@ -4,7 +4,6 @@ package controller
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/rabizd/alumni/internal/model"
 	"github.com/rabizd/alumni/internal/view"
@@ -54,8 +53,6 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.Name = strings.TrimSpace(u.Name)
-	u.Email = strings.TrimSpace(u.Email)
 	if err := u.Validate(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -76,8 +73,6 @@ func ReplaceUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.Name = strings.TrimSpace(u.Name)
-	u.Email = strings.TrimSpace(u.Email)
 	if err := u.Validate(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -104,28 +99,9 @@ func PatchUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// An empty body would silently do nothing, which is more likely a mistake
-	// than an intention.
-	if p.Name == nil && p.Email == nil {
-		http.Error(w, "send at least one of name or email", http.StatusBadRequest)
+	if err := p.Validate(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
-	}
-
-	if p.Name != nil {
-		trimmed := strings.TrimSpace(*p.Name)
-		if trimmed == "" {
-			http.Error(w, "name cannot be empty", http.StatusBadRequest)
-			return
-		}
-		p.Name = &trimmed
-	}
-	if p.Email != nil {
-		trimmed := strings.TrimSpace(*p.Email)
-		if trimmed == "" {
-			http.Error(w, "email cannot be empty", http.StatusBadRequest)
-			return
-		}
-		p.Email = &trimmed
 	}
 
 	updated, found := model.Users.Patch(id, p)

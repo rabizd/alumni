@@ -4,6 +4,7 @@ package model
 
 import (
 	"errors"
+	"strings"
 	"sync"
 )
 
@@ -15,8 +16,10 @@ type User struct {
 	Email string `json:"email"`
 }
 
-// Validate reports the first required field that is missing.
-func (u User) Validate() error {
+// Validate trims the fields and reports the first required one that is missing.
+func (u *User) Validate() error {
+	u.Name = strings.TrimSpace(u.Name)
+	u.Email = strings.TrimSpace(u.Email)
 	switch {
 	case u.Name == "":
 		return errors.New("name is required")
@@ -33,6 +36,31 @@ func (u User) Validate() error {
 type UserPatch struct {
 	Name  *string `json:"name"`
 	Email *string `json:"email"`
+}
+
+// Validate trims the fields that were sent and rejects a patch that would
+// change nothing or leave a field empty.
+func (p *UserPatch) Validate() error {
+	// An empty body would silently do nothing, which is more likely a mistake
+	// than an intention.
+	if p.Name == nil && p.Email == nil {
+		return errors.New("send at least one of name or email")
+	}
+	if p.Name != nil {
+		trimmed := strings.TrimSpace(*p.Name)
+		if trimmed == "" {
+			return errors.New("name cannot be empty")
+		}
+		p.Name = &trimmed
+	}
+	if p.Email != nil {
+		trimmed := strings.TrimSpace(*p.Email)
+		if trimmed == "" {
+			return errors.New("email cannot be empty")
+		}
+		p.Email = &trimmed
+	}
+	return nil
 }
 
 type UserStore struct {

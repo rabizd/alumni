@@ -305,7 +305,7 @@ alumni/
 │
 ├── internal/                   # the application, split into the three MVC layers
 │   ├── model/                  # MODEL
-│   │   ├── user.go             #   User + Validate(), UserPatch, UserStore (List/Add/Find/Remove/Replace/Patch)
+│   │   ├── user.go             #   User + Validate(), UserPatch + Validate(), UserStore (List/Add/Find/Remove/Replace/Patch)
 │   │   ├── alumni.go           #   Alumni + Validate(), AlumniStore (List/Add)
 │   │   └── health.go           #   Health, the {"status":"ok"} shape
 │   │
@@ -340,7 +340,7 @@ The layers are the app's own parts, not a library for other projects.
 
 | Layer | Folder | What it contains | What it must not do |
 | --- | --- | --- | --- |
-| **Model** | `internal/model` | Structs (`User`, `Alumni`, `Health`), their `Validate()` rules, and in-memory stores guarded by a mutex. The store assigns ids; a request body never does. | Touch `http.Request`, write a response, or know about HTML |
+| **Model** | `internal/model` | Structs (`User`, `UserPatch`, `Alumni`, `Health`), their `Validate()` rules (trimming spaces, required fields, the PATCH checks), and in-memory stores guarded by a mutex. The store assigns ids; a request body never does. | Touch `http.Request`, write a response, or know about HTML |
 | **View** | `internal/view` | `HTML()` for pages, `JSON()` for API bodies, `OpenAPI()` for the spec, plus the templates and `openapi.json` | Check input or read and change the stores |
 | **Controller** | `internal/controller` | One exported function per route. It returns `400` on bad input and `404` on a missing id, and otherwise calls the model and then a view. | Hold data itself, or build HTML or JSON by hand |
 
@@ -349,9 +349,6 @@ The layers are the app's own parts, not a library for other projects.
 - **The model has no database.** The stores are slices in memory, so restarting the server
   resets them. When PostgreSQL arrives, the queries go in the model layer and the
   controllers do not change.
-- **Some validation is still in a controller.** The PATCH checks (at least one field sent, no
-  empty values) live in `controller.PatchUser`. `User.Validate()` and `Alumni.Validate()` are
-  already in the model.
 - **Planned:** `migrations/` for SQL schema migrations, and `.env.example` as a configuration template.
 
 ## Roadmap
