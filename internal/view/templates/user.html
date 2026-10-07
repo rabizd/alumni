@@ -3,6 +3,12 @@
 <dl>
   <dt>Numara</dt><dd>{{.ID}}</dd>
   <dt>E-posta</dt><dd>{{.Email}}</dd>
+  <dt>Bölüm</dt><dd>{{.Department}}</dd>
+  <dt>Yıllar</dt><dd>{{.StartYear}} – {{.GraduationYear}}</dd>
+  <dt>ÇAP</dt><dd>{{if .DoubleMajor}}{{.DoubleMajor}}{{else}}yok{{end}}</dd>
+  <dt>Yandal</dt><dd>{{if .Minor}}{{.Minor}}{{else}}yok{{end}}</dd>
+  <dt>Danışman</dt><dd>{{if .Advisor}}{{.Advisor}}{{else}}belirtilmedi{{end}}</dd>
+  <dt>İng. hazırlık</dt><dd>{{if .PrepExempt}}muaf{{else}}muaf değil{{end}}</dd>
 </dl>
 <div class="row">
   <a class="btn" href="/users/{{.ID}}/edit">Düzenle</a>

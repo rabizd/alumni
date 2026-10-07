@@ -71,7 +71,26 @@ Content-Type: application/json
 
 {
   "name": "Elif Kaya",
-  "email": "elif@example.com"
+  "email": "elif@example.com",
+  "department": "Tıp",
+  "startYear": 2016,
+  "graduationYear": 2022,
+  "doubleMajor": "",
+  "minor": "Psikoloji",
+  "advisor": "Doç. Dr. Şule Arslan",
+  "prepExempt": false
+}
+
+### Graduation before the start year -> 400
+POST {{host}}/api/users
+Content-Type: application/json
+
+{
+  "name": "Elif Kaya",
+  "email": "elif@example.com",
+  "department": "Tıp",
+  "startYear": 2022,
+  "graduationYear": 2016
 }
 
 ### One user by id
@@ -86,7 +105,14 @@ Content-Type: application/json
 
 {
   "name": "Ayse Yilmaz",
-  "email": "ayse.yilmaz@example.com"
+  "email": "ayse.yilmaz@example.com",
+  "department": "Bilgisayar Mühendisliği",
+  "startYear": 2017,
+  "graduationYear": 2021,
+  "doubleMajor": "Matematik",
+  "minor": "",
+  "advisor": "Prof. Dr. Ahmet Kaya",
+  "prepExempt": true
 }
 
 ### PATCH changes only what you send; the name stays as it was -> 200
@@ -197,13 +223,13 @@ GET {{host}}/users
 POST {{host}}/users
 Content-Type: application/x-www-form-urlencoded
 
-name=Zeynep&email=zeynep@example.com
+name=Zeynep&email=zeynep@example.com&department=Hukuk&startYear=2018&graduationYear=2022&prepExempt=on&minor=İşletme
 
 ### Empty name -> 400, the form comes back with the error
 POST {{host}}/users
 Content-Type: application/x-www-form-urlencoded
 
-name=&email=zeynep@example.com
+name=&email=zeynep@example.com&department=Hukuk&startYear=2018&graduationYear=2022
 
 ### Edit form, filled in
 GET {{host}}/users/1/edit
@@ -212,7 +238,7 @@ GET {{host}}/users/1/edit
 POST {{host}}/users/1
 Content-Type: application/x-www-form-urlencoded
 
-name=Ayşe Yılmaz&email=ayse.yilmaz@example.com
+name=Ayşe Yılmaz&email=ayse.yilmaz@example.com&department=Bilgisayar Mühendisliği&startYear=2017&graduationYear=2021&doubleMajor=Matematik&advisor=Prof. Dr. Ahmet Kaya&prepExempt=on
 
 ### Delete -> 303 redirect to /users
 POST {{host}}/users/2/delete

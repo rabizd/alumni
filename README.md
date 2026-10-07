@@ -316,7 +316,7 @@ alumni/
 │   │   └── api.go              #   API(): ApiUserController at /api/users, health, swagger, /alumni  (JSON)
 │   │
 │   ├── model/                  # MODEL
-│   │   ├── user.go             #   User + Validate(), UserPatch + Validate(), UserStore (List/Add/Find/Remove/Replace/Patch)
+│   │   ├── user.go             #   User (+ department, years, ÇAP, yandal, advisor, prep exemption) + Validate(), UserPatch, UserStore (List/Add/Find/Remove/Replace/Patch)
 │   │   ├── alumni.go           #   Alumni + Validate(), AlumniStore (List/Add)
 │   │   └── health.go           #   Health, the {"status":"ok"} shape
 │   │
@@ -372,7 +372,7 @@ operation is one method:
 | **Read** | `List() []User` | returns a copy of every user | `GET /api/users` |
 | **Read** | `Find(id int) (User, bool)` | returns one user; `false` if the id does not exist | `GET /api/users/{id}` |
 | **Update** | `Replace(id int, u User) (User, bool)` | overwrites every field, keeps the id | `PUT /api/users/{id}` |
-| **Update** | `Patch(id int, p UserPatch) (User, bool)` | changes only the fields that were sent | `PATCH /api/users/{id}` |
+| **Update** | `Patch(id int, p UserPatch) (User, bool, error)` | changes only the fields that were sent; saves nothing if the result breaks a rule | `PATCH /api/users/{id}` |
 | **Delete** | `Remove(id int) bool` | deletes the user; `false` if the id does not exist | `DELETE /api/users/{id}` |
 
 ### Two controllers for the same model
@@ -398,7 +398,21 @@ the page does not submit the form twice. HTML forms can only send `GET` and `POS
 the HTML side uses `POST` where the API uses `PUT`, `PATCH` and `DELETE`.
 
 Before Create and Update, the controller calls `User.Validate()` or `UserPatch.Validate()`.
-These trim spaces and reject a missing name or email. Because the data lives in memory,
+These trim spaces and enforce the rules below.
+
+| Field | JSON / form name | Rule |
+| --- | --- | --- |
+| Name, e-mail | `name`, `email` | required |
+| Department (okuduğu bölüm) | `department` | required |
+| Start year (başlangıç yılı) | `startYear` | required, between 1900 and this year |
+| Graduation year (mezuniyet yılı) | `graduationYear` | required, not before the start year, not in the future |
+| Double major (ÇAP) | `doubleMajor` | optional, empty means none |
+| Minor (yandal) | `minor` | optional, empty means none |
+| Advisor (danışman) | `advisor` | optional |
+| English prep exemption (İngilizce hazırlık muafiyeti) | `prepExempt` | `true` / `false`; in the HTML form a checkbox |
+
+A PATCH is applied first and the patched user is validated as a whole, so changing only
+`graduationYear` to a year before the existing `startYear` is still rejected. Because the data lives in memory,
 a server restart brings back the two sample users and loses everything else.
 
 ### What is still on the way

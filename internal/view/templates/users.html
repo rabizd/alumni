@@ -1,14 +1,15 @@
 {{template "users_top"}}
 <h1>Kullanıcılar</h1>
-{{if .}}
+{{if .Users}}
 <table>
-  <thead><tr><th>#</th><th>Ad</th><th>E-posta</th><th></th></tr></thead>
+  <thead><tr><th>#</th><th>Ad</th><th>Bölüm</th><th>Yıllar</th><th></th></tr></thead>
   <tbody>
-  {{range .}}
+  {{range .Users}}
     <tr>
       <td>{{.ID}}</td>
       <td><a href="/users/{{.ID}}">{{.Name}}</a></td>
-      <td>{{.Email}}</td>
+      <td>{{.Department}}</td>
+      <td>{{.StartYear}}–{{.GraduationYear}}</td>
       <td class="actions">
         <a class="btn ghost" href="/users/{{.ID}}/edit">Düzenle</a>
         <form method="post" action="/users/{{.ID}}/delete">
@@ -26,10 +27,7 @@
 {{/* Posts straight to POST /users (UserController.Store), so the listing and
 the creating route both live on this page. */}}
 <form method="post" action="/users">
-  <label for="name">Ad</label>
-  <input type="text" id="name" name="name" required>
-  <label for="email">E-posta</label>
-  <input type="email" id="email" name="email" required>
+  {{template "user_fields" .New}}
   <button type="submit">Ekle</button>
 </form>
 {{template "users_bottom"}}
