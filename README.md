@@ -344,6 +344,25 @@ The layers are the app's own parts, not a library for other projects.
 | **View** | `internal/view` | `HTML()` for pages, `JSON()` for API bodies, `OpenAPI()` for the spec, plus the templates and `openapi.json` | Check input or read and change the stores |
 | **Controller** | `internal/controller` | One exported function per route. It returns `400` on bad input and `404` on a missing id, and otherwise calls the model and then a view. | Hold data itself, or build HTML or JSON by hand |
 
+### The User model: CRUD without a database
+
+`internal/model/user.go` is the User model. It has no database connection: `model.Users` keeps
+the users in a slice in memory, guarded by a mutex, and starts with two sample users. Each CRUD
+operation is one method:
+
+| CRUD | Method on `model.Users` | What it does | Route that uses it |
+| --- | --- | --- | --- |
+| **Create** | `Add(u User) User` | gives the user the next id and stores it | `POST /api/users` |
+| **Read** | `List() []User` | returns a copy of every user | `GET /api/users` |
+| **Read** | `Find(id int) (User, bool)` | returns one user; `false` if the id does not exist | `GET /api/users/{id}` |
+| **Update** | `Replace(id int, u User) (User, bool)` | overwrites every field, keeps the id | `PUT /api/users/{id}` |
+| **Update** | `Patch(id int, p UserPatch) (User, bool)` | changes only the fields that were sent | `PATCH /api/users/{id}` |
+| **Delete** | `Remove(id int) bool` | deletes the user; `false` if the id does not exist | `DELETE /api/users/{id}` |
+
+Before Create and Update, the controller calls `User.Validate()` or `UserPatch.Validate()`.
+These trim spaces and reject a missing name or email. Because the data lives in memory,
+a server restart brings back the two sample users and loses everything else.
+
 ### What is still on the way
 
 - **The model has no database.** The stores are slices in memory, so restarting the server
