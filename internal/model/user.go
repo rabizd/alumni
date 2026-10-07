@@ -4,27 +4,60 @@ package model
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
+	"time"
 )
 
 // User is one account on the network. No database yet: the users live in
 // memory, so they are gone when the server restarts.
 type User struct {
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	ID             int    `json:"id"`
+	Name           string `json:"name"`
+	Email          string `json:"email"`
+	Department     string `json:"department"`
+	StartYear      int    `json:"startYear"`
+	GraduationYear int    `json:"graduationYear"`
+	// DoubleMajor (ÇAP), Minor (yandal) and Advisor (danışman) are optional;
+	// "" means none.
+	DoubleMajor string `json:"doubleMajor"`
+	Minor       string `json:"minor"`
+	Advisor     string `json:"advisor"`
+	// PrepExempt is true when the user was exempt from the English prep year.
+	PrepExempt bool `json:"prepExempt"`
 }
 
-// Validate trims the fields and reports the first required one that is missing.
+// firstYear is the earliest start year the form accepts.
+const firstYear = 1900
+
+// Validate trims the text fields and reports the first rule the user breaks.
 func (u *User) Validate() error {
 	u.Name = strings.TrimSpace(u.Name)
 	u.Email = strings.TrimSpace(u.Email)
+	u.Department = strings.TrimSpace(u.Department)
+	u.DoubleMajor = strings.TrimSpace(u.DoubleMajor)
+	u.Minor = strings.TrimSpace(u.Minor)
+	u.Advisor = strings.TrimSpace(u.Advisor)
+
+	thisYear := time.Now().Year()
 	switch {
 	case u.Name == "":
 		return errors.New("name is required")
 	case u.Email == "":
 		return errors.New("email is required")
+	case u.Department == "":
+		return errors.New("department is required")
+	case u.StartYear == 0:
+		return errors.New("startYear is required")
+	case u.StartYear < firstYear || u.StartYear > thisYear:
+		return fmt.Errorf("startYear must be between %d and %d", firstYear, thisYear)
+	case u.GraduationYear == 0:
+		return errors.New("graduationYear is required")
+	case u.GraduationYear < u.StartYear:
+		return errors.New("graduationYear cannot be before startYear")
+	case u.GraduationYear > thisYear:
+		return errors.New("graduationYear cannot be in the future")
 	}
 	return nil
 }
@@ -34,33 +67,59 @@ func (u *User) Validate() error {
 // mention name at all" (nil), which is the whole difference between PATCH
 // and PUT.
 type UserPatch struct {
-	Name  *string `json:"name"`
-	Email *string `json:"email"`
+	Name           *string `json:"name"`
+	Email          *string `json:"email"`
+	Department     *string `json:"department"`
+	StartYear      *int    `json:"startYear"`
+	GraduationYear *int    `json:"graduationYear"`
+	DoubleMajor    *string `json:"doubleMajor"`
+	Minor          *string `json:"minor"`
+	Advisor        *string `json:"advisor"`
+	PrepExempt     *bool   `json:"prepExempt"`
 }
 
-// Validate trims the fields that were sent and rejects a patch that would
-// change nothing or leave a field empty.
+// Validate rejects a patch that would change nothing. The field rules are
+// checked by User.Validate on the patched user, because some of them (a
+// graduation year before the start year) need both old and new values.
 func (p *UserPatch) Validate() error {
 	// An empty body would silently do nothing, which is more likely a mistake
 	// than an intention.
-	if p.Name == nil && p.Email == nil {
-		return errors.New("send at least one of name or email")
-	}
-	if p.Name != nil {
-		trimmed := strings.TrimSpace(*p.Name)
-		if trimmed == "" {
-			return errors.New("name cannot be empty")
-		}
-		p.Name = &trimmed
-	}
-	if p.Email != nil {
-		trimmed := strings.TrimSpace(*p.Email)
-		if trimmed == "" {
-			return errors.New("email cannot be empty")
-		}
-		p.Email = &trimmed
+	if *p == (UserPatch{}) {
+		return errors.New("send at least one field to change")
 	}
 	return nil
+}
+
+// apply returns u with every field the patch mentions replaced.
+func (u User) apply(p UserPatch) User {
+	if p.Name != nil {
+		u.Name = *p.Name
+	}
+	if p.Email != nil {
+		u.Email = *p.Email
+	}
+	if p.Department != nil {
+		u.Department = *p.Department
+	}
+	if p.StartYear != nil {
+		u.StartYear = *p.StartYear
+	}
+	if p.GraduationYear != nil {
+		u.GraduationYear = *p.GraduationYear
+	}
+	if p.DoubleMajor != nil {
+		u.DoubleMajor = *p.DoubleMajor
+	}
+	if p.Minor != nil {
+		u.Minor = *p.Minor
+	}
+	if p.Advisor != nil {
+		u.Advisor = *p.Advisor
+	}
+	if p.PrepExempt != nil {
+		u.PrepExempt = *p.PrepExempt
+	}
+	return u
 }
 
 type UserStore struct {
@@ -72,8 +131,10 @@ type UserStore struct {
 var Users = &UserStore{
 	nextID: 3,
 	items: []User{
-		{ID: 1, Name: "Ayşe Yılmaz", Email: "ayse@example.com"},
-		{ID: 2, Name: "Mehmet Demir", Email: "mehmet@example.com"},
+		{ID: 1, Name: "Ayşe Yılmaz", Email: "ayse@example.com", Department: "Bilgisayar Mühendisliği",
+			StartYear: 2017, GraduationYear: 2021, DoubleMajor: "Matematik", Advisor: "Prof. Dr. Ahmet Kaya", PrepExempt: true},
+		{ID: 2, Name: "Mehmet Demir", Email: "mehmet@example.com", Department: "Hukuk",
+			StartYear: 2015, GraduationYear: 2019, Minor: "İşletme"},
 	},
 }
 
@@ -132,21 +193,21 @@ func (s *UserStore) Replace(id int, u User) (User, bool) {
 	return User{}, false
 }
 
-// Patch changes only the fields the client actually sent.
-func (s *UserStore) Patch(id int, p UserPatch) (User, bool) {
+// Patch changes only the fields the client actually sent. The bool reports
+// whether the user existed; the error reports a patched user that would break
+// a rule, in which case nothing is saved.
+func (s *UserStore) Patch(id int, p UserPatch) (User, bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for i, existing := range s.items {
 		if existing.ID == id {
-			if p.Name != nil {
-				existing.Name = *p.Name
+			patched := existing.apply(p)
+			if err := patched.Validate(); err != nil {
+				return User{}, true, err
 			}
-			if p.Email != nil {
-				existing.Email = *p.Email
-			}
-			s.items[i] = existing
-			return existing, true
+			s.items[i] = patched
+			return patched, true, nil
 		}
 	}
-	return User{}, false
+	return User{}, false, nil
 }

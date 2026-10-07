@@ -92,9 +92,13 @@ func (ApiUserController) Patch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated, found := model.Users.Patch(id, p)
+	updated, found, err := model.Users.Patch(id, p)
 	if !found {
 		http.Error(w, "no user with that id", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 

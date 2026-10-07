@@ -1,5 +1,5 @@
-{{/* Shared top and bottom of the /users pages. users.html, user.html and
-user_form.html wrap their content in these two. */}}
+{{/* Shared parts of the /users pages: users_top and users_bottom wrap every
+page, and user_fields is the set of inputs both user forms use. */}}
 {{define "users_top"}}<!doctype html>
 <html lang="tr">
 <head>
@@ -49,11 +49,15 @@ user_form.html wrap their content in these two. */}}
   dd{ margin:0; }
 
   label{ display:block; font-size:0.9rem; color:var(--muted); margin-bottom:0.3rem; }
-  input[type=text], input[type=email]{
+  input[type=text], input[type=email], input[type=number]{
     width:100%; padding:0.6rem 0.7rem; margin-bottom:1.1rem;
     font:inherit; color:var(--ink); background:#f6f2ea;
     border:1px solid var(--line); border-radius:3px;
   }
+  .pair{ display:grid; grid-template-columns:1fr 1fr; gap:0 1rem; }
+  fieldset{ border:1px solid var(--line); border-radius:3px; padding:1rem 1rem 0.2rem; margin:0 0 1.2rem; }
+  legend{ color:var(--muted); font-size:0.85rem; padding:0 0.4rem; }
+  label.check{ display:flex; align-items:center; gap:0.5rem; color:var(--ink); margin-bottom:1.1rem; }
   .error{ background:#f3dcd8; color:var(--maroon); padding:0.7rem 0.9rem; border-radius:3px; margin-bottom:1.2rem; }
 
   .btn, button{
@@ -82,4 +86,36 @@ user_form.html wrap their content in these two. */}}
 </main>
 </body>
 </html>
+{{end}}
+
+{{define "user_fields"}}
+  <label for="name">Ad</label>
+  <input type="text" id="name" name="name" value="{{.Name}}" required>
+  <label for="email">E-posta</label>
+  <input type="email" id="email" name="email" value="{{.Email}}" required>
+  <label for="department">Okuduğu bölüm</label>
+  <input type="text" id="department" name="department" value="{{.Department}}" required>
+  <div class="pair">
+    <div>
+      <label for="startYear">Başlangıç yılı</label>
+      <input type="number" id="startYear" name="startYear" min="1900" value="{{if .StartYear}}{{.StartYear}}{{end}}" required>
+    </div>
+    <div>
+      <label for="graduationYear">Mezuniyet yılı</label>
+      <input type="number" id="graduationYear" name="graduationYear" min="1900" value="{{if .GraduationYear}}{{.GraduationYear}}{{end}}" required>
+    </div>
+  </div>
+  <label class="check">
+    <input type="checkbox" name="prepExempt"{{if .PrepExempt}} checked{{end}}>
+    İngilizce hazırlıktan muaf
+  </label>
+  <fieldset>
+    <legend>Varsa doldurun</legend>
+    <label for="doubleMajor">ÇAP bölümü</label>
+    <input type="text" id="doubleMajor" name="doubleMajor" value="{{.DoubleMajor}}">
+    <label for="minor">Yandal bölümü</label>
+    <input type="text" id="minor" name="minor" value="{{.Minor}}">
+    <label for="advisor">Danışman</label>
+    <input type="text" id="advisor" name="advisor" value="{{.Advisor}}">
+  </fieldset>
 {{end}}

@@ -61,7 +61,7 @@
           "content": {
             "application/json": {
               "schema": { "$ref": "#/components/schemas/NewUser" },
-              "example": { "name": "Elif Kaya", "email": "elif@example.com" }
+              "example": { "name": "Elif Kaya", "email": "elif@example.com", "department": "Tıp", "startYear": 2016, "graduationYear": 2022, "doubleMajor": "", "minor": "Psikoloji", "advisor": "Doç. Dr. Şule Arslan", "prepExempt": false }
             }
           }
         },
@@ -115,7 +115,7 @@
           "content": {
             "application/json": {
               "schema": { "$ref": "#/components/schemas/NewUser" },
-              "example": { "name": "Ayşe Yıldız", "email": "ayse.yildiz@example.com" }
+              "example": { "name": "Ayşe Yıldız", "email": "ayse.yildiz@example.com", "department": "Bilgisayar Mühendisliği", "startYear": 2017, "graduationYear": 2021, "doubleMajor": "Matematik", "minor": "", "advisor": "Prof. Dr. Ahmet Kaya", "prepExempt": true }
             }
           }
         },
@@ -142,7 +142,7 @@
           "content": {
             "application/json": {
               "schema": { "$ref": "#/components/schemas/UserPatch" },
-              "example": { "email": "yeni@example.com" }
+              "example": { "graduationYear": 2022, "prepExempt": false }
             }
           }
         },
@@ -291,29 +291,51 @@
         "properties": {
           "id": { "type": "integer", "readOnly": true, "example": 1 },
           "name": { "type": "string", "example": "Ayşe Yılmaz" },
-          "email": { "type": "string", "example": "ayse@example.com" }
+          "email": { "type": "string", "example": "ayse@example.com" },
+          "department": { "type": "string", "example": "Bilgisayar Mühendisliği" },
+          "startYear": { "type": "integer", "minimum": 1900, "example": 2017, "description": "Başlangıç yılı; 1900 ile bu yıl arasında" },
+          "graduationYear": { "type": "integer", "example": 2021, "description": "Mezuniyet yılı; başlangıç yılından önce ve gelecekte olamaz" },
+          "doubleMajor": { "type": "string", "example": "Matematik", "description": "ÇAP bölümü; yoksa boş" },
+          "minor": { "type": "string", "example": "", "description": "Yandal bölümü; yoksa boş" },
+          "advisor": { "type": "string", "example": "Prof. Dr. Ahmet Kaya", "description": "Danışman; yoksa boş" },
+          "prepExempt": { "type": "boolean", "example": true, "description": "İngilizce hazırlıktan muaf mı?" }
         }
       },
       "NewUser": {
         "type": "object",
-        "required": ["name", "email"],
+        "required": ["name", "email", "department", "startYear", "graduationYear"],
         "properties": {
           "name": { "type": "string", "example": "Elif Kaya" },
-          "email": { "type": "string", "example": "elif@example.com" }
+          "email": { "type": "string", "example": "elif@example.com" },
+          "department": { "type": "string", "example": "Bilgisayar Mühendisliği" },
+          "startYear": { "type": "integer", "minimum": 1900, "example": 2017, "description": "Başlangıç yılı; 1900 ile bu yıl arasında" },
+          "graduationYear": { "type": "integer", "example": 2021, "description": "Mezuniyet yılı; başlangıç yılından önce ve gelecekte olamaz" },
+          "doubleMajor": { "type": "string", "example": "Matematik", "description": "ÇAP bölümü; yoksa boş" },
+          "minor": { "type": "string", "example": "", "description": "Yandal bölümü; yoksa boş" },
+          "advisor": { "type": "string", "example": "Prof. Dr. Ahmet Kaya", "description": "Danışman; yoksa boş" },
+          "prepExempt": { "type": "boolean", "example": true, "description": "İngilizce hazırlıktan muaf mı?" }
         }
       },
       "UserPatch": {
         "type": "object",
         "minProperties": 1,
+        "description": "Gönderilen alanlar değişir. Sonuç yine bütün kurallara uymalı; örneğin mezuniyet yılı başlangıç yılından önce olamaz.",
         "properties": {
           "name": { "type": "string", "example": "Elif Kaya" },
-          "email": { "type": "string", "example": "yeni@example.com" }
+          "email": { "type": "string", "example": "yeni@example.com" },
+          "department": { "type": "string", "example": "Bilgisayar Mühendisliği" },
+          "startYear": { "type": "integer", "minimum": 1900, "example": 2017, "description": "Başlangıç yılı; 1900 ile bu yıl arasında" },
+          "graduationYear": { "type": "integer", "example": 2021, "description": "Mezuniyet yılı; başlangıç yılından önce ve gelecekte olamaz" },
+          "doubleMajor": { "type": "string", "example": "Matematik", "description": "ÇAP bölümü; yoksa boş" },
+          "minor": { "type": "string", "example": "", "description": "Yandal bölümü; yoksa boş" },
+          "advisor": { "type": "string", "example": "Prof. Dr. Ahmet Kaya", "description": "Danışman; yoksa boş" },
+          "prepExempt": { "type": "boolean", "example": true, "description": "İngilizce hazırlıktan muaf mı?" }
         }
       }
     },
     "responses": {
       "BadRequest": {
-        "description": "İstek hatalı: bozuk JSON, eksik alan ya da sayı olmayan id",
+        "description": "İstek hatalı: bozuk JSON, eksik alan, kurala uymayan yıl ya da sayı olmayan id",
         "content": {
           "text/plain": { "schema": { "type": "string" }, "example": "name is required" }
         }
