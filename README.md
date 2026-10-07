@@ -144,7 +144,7 @@ that next.
 | `GET /api/swagger.json` | the OpenAPI document itself |
 | `GET /main` | HTML page listing every route |
 | `GET /about` | HTML about page (placeholder content) |
-| `GET /users` | HTML page listing every user, with edit and delete buttons |
+| `GET /users` | HTML page listing every user, with edit and delete buttons and a form that posts to `POST /users` |
 | `GET /users/new` | HTML form for a new user |
 | `POST /users` | creates a user from the form, then redirects (`303`) to `/users` |
 | `GET /users/{id}` | HTML page for one user, or `404` |
