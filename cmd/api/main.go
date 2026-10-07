@@ -1,66 +1,57 @@
 package main
 
 import (
-	"embed"
-	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
-	"unicode"
+
+	"github.com/rabizd/alumni/internal/controller"
 )
 
-// The HTML lives in its own files; go:embed bakes them into the binary at
-// build time, so the server stays a single executable with no loose files.
-//
-//go:embed templates/*.html
-var templateFiles embed.FS
-
-var templates = template.Must(template.ParseFS(templateFiles, "templates/*.html"))
-
+// main only wires things together: every route points at a controller, and
+// the controllers do the rest.
 func main() {
 	mux := http.NewServeMux()
 
 	// 1. GET / -> the landing page
-	mux.HandleFunc("GET /{$}", handleRoot)
+	mux.HandleFunc("GET /{$}", controller.Root)
 
 	// 2. GET /hello -> Hello, World!
-	mux.HandleFunc("GET /hello", handleHello)
+	mux.HandleFunc("GET /hello", controller.Hello)
 
 	// 3. GET /hello/{name} -> Hello, Emre!
-	mux.HandleFunc("GET /hello/{name}", handleHelloName)
+	mux.HandleFunc("GET /hello/{name}", controller.HelloName)
 
 	// 4. GET /sum/{number1}/{number2} -> the sum of the two numbers
-	mux.HandleFunc("GET /sum/{number1}/{number2}", handleSum)
+	mux.HandleFunc("GET /sum/{number1}/{number2}", controller.Sum)
 
 	// 5. GET /temporary -> temporary redirect to the main page
-	mux.HandleFunc("GET /temporary", handleTemporary)
+	mux.HandleFunc("GET /temporary", controller.Temporary)
 
 	// The main page the temporary redirect points at.
-	mux.HandleFunc("GET /main", handleMain)
+	mux.HandleFunc("GET /main", controller.Main)
 
 	// 6. GET /about -> a temporary about page
-	mux.HandleFunc("GET /about", handleAbout)
+	mux.HandleFunc("GET /about", controller.About)
 
 	// GET /api/health -> a JSON health check
-	mux.HandleFunc("GET /api/health", handleHealth)
+	mux.HandleFunc("GET /api/health", controller.Health)
 
 	// GET /api/swagger -> the API documentation, generated from openapi.json
-	mux.HandleFunc("GET /api/swagger", handleSwagger)
-	mux.HandleFunc("GET /api/swagger.json", handleSwaggerSpec)
+	mux.HandleFunc("GET /api/swagger", controller.Swagger)
+	mux.HandleFunc("GET /api/swagger.json", controller.SwaggerSpec)
 
 	// The users resource, kept in memory for now.
-	mux.HandleFunc("GET /api/users", handleListUsers)
-	mux.HandleFunc("POST /api/users", handleCreateUser)
-	mux.HandleFunc("GET /api/users/{id}", handleGetUser)
-	mux.HandleFunc("DELETE /api/users/{id}", handleDeleteUser)
-	mux.HandleFunc("PUT /api/users/{id}", handleReplaceUser)
-	mux.HandleFunc("PATCH /api/users/{id}", handlePatchUser)
+	mux.HandleFunc("GET /api/users", controller.ListUsers)
+	mux.HandleFunc("POST /api/users", controller.CreateUser)
+	mux.HandleFunc("GET /api/users/{id}", controller.GetUser)
+	mux.HandleFunc("DELETE /api/users/{id}", controller.DeleteUser)
+	mux.HandleFunc("PUT /api/users/{id}", controller.ReplaceUser)
+	mux.HandleFunc("PATCH /api/users/{id}", controller.PatchUser)
 
 	// The alumni resource itself.
-	mux.HandleFunc("GET /alumni", handleListAlumni)
-	mux.HandleFunc("POST /alumni", handleCreateAlumni)
+	mux.HandleFunc("GET /alumni", controller.ListAlumni)
+	mux.HandleFunc("POST /alumni", controller.CreateAlumni)
 
 	port := os.Getenv("APP_PORT")
 	if port == "" {
@@ -71,63 +62,5 @@ func main() {
 	log.Printf("listening on http://localhost%s", addr)
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		log.Fatal(err)
-	}
-}
-
-func handleRoot(w http.ResponseWriter, r *http.Request) {
-	render(w, "main.html")
-}
-
-func handleHello(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Hello, World!")
-}
-
-func handleHelloName(w http.ResponseWriter, r *http.Request) {
-	name := r.PathValue("name")
-	fmt.Fprintf(w, "Hello, %s!", capitalize(name))
-}
-
-// capitalize upper-cases the first letter so /hello/emre answers "Hello, Emre!".
-func capitalize(s string) string {
-	if s == "" {
-		return s
-	}
-	r := []rune(s)
-	r[0] = unicode.ToUpper(r[0])
-	return string(r)
-}
-
-func handleSum(w http.ResponseWriter, r *http.Request) {
-	a, err := strconv.Atoi(r.PathValue("number1"))
-	if err != nil {
-		http.Error(w, "number1 must be a whole number", http.StatusBadRequest)
-		return
-	}
-
-	b, err := strconv.Atoi(r.PathValue("number2"))
-	if err != nil {
-		http.Error(w, "number2 must be a whole number", http.StatusBadRequest)
-		return
-	}
-
-	fmt.Fprintf(w, "%d", a+b)
-}
-
-func handleTemporary(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/main", http.StatusTemporaryRedirect)
-}
-
-func handleMain(w http.ResponseWriter, r *http.Request) {
-	render(w, "main.html")
-}
-
-func handleAbout(w http.ResponseWriter, r *http.Request) {
-	render(w, "about.html")
-}
-
-func render(w http.ResponseWriter, page string) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := templates.ExecuteTemplate(w, page, nil); err != nil {
-		log.Printf("rendering %s: %v", page, err)
 	}
 }

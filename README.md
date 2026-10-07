@@ -28,7 +28,7 @@
 - [Open Design Questions](#open-design-questions)
 - [Getting Started](#getting-started)
 - [Configuration](#configuration)
-- [Project Structure](#project-structure)
+- [Project Structure (MVC)](#project-structure-mvc)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [License](#license)
@@ -151,7 +151,7 @@ that next.
 | `GET /temporary` | `307` temporary redirect to `/main` |
 
 Routing uses the Go 1.22 standard-library `ServeMux` — no third-party router. HTML lives in
-`cmd/api/templates/`, embedded into the binary with `go:embed` and rendered through
+`internal/view/templates/`, embedded into the binary with `go:embed` and rendered through
 `html/template`; styling is [Pico.css](https://picocss.com), so the markup stays plain HTML.
 
 `requests.http` at the repository root fires every endpoint, including the error cases, from
@@ -159,7 +159,7 @@ the VS Code REST Client extension.
 
 ### Keep the API documentation current
 
-`cmd/api/openapi.json` describes the API in the [OpenAPI 3](https://swagger.io/specification/)
+`internal/view/openapi.json` describes the API in the [OpenAPI 3](https://swagger.io/specification/)
 format, and `GET /api/swagger` renders it as a Swagger UI page you can send requests from.
 
 **Every pull request that changes an endpoint must update `openapi.json` in the same commit.**
@@ -253,30 +253,103 @@ to configure — the server has no database behind it so far.
 
 > 🔒 Never commit your `.env` file. Only `.env.example` belongs in version control.
 
-## Project Structure
+## Project Structure (MVC)
 
-What exists today, and where it is heading. Directories marked *planned* are not there yet.
+The code follows the **Model–View–Controller** pattern, and each layer has its own folder
+under `internal/`:
+
+- **Model** (`internal/model`) — the data and the rules that keep it valid: what a user or a graduate *is*, how it is checked, and how it is stored, found, changed, and removed. It knows nothing about HTTP.
+- **View** (`internal/view`) — what the client receives: an HTML page or a JSON body. A view shows data and decides nothing.
+- **Controller** (`internal/controller`) — one function per route. It reads the request (URL, path values, JSON body), checks it, asks the model for data, and hands the result to a view.
+
+`cmd/api/main.go` sits outside the three layers. It only connects each route to its controller
+and starts the server.
+
+### How one request moves through the app
+
+```
+  Client
+    │  GET /api/users/1
+    ▼
+┌───────────────────────────────────────┐
+│ Router      cmd/api/main.go           │  ServeMux matches method + path
+└───────────────────┬───────────────────┘
+                    ▼
+┌───────────────────────────────────────┐
+│ Controller  internal/controller/      │  controller.GetUser: read {id},
+│             users.go                  │  400 if it is not a number
+└───────────────────┬───────────────────┘
+                    ▼
+┌───────────────────────────────────────┐
+│ Model       internal/model/user.go    │  model.Users.Find(1) → User, found?
+└───────────────────┬───────────────────┘
+                    ▼
+┌───────────────────────────────────────┐
+│ View        internal/view/view.go     │  view.JSON(...) → {"id":1,"name":...}
+│                                       │  view.HTML(...) → templates/*.html
+└───────────────────┬───────────────────┘
+                    ▼
+                 Client
+```
+
+The arrows only point one way. A controller imports the model and the view; the model and the
+view never import a controller, and they never import each other.
+
+### Directories and files
 
 ```
 alumni/
 ├── cmd/
 │   └── api/
-│       ├── main.go         # routes, HTML pages, server start-up
-│       ├── alumni.go       # the Alumni type, in-memory store, JSON handlers
-│       └── templates/      # main.html, about.html (embedded with go:embed)
-├── requests.http           # every endpoint, for the VS Code REST Client
-├── go.mod
-├── README.md
-├── LICENSE
+│       └── main.go             # entry point: route → controller table, reads APP_PORT, starts the server
 │
-├── internal/               # planned — handler / service / repository / model
-├── migrations/             # planned — SQL schema migrations
-├── docker-compose.yml      # planned — PostgreSQL + Redis for local development
-└── .env.example            # planned
+├── internal/                   # the application, split into the three MVC layers
+│   ├── model/                  # MODEL
+│   │   ├── user.go             #   User + Validate(), UserPatch + Validate(), UserStore (List/Add/Find/Remove/Replace/Patch)
+│   │   ├── alumni.go           #   Alumni + Validate(), AlumniStore (List/Add)
+│   │   └── health.go           #   Health, the {"status":"ok"} shape
+│   │
+│   ├── view/                   # VIEW
+│   │   ├── view.go             #   HTML() renders a template, JSON() writes a JSON body, OpenAPI() serves the spec
+│   │   ├── openapi.json        #   the API description (embedded with go:embed)
+│   │   └── templates/          #   HTML pages (embedded with go:embed)
+│   │       ├── main.html       #     landing page, lists every route
+│   │       ├── about.html      #     about page
+│   │       └── swagger.html    #     Swagger UI, loads /api/swagger.json
+│   │
+│   └── controller/             # CONTROLLER
+│       ├── pages.go            #   Root, Main, About, Hello, HelloName, Sum, Temporary
+│       ├── users.go            #   ListUsers, GetUser, CreateUser, ReplaceUser, PatchUser, DeleteUser
+│       ├── alumni.go           #   ListAlumni, CreateAlumni
+│       ├── api.go              #   Health, Swagger, SwaggerSpec
+│       └── request.go          #   shared helpers: pathID (reads {id}), decodeJSON (strict body parsing)
+│
+├── requests.http               # every endpoint, for the VS Code REST Client (manual testing)
+├── Dockerfile                  # two-stage build: compile in golang, run in a small alpine image
+├── docker-compose.yml          # runs the app container on port 8080
+├── .dockerignore               # files kept out of the Docker build
+├── go.mod                      # Go module: github.com/rabizd/alumni, Go 1.22, no dependencies
+├── README.md
+└── LICENSE
 ```
 
-Everything lives in `cmd/api` while the surface is small. It moves into `internal/` when the
-database arrives and handlers stop being one-liners.
+Go treats a folder named `internal/` specially: only code inside this module may import it.
+The layers are the app's own parts, not a library for other projects.
+
+### The same thing, layer by layer
+
+| Layer | Folder | What it contains | What it must not do |
+| --- | --- | --- | --- |
+| **Model** | `internal/model` | Structs (`User`, `UserPatch`, `Alumni`, `Health`), their `Validate()` rules (trimming spaces, required fields, the PATCH checks), and in-memory stores guarded by a mutex. The store assigns ids; a request body never does. | Touch `http.Request`, write a response, or know about HTML |
+| **View** | `internal/view` | `HTML()` for pages, `JSON()` for API bodies, `OpenAPI()` for the spec, plus the templates and `openapi.json` | Check input or read and change the stores |
+| **Controller** | `internal/controller` | One exported function per route. It returns `400` on bad input and `404` on a missing id, and otherwise calls the model and then a view. | Hold data itself, or build HTML or JSON by hand |
+
+### What is still on the way
+
+- **The model has no database.** The stores are slices in memory, so restarting the server
+  resets them. When PostgreSQL arrives, the queries go in the model layer and the
+  controllers do not change.
+- **Planned:** `migrations/` for SQL schema migrations, and `.env.example` as a configuration template.
 
 ## Roadmap
 
@@ -286,6 +359,7 @@ database arrives and handlers stop being one-liners.
 - [x] `GET` and `POST /alumni` against an in-memory store
 - [x] `/api/users` with `GET`, `POST`, `PUT`, `PATCH` and `DELETE`, still in memory
 - [x] OpenAPI document and a Swagger UI page at `/api/swagger`
+- [x] Code split into `internal/model`, `internal/view`, and `internal/controller` (MVC)
 - [ ] `docker-compose.yml` for PostgreSQL and Redis
 - [ ] Database schema and migrations
 - [ ] Move the in-memory store onto PostgreSQL
@@ -320,7 +394,7 @@ Contributions are welcome — this project grows faster with more hands.
 4. Push the branch: `git push origin feature/your-feature`
 5. Open a **Pull Request**.
 
-Before step 5, make sure `cmd/api/openapi.json` reflects any endpoint you added or changed —
+Before step 5, make sure `internal/view/openapi.json` reflects any endpoint you added or changed —
 see [Keep the API documentation current](#keep-the-api-documentation-current).
 
 ## License
