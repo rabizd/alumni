@@ -151,7 +151,7 @@ that next.
 | `GET /temporary` | `307` temporary redirect to `/main` |
 
 Routing uses the Go 1.22 standard-library `ServeMux` — no third-party router. HTML lives in
-`cmd/api/templates/`, embedded into the binary with `go:embed` and rendered through
+`internal/view/templates/`, embedded into the binary with `go:embed` and rendered through
 `html/template`; styling is [Pico.css](https://picocss.com), so the markup stays plain HTML.
 
 `requests.http` at the repository root fires every endpoint, including the error cases, from
@@ -159,7 +159,7 @@ the VS Code REST Client extension.
 
 ### Keep the API documentation current
 
-`cmd/api/openapi.json` describes the API in the [OpenAPI 3](https://swagger.io/specification/)
+`internal/view/openapi.json` describes the API in the [OpenAPI 3](https://swagger.io/specification/)
 format, and `GET /api/swagger` renders it as a Swagger UI page you can send requests from.
 
 **Every pull request that changes an endpoint must update `openapi.json` in the same commit.**
@@ -255,11 +255,15 @@ to configure — the server has no database behind it so far.
 
 ## Project Structure (MVC)
 
-The code follows the **Model–View–Controller** pattern. Each part has one job:
+The code follows the **Model–View–Controller** pattern, and each layer has its own folder
+under `internal/`:
 
-- **Model** — the data and the rules that protect it: what a user or a graduate *is*, and how they are stored, found, changed, and removed.
-- **View** — what the client receives: an HTML page or a JSON body. A view shows data and decides nothing.
-- **Controller** — the code in between. It reads the request (URL, path values, JSON body), checks it, asks the model for data, and passes the result to a view.
+- **Model** (`internal/model`) — the data and the rules that keep it valid: what a user or a graduate *is*, how it is checked, and how it is stored, found, changed, and removed. It knows nothing about HTTP.
+- **View** (`internal/view`) — what the client receives: an HTML page or a JSON body. A view shows data and decides nothing.
+- **Controller** (`internal/controller`) — one function per route. It reads the request (URL, path values, JSON body), checks it, asks the model for data, and hands the result to a view.
+
+`cmd/api/main.go` sits outside the three layers. It only connects each route to its controller
+and starts the server.
 
 ### How one request moves through the app
 
@@ -267,50 +271,58 @@ The code follows the **Model–View–Controller** pattern. Each part has one jo
   Client
     │  GET /api/users/1
     ▼
-┌──────────────────────────┐
-│ Router        (main.go)  │  ServeMux matches method + path → handler
-└────────────┬─────────────┘
-             ▼
-┌──────────────────────────┐
-│ Controller   (users.go)  │  handleGetUser: read {id}, validate it
-└────────────┬─────────────┘
-             ▼
-┌──────────────────────────┐
-│ Model        (users.go)  │  users.find(1) → User, found?
-└────────────┬─────────────┘
-             ▼
-┌──────────────────────────┐
-│ View                     │  writeJSON(...)  → {"id":1,"name":...}
-│                          │  render(...)     → templates/*.html
-└────────────┬─────────────┘
-             ▼
-          Client
+┌───────────────────────────────────────┐
+│ Router      cmd/api/main.go           │  ServeMux matches method + path
+└───────────────────┬───────────────────┘
+                    ▼
+┌───────────────────────────────────────┐
+│ Controller  internal/controller/      │  controller.GetUser: read {id},
+│             users.go                  │  400 if it is not a number
+└───────────────────┬───────────────────┘
+                    ▼
+┌───────────────────────────────────────┐
+│ Model       internal/model/user.go    │  model.Users.Find(1) → User, found?
+└───────────────────┬───────────────────┘
+                    ▼
+┌───────────────────────────────────────┐
+│ View        internal/view/view.go     │  view.JSON(...) → {"id":1,"name":...}
+│                                       │  view.HTML(...) → templates/*.html
+└───────────────────┬───────────────────┘
+                    ▼
+                 Client
 ```
+
+The arrows only point one way. A controller imports the model and the view; the model and the
+view never import a controller, and they never import each other.
 
 ### Directories and files
 
 ```
 alumni/
 ├── cmd/
-│   └── api/                    # the whole web server: package main
-│       ├── main.go             # CONTROLLER  router (every route → handler), server start-up,
-│       │                       #             page handlers: /, /main, /about, /hello, /sum, /temporary
-│       │                       # VIEW        render() — fills an HTML template and sends it
-│       ├── users.go            # MODEL       User, userPatch, userStore (list/add/find/remove/replace/patch)
-│       │                       # CONTROLLER  handleListUsers, handleGetUser, handleCreateUser,
-│       │                       #             handleReplaceUser, handlePatchUser, handleDeleteUser,
-│       │                       #             plus pathID, decodeJSON, validateUser
-│       ├── alumni.go           # MODEL       Alumni, store (list/add)
-│       │                       # CONTROLLER  handleListAlumni, handleCreateAlumni
-│       │                       # VIEW        writeJSON() — the JSON view every API route answers with
-│       ├── health.go           # MODEL       health (the {"status":"ok"} shape)
-│       │                       # CONTROLLER  handleHealth
-│       ├── swagger.go          # CONTROLLER  handleSwagger, handleSwaggerSpec
-│       ├── openapi.json        # API description that the Swagger view reads (embedded with go:embed)
-│       └── templates/          # VIEW        HTML views, embedded into the binary with go:embed
-│           ├── main.html       #             landing page, lists every route
-│           ├── about.html      #             about page
-│           └── swagger.html    #             Swagger UI, loads /api/swagger.json
+│   └── api/
+│       └── main.go             # entry point: route → controller table, reads APP_PORT, starts the server
+│
+├── internal/                   # the application, split into the three MVC layers
+│   ├── model/                  # MODEL
+│   │   ├── user.go             #   User + Validate(), UserPatch, UserStore (List/Add/Find/Remove/Replace/Patch)
+│   │   ├── alumni.go           #   Alumni + Validate(), AlumniStore (List/Add)
+│   │   └── health.go           #   Health, the {"status":"ok"} shape
+│   │
+│   ├── view/                   # VIEW
+│   │   ├── view.go             #   HTML() renders a template, JSON() writes a JSON body, OpenAPI() serves the spec
+│   │   ├── openapi.json        #   the API description (embedded with go:embed)
+│   │   └── templates/          #   HTML pages (embedded with go:embed)
+│   │       ├── main.html       #     landing page, lists every route
+│   │       ├── about.html      #     about page
+│   │       └── swagger.html    #     Swagger UI, loads /api/swagger.json
+│   │
+│   └── controller/             # CONTROLLER
+│       ├── pages.go            #   Root, Main, About, Hello, HelloName, Sum, Temporary
+│       ├── users.go            #   ListUsers, GetUser, CreateUser, ReplaceUser, PatchUser, DeleteUser
+│       ├── alumni.go           #   ListAlumni, CreateAlumni
+│       ├── api.go              #   Health, Swagger, SwaggerSpec
+│       └── request.go          #   shared helpers: pathID (reads {id}), decodeJSON (strict body parsing)
 │
 ├── requests.http               # every endpoint, for the VS Code REST Client (manual testing)
 ├── Dockerfile                  # two-stage build: compile in golang, run in a small alpine image
@@ -321,38 +333,26 @@ alumni/
 └── LICENSE
 ```
 
+Go treats a folder named `internal/` specially: only code inside this module may import it.
+The layers are the app's own parts, not a library for other projects.
+
 ### The same thing, layer by layer
 
-| Layer | Where it lives today | What it contains |
-| --- | --- | --- |
-| **Model** | `users.go`, `alumni.go`, `health.go` | Structs (`User`, `Alumni`, `health`) and in-memory stores guarded by a mutex. The store assigns ids; a request body never does. |
-| **View** | `templates/*.html`, `render()` in `main.go`, `writeJSON()` in `alumni.go` | HTML pages for people, JSON bodies for programs. Neither one checks input or touches the store. |
-| **Controller** | the `handle…` functions in every `.go` file, routes in `main.go` | One function per route. It reads the request, returns `400` on bad input and `404` on a missing id, and otherwise calls the model and then a view. |
+| Layer | Folder | What it contains | What it must not do |
+| --- | --- | --- | --- |
+| **Model** | `internal/model` | Structs (`User`, `Alumni`, `Health`), their `Validate()` rules, and in-memory stores guarded by a mutex. The store assigns ids; a request body never does. | Touch `http.Request`, write a response, or know about HTML |
+| **View** | `internal/view` | `HTML()` for pages, `JSON()` for API bodies, `OpenAPI()` for the spec, plus the templates and `openapi.json` | Check input or read and change the stores |
+| **Controller** | `internal/controller` | One exported function per route. It returns `400` on bad input and `404` on a missing id, and otherwise calls the model and then a view. | Hold data itself, or build HTML or JSON by hand |
 
-### What is not separated yet
+### What is still on the way
 
-The surface is still small, so everything is in one Go package (`main`) and a file groups
-**by resource** (`users.go` holds the User model *and* its controllers) rather than **by layer**.
-Two honest gaps:
-
-- **Validation sits in the controller.** `validateUser` and the PATCH checks are rules about
-  the data, so they belong to the model; they move there once the model is its own package.
-- **The model has no database.** The stores are slices in memory; restarting the server resets them.
-
-When PostgreSQL arrives, the layers get their own directories:
-
-```
-internal/
-├── model/        # MODEL       User, Alumni, and their validation rules
-├── store/        # MODEL       PostgreSQL queries, replacing the in-memory stores
-├── handler/      # CONTROLLER  the handle… functions
-└── view/         # VIEW        writeJSON, render, and the templates/ folder
-migrations/       # SQL schema migrations      (planned)
-.env.example      # configuration template     (planned)
-```
-
-`cmd/api/main.go` then keeps only what a `main` should: read the configuration, connect to the
-database, register the routes, and start the server.
+- **The model has no database.** The stores are slices in memory, so restarting the server
+  resets them. When PostgreSQL arrives, the queries go in the model layer and the
+  controllers do not change.
+- **Some validation is still in a controller.** The PATCH checks (at least one field sent, no
+  empty values) live in `controller.PatchUser`. `User.Validate()` and `Alumni.Validate()` are
+  already in the model.
+- **Planned:** `migrations/` for SQL schema migrations, and `.env.example` as a configuration template.
 
 ## Roadmap
 
@@ -362,6 +362,7 @@ database, register the routes, and start the server.
 - [x] `GET` and `POST /alumni` against an in-memory store
 - [x] `/api/users` with `GET`, `POST`, `PUT`, `PATCH` and `DELETE`, still in memory
 - [x] OpenAPI document and a Swagger UI page at `/api/swagger`
+- [x] Code split into `internal/model`, `internal/view`, and `internal/controller` (MVC)
 - [ ] `docker-compose.yml` for PostgreSQL and Redis
 - [ ] Database schema and migrations
 - [ ] Move the in-memory store onto PostgreSQL
@@ -396,7 +397,7 @@ Contributions are welcome — this project grows faster with more hands.
 4. Push the branch: `git push origin feature/your-feature`
 5. Open a **Pull Request**.
 
-Before step 5, make sure `cmd/api/openapi.json` reflects any endpoint you added or changed —
+Before step 5, make sure `internal/view/openapi.json` reflects any endpoint you added or changed —
 see [Keep the API documentation current](#keep-the-api-documentation-current).
 
 ## License
