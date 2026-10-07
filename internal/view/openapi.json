@@ -10,12 +10,14 @@
   ],
   "tags": [
     { "name": "health", "description": "Sunucu ayakta mı?" },
-    { "name": "users", "description": "Kullanıcılar (bellekte)" }
+    { "name": "ApiUserController", "description": "Kullanıcılar, JSON olarak (/api/users) — programlar için. Bellekte tutulur." },
+    { "name": "UserController", "description": "Kullanıcılar, HTML sayfası olarak (/users) — tarayıcıdaki insanlar için. Formlar yalnızca GET ve POST gönderebildiğinden güncelleme ve silme burada POST'tur. Başarılı bir POST 303 ile yönlendirir; Swagger yönlendirmeyi takip edip varılan sayfayı gösterir." }
   ],
   "paths": {
     "/api/health": {
       "get": {
         "tags": ["health"],
+        "operationId": "Health",
         "summary": "Sağlık kontrolü",
         "description": "Bu uç noktaya ulaşabilmek zaten kontrolün kendisidir: süreç ayakta ve yönlendirme doğru kurulmuş demektir.",
         "responses": {
@@ -32,7 +34,8 @@
     },
     "/api/users": {
       "get": {
-        "tags": ["users"],
+        "tags": ["ApiUserController"],
+        "operationId": "ApiUserController.Index",
         "summary": "Bütün kullanıcıları listele",
         "responses": {
           "200": {
@@ -49,7 +52,8 @@
         }
       },
       "post": {
-        "tags": ["users"],
+        "tags": ["ApiUserController"],
+        "operationId": "ApiUserController.Store",
         "summary": "Yeni kullanıcı oluştur",
         "description": "id alanını sunucu verir; gövdede göndermeye çalışma.",
         "requestBody": {
@@ -85,7 +89,8 @@
         }
       ],
       "get": {
-        "tags": ["users"],
+        "tags": ["ApiUserController"],
+        "operationId": "ApiUserController.Show",
         "summary": "Tek bir kullanıcıyı getir",
         "responses": {
           "200": {
@@ -101,7 +106,8 @@
         }
       },
       "put": {
-        "tags": ["users"],
+        "tags": ["ApiUserController"],
+        "operationId": "ApiUserController.Update",
         "summary": "Kullanıcıyı bütünüyle değiştir",
         "description": "PUT kaydın yeni hâlinin tamamıdır, bu yüzden her alan zorunludur. Eksik alan gönderirsen 400 alırsın. Yalnızca bir alanı değiştirmek istiyorsan PATCH kullan.",
         "requestBody": {
@@ -127,7 +133,8 @@
         }
       },
       "patch": {
-        "tags": ["users"],
+        "tags": ["ApiUserController"],
+        "operationId": "ApiUserController.Patch",
         "summary": "Kullanıcının yalnızca gönderilen alanlarını değiştir",
         "description": "Gövdede anmadığın alanlar olduğu gibi kalır. En az bir alan göndermelisin.",
         "requestBody": {
@@ -153,7 +160,8 @@
         }
       },
       "delete": {
-        "tags": ["users"],
+        "tags": ["ApiUserController"],
+        "operationId": "ApiUserController.Destroy",
         "summary": "Kullanıcıyı sil",
         "responses": {
           "204": { "description": "Silindi; geri gönderilecek gövde yok" },
@@ -161,9 +169,116 @@
           "404": { "$ref": "#/components/responses/NotFound" }
         }
       }
+    },
+    "/users": {
+      "get": {
+        "tags": ["UserController"],
+        "operationId": "UserController.Index",
+        "summary": "Kullanıcı listesi sayfası",
+        "responses": {
+          "200": { "$ref": "#/components/responses/HtmlPage" }
+        }
+      },
+      "post": {
+        "tags": ["UserController"],
+        "operationId": "UserController.Store",
+        "summary": "Formdan yeni kullanıcı oluştur",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": { "$ref": "#/components/schemas/NewUser" }
+            }
+          }
+        },
+        "responses": {
+          "303": { "$ref": "#/components/responses/RedirectToList" },
+          "400": { "$ref": "#/components/responses/FormWithError" }
+        }
+      }
+    },
+    "/users/new": {
+      "get": {
+        "tags": ["UserController"],
+        "operationId": "UserController.Create",
+        "summary": "Boş \"yeni kullanıcı\" formu",
+        "responses": {
+          "200": { "$ref": "#/components/responses/HtmlPage" }
+        }
+      }
+    },
+    "/users/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/UserID" }],
+      "get": {
+        "tags": ["UserController"],
+        "operationId": "UserController.Show",
+        "summary": "Tek bir kullanıcının sayfası",
+        "responses": {
+          "200": { "$ref": "#/components/responses/HtmlPage" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "post": {
+        "tags": ["UserController"],
+        "operationId": "UserController.Update",
+        "summary": "Düzenleme formunu kaydet",
+        "description": "Her alan zorunludur, API'deki PUT gibi.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": { "$ref": "#/components/schemas/NewUser" }
+            }
+          }
+        },
+        "responses": {
+          "303": {
+            "description": "Kaydedildi; tarayıcı kullanıcının sayfasına (/users/{id}) gönderilir",
+            "headers": { "Location": { "schema": { "type": "string", "example": "/users/1" } } }
+          },
+          "400": { "$ref": "#/components/responses/FormWithError" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/users/{id}/edit": {
+      "parameters": [{ "$ref": "#/components/parameters/UserID" }],
+      "get": {
+        "tags": ["UserController"],
+        "operationId": "UserController.Edit",
+        "summary": "Mevcut değerlerle doldurulmuş düzenleme formu",
+        "responses": {
+          "200": { "$ref": "#/components/responses/HtmlPage" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/users/{id}/delete": {
+      "parameters": [{ "$ref": "#/components/parameters/UserID" }],
+      "post": {
+        "tags": ["UserController"],
+        "operationId": "UserController.Destroy",
+        "summary": "Kullanıcıyı sil",
+        "responses": {
+          "303": { "$ref": "#/components/responses/RedirectToList" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
     }
   },
   "components": {
+    "parameters": {
+      "UserID": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Kullanıcının id'si",
+        "schema": { "type": "integer", "example": 1 }
+      }
+    },
     "schemas": {
       "Health": {
         "type": "object",
@@ -202,6 +317,18 @@
         "content": {
           "text/plain": { "schema": { "type": "string" }, "example": "name is required" }
         }
+      },
+      "HtmlPage": {
+        "description": "HTML sayfası",
+        "content": { "text/html": { "schema": { "type": "string" } } }
+      },
+      "RedirectToList": {
+        "description": "Tamam; tarayıcı kullanıcı listesine (/users) gönderilir",
+        "headers": { "Location": { "schema": { "type": "string", "example": "/users" } } }
+      },
+      "FormWithError": {
+        "description": "Eksik alan: form, hata mesajı ve girilen değerlerle yeniden gösterilir",
+        "content": { "text/html": { "schema": { "type": "string" } } }
       },
       "NotFound": {
         "description": "Bu id'ye sahip kullanıcı yok",

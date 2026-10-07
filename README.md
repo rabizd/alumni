@@ -269,8 +269,8 @@ under `internal/`:
 - **View** (`internal/view`) — what the client receives: an HTML page or a JSON body. A view shows data and decides nothing.
 - **Controller** (`internal/controller`) — one function per route. It reads the request (URL, path values, JSON body), checks it, asks the model for data, and hands the result to a view.
 
-`cmd/api/main.go` sits outside the three layers. It only connects each route to its controller
-and starts the server.
+Routes sit outside the three layers, in `internal/routes`: `web.go` maps the HTML routes and
+`api.go` the JSON routes to their controllers. `cmd/api/main.go` registers both and starts the server.
 
 ### How one request moves through the app
 
@@ -279,7 +279,7 @@ and starts the server.
     │  GET /api/users/1
     ▼
 ┌───────────────────────────────────────┐
-│ Router      cmd/api/main.go           │  ServeMux matches method + path
+│ Router      internal/routes/api.go    │  ServeMux matches method + path
 └───────────────────┬───────────────────┘
                     ▼
 ┌───────────────────────────────────────┐
@@ -308,9 +308,13 @@ view never import a controller, and they never import each other.
 alumni/
 ├── cmd/
 │   └── api/
-│       └── main.go             # entry point: route → controller table, reads APP_PORT, starts the server
+│       └── main.go             # entry point: registers the routes, reads APP_PORT, starts the server
 │
 ├── internal/                   # the application, split into the three MVC layers
+│   ├── routes/                 # ROUTES: which URL goes to which controller
+│   │   ├── web.go              #   Web(): pages + UserController at /users  (HTML)
+│   │   └── api.go              #   API(): ApiUserController at /api/users, health, swagger, /alumni  (JSON)
+│   │
 │   ├── model/                  # MODEL
 │   │   ├── user.go             #   User + Validate(), UserPatch + Validate(), UserStore (List/Add/Find/Remove/Replace/Patch)
 │   │   ├── alumni.go           #   Alumni + Validate(), AlumniStore (List/Add)
@@ -372,6 +376,11 @@ operation is one method:
 | **Delete** | `Remove(id int) bool` | deletes the user; `false` if the id does not exist | `DELETE /api/users/{id}` |
 
 ### Two controllers for the same model
+
+The routes that reach them are defined in `internal/routes`: `web.go` sends `/users` to
+`UserController`, and `api.go` sends `/api/users` to `ApiUserController`. Both controllers are
+in the Swagger document at `/api/swagger`, each under its own tag, and every operation's
+`operationId` is the controller method that answers it (for example `ApiUserController.Show`).
 
 The users are served two ways, by two controllers in `internal/controller`. Both call the same
 `model.Users` methods; only the input and the output differ.
