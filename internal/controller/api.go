@@ -17,7 +17,7 @@ func Health(w http.ResponseWriter, r *http.Request) {
 
 // GET /api/swagger -> the Swagger UI page, which reads the spec below
 func Swagger(w http.ResponseWriter, r *http.Request) {
-	view.HTML(w, "swagger.html")
+	view.HTML(w, http.StatusOK, "swagger.html", nil)
 }
 
 // GET /api/swagger.json -> the OpenAPI document itself

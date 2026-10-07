@@ -1,0 +1,84 @@
+{{/* Shared top and bottom of the /users pages. users.html, user.html and
+user_form.html wrap their content in these two. */}}
+{{define "users_top"}}<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kullanıcılar · Alumni</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#211c18;
+    --paper:#e9e4d8;
+    --maroon:#4a0e1a;
+    --gold:#a9832d;
+    --line: rgba(33,28,24,0.16);
+    --muted:#5b5248;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'Inter', system-ui, sans-serif; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1{ font-family:'Spectral', Georgia, serif; font-weight:500; line-height:1.2; margin:0 0 1.5rem; font-size:2rem; }
+  a{ color:var(--maroon); }
+  a:focus-visible, button:focus-visible, input:focus-visible{ outline:2px solid var(--maroon); outline-offset:3px; }
+  .wrap{ max-width:44rem; margin:0 auto; padding:0 1.5rem; }
+
+  nav.top{ border-bottom:1px solid var(--line); }
+  nav.top .wrap{ display:flex; align-items:center; justify-content:space-between; padding-top:1.1rem; padding-bottom:1.1rem; }
+  .brand{ font-family:'Spectral', serif; font-size:1.05rem; color:var(--ink); text-decoration:none; }
+  .brand b{ color:var(--maroon); font-weight:600; }
+  nav.top a.link{ color:var(--ink); text-decoration:none; font-size:0.92rem; }
+  nav.top a.link:hover{ color:var(--maroon); }
+
+  main{ padding:3rem 0 4rem; }
+  table{ width:100%; border-collapse:collapse; margin-bottom:1.5rem; }
+  th{ text-align:left; color:var(--muted); font-weight:500; font-size:0.85rem; padding:0.5rem 0; border-bottom:1px solid var(--line); }
+  td{ padding:0.7rem 0; border-bottom:1px solid var(--line); vertical-align:middle; }
+  td.actions{ text-align:right; white-space:nowrap; }
+  td.actions form{ display:inline; }
+
+  dl{ display:grid; grid-template-columns:7rem 1fr; gap:0.6rem 1rem; margin:0 0 2rem; }
+  dt{ color:var(--muted); }
+  dd{ margin:0; }
+
+  label{ display:block; font-size:0.9rem; color:var(--muted); margin-bottom:0.3rem; }
+  input[type=text], input[type=email]{
+    width:100%; padding:0.6rem 0.7rem; margin-bottom:1.1rem;
+    font:inherit; color:var(--ink); background:#f6f2ea;
+    border:1px solid var(--line); border-radius:3px;
+  }
+  .error{ background:#f3dcd8; color:var(--maroon); padding:0.7rem 0.9rem; border-radius:3px; margin-bottom:1.2rem; }
+
+  .btn, button{
+    display:inline-block; font:inherit; font-size:0.92rem; cursor:pointer;
+    padding:0.5rem 1rem; border-radius:3px; text-decoration:none;
+    background:var(--maroon); color:#f2e9df; border:1px solid var(--maroon);
+  }
+  .btn.ghost, button.ghost{ background:transparent; color:var(--maroon); }
+  .row{ display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center; }
+  .empty{ color:var(--muted); }
+</style>
+</head>
+<body>
+<nav class="top">
+  <div class="wrap">
+    <a class="brand" href="/main"><b>İ.Ü.</b> Alumni</a>
+    <a class="link" href="/users">Kullanıcılar</a>
+  </div>
+</nav>
+<main>
+  <div class="wrap">
+{{end}}
+
+{{define "users_bottom"}}
+  </div>
+</main>
+</body>
+</html>
+{{end}}

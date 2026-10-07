@@ -9,13 +9,17 @@ import (
 	"github.com/rabizd/alumni/internal/view"
 )
 
-// GET /api/users -> every user, as a JSON array
-func ListUsers(w http.ResponseWriter, r *http.Request) {
+// ApiUserController answers /api/users with JSON, for programs rather than
+// people. UserController serves the same users as HTML pages.
+type ApiUserController struct{}
+
+// Index: GET /api/users -> every user, as a JSON array
+func (ApiUserController) Index(w http.ResponseWriter, r *http.Request) {
 	view.JSON(w, http.StatusOK, model.Users.List())
 }
 
-// GET /api/users/{id} -> one user, or 404
-func GetUser(w http.ResponseWriter, r *http.Request) {
+// Show: GET /api/users/{id} -> one user, or 404
+func (ApiUserController) Show(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathID(w, r)
 	if !ok {
 		return
@@ -30,24 +34,8 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	view.JSON(w, http.StatusOK, u)
 }
 
-// DELETE /api/users/{id} -> 204 with an empty body, or 404
-func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	id, ok := pathID(w, r)
-	if !ok {
-		return
-	}
-
-	if !model.Users.Remove(id) {
-		http.Error(w, "no user with that id", http.StatusNotFound)
-		return
-	}
-
-	// 204 No Content: it worked, and there is nothing left to send back.
-	w.WriteHeader(http.StatusNoContent)
-}
-
-// POST /api/users -> create a user; 201 with the id the server assigned
-func CreateUser(w http.ResponseWriter, r *http.Request) {
+// Store: POST /api/users -> create a user; 201 with the id the server assigned
+func (ApiUserController) Store(w http.ResponseWriter, r *http.Request) {
 	var u model.User
 	if !decodeJSON(w, r, &u) {
 		return
@@ -61,8 +49,8 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	view.JSON(w, http.StatusCreated, model.Users.Add(u))
 }
 
-// PUT /api/users/{id} -> replace the whole user, so every field is required
-func ReplaceUser(w http.ResponseWriter, r *http.Request) {
+// Update: PUT /api/users/{id} -> replace the whole user, so every field is required
+func (ApiUserController) Update(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathID(w, r)
 	if !ok {
 		return
@@ -87,8 +75,8 @@ func ReplaceUser(w http.ResponseWriter, r *http.Request) {
 	view.JSON(w, http.StatusOK, updated)
 }
 
-// PATCH /api/users/{id} -> change only the fields the body mentions
-func PatchUser(w http.ResponseWriter, r *http.Request) {
+// Patch: PATCH /api/users/{id} -> change only the fields the body mentions
+func (ApiUserController) Patch(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathID(w, r)
 	if !ok {
 		return
@@ -111,4 +99,20 @@ func PatchUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	view.JSON(w, http.StatusOK, updated)
+}
+
+// Destroy: DELETE /api/users/{id} -> 204 with an empty body, or 404
+func (ApiUserController) Destroy(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r)
+	if !ok {
+		return
+	}
+
+	if !model.Users.Remove(id) {
+		http.Error(w, "no user with that id", http.StatusNotFound)
+		return
+	}
+
+	// 204 No Content: it worked, and there is nothing left to send back.
+	w.WriteHeader(http.StatusNoContent)
 }

@@ -187,3 +187,32 @@ Content-Type: application/json
 
 ### Wrong method on an existing path -> 405 Method Not Allowed
 DELETE {{host}}/alumni
+
+### --- /users: the HTML side (UserController). Easiest in a browser: {{host}}/users
+
+### User list page
+GET {{host}}/users
+
+### Create from a form -> 303 redirect to /users
+POST {{host}}/users
+Content-Type: application/x-www-form-urlencoded
+
+name=Zeynep&email=zeynep@example.com
+
+### Empty name -> 400, the form comes back with the error
+POST {{host}}/users
+Content-Type: application/x-www-form-urlencoded
+
+name=&email=zeynep@example.com
+
+### Edit form, filled in
+GET {{host}}/users/1/edit
+
+### Save the edit form -> 303 redirect to /users/1
+POST {{host}}/users/1
+Content-Type: application/x-www-form-urlencoded
+
+name=Ayşe Yılmaz&email=ayse.yilmaz@example.com
+
+### Delete -> 303 redirect to /users
+POST {{host}}/users/2/delete
