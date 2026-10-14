@@ -339,6 +339,26 @@ The `seed` service has the `tools` profile, so `docker compose up` does not star
 runs when you ask. Running it twice adds more random records but never a second copy of the
 samples.
 
+### Looking inside the database
+
+**In the browser — Adminer.** `docker compose up` also starts Adminer, a small database viewer.
+Open <http://localhost:8081> and log in:
+
+| Field | Value |
+| --- | --- |
+| System | `PostgreSQL` |
+| Server | `db` |
+| Username | `DB_USER` from `.env` (`alumni`) |
+| Password | the contents of `secrets/db_password.txt` |
+| Database | `DB_NAME` from `.env` (`alumni`) |
+
+Click a table, then **Select data**, to see its rows. Edit a graduate at `/graduates`, refresh
+Adminer, and the change is there. Adminer listens on `127.0.0.1` only, so other computers on the
+network cannot reach it.
+
+**In the terminal — psql.** `docker compose exec db psql -U alumni -d alumni`, then SQL such as
+`SELECT * FROM alumni;`. `\dt` lists the tables, `\q` quits.
+
 ## Configuration
 
 Settings live in a **`.env`** file in the project root. Docker Compose reads it automatically
@@ -358,6 +378,7 @@ else's checkout. When a new variable is added, it goes into `.env.example` too.
 | `DB_USER` | PostgreSQL user | `alumni` |
 | `DB_NAME` | PostgreSQL database name | `alumni` |
 | `DB_PORT` | Port PostgreSQL is reachable on from your machine | `5432` |
+| `ADMINER_PORT` | Port of Adminer, the database viewer (optional; `8081` if unset) | `8081` |
 
 Compose also passes two fixed values to the app: `DB_HOST=db` (the database container's name)
 and `DB_PASSWORD_FILE=/run/secrets/db_password`. When you `go run ./cmd/api` outside Docker, the
