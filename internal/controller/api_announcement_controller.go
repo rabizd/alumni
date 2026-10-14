@@ -13,7 +13,13 @@ type ApiAnnouncementController struct{}
 
 // Index: GET /api/announcements -> every announcement, newest first
 func (ApiAnnouncementController) Index(w http.ResponseWriter, r *http.Request) {
-	view.JSON(w, http.StatusOK, model.Announcements.List())
+	list, err := model.Announcements.List()
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+
+	view.JSON(w, http.StatusOK, list)
 }
 
 // Show: GET /api/announcements/{id} -> one announcement, or 404
@@ -23,7 +29,11 @@ func (ApiAnnouncementController) Show(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a, found := model.Announcements.Find(id)
+	a, found, err := model.Announcements.Find(id)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
 	if !found {
 		http.Error(w, "no announcement with that id", http.StatusNotFound)
 		return
@@ -44,7 +54,13 @@ func (ApiAnnouncementController) Store(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	view.JSON(w, http.StatusCreated, model.Announcements.Add(a))
+	created, err := model.Announcements.Add(a)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+
+	view.JSON(w, http.StatusCreated, created)
 }
 
 // Update: PUT /api/announcements/{id} -> replace title, body and author
@@ -64,7 +80,11 @@ func (ApiAnnouncementController) Update(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	updated, found := model.Announcements.Replace(id, a)
+	updated, found, err := model.Announcements.Replace(id, a)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
 	if !found {
 		http.Error(w, "no announcement with that id", http.StatusNotFound)
 		return
@@ -80,7 +100,12 @@ func (ApiAnnouncementController) Destroy(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if !model.Announcements.Remove(id) {
+	found, err := model.Announcements.Remove(id)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+	if !found {
 		http.Error(w, "no announcement with that id", http.StatusNotFound)
 		return
 	}

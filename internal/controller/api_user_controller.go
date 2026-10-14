@@ -15,7 +15,13 @@ type ApiUserController struct{}
 
 // Index: GET /api/users -> every user, as a JSON array
 func (ApiUserController) Index(w http.ResponseWriter, r *http.Request) {
-	view.JSON(w, http.StatusOK, model.Users.List())
+	list, err := model.Users.List()
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+
+	view.JSON(w, http.StatusOK, list)
 }
 
 // Show: GET /api/users/{id} -> one user, or 404
@@ -25,7 +31,11 @@ func (ApiUserController) Show(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, found := model.Users.Find(id)
+	u, found, err := model.Users.Find(id)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
 	if !found {
 		http.Error(w, "no user with that id", http.StatusNotFound)
 		return
@@ -46,7 +56,13 @@ func (ApiUserController) Store(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	view.JSON(w, http.StatusCreated, model.Users.Add(u))
+	created, err := model.Users.Add(u)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+
+	view.JSON(w, http.StatusCreated, created)
 }
 
 // Update: PUT /api/users/{id} -> replace the whole user, so every field is required
@@ -66,7 +82,11 @@ func (ApiUserController) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated, found := model.Users.Replace(id, u)
+	updated, found, err := model.Users.Replace(id, u)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
 	if !found {
 		http.Error(w, "no user with that id", http.StatusNotFound)
 		return
@@ -92,13 +112,31 @@ func (ApiUserController) Patch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated, found, err := model.Users.Patch(id, p)
+	existing, found, err := model.Users.Find(id)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
 	if !found {
 		http.Error(w, "no user with that id", http.StatusNotFound)
 		return
 	}
-	if err != nil {
+
+	// Some rules need both old and new values (graduation before start), so
+	// check the patched user as a whole before saving anything.
+	patched := existing.Apply(p)
+	if err := patched.Validate(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	updated, found, err := model.Users.Replace(id, patched)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+	if !found {
+		http.Error(w, "no user with that id", http.StatusNotFound)
 		return
 	}
 
@@ -112,7 +150,12 @@ func (ApiUserController) Destroy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !model.Users.Remove(id) {
+	found, err := model.Users.Remove(id)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+	if !found {
 		http.Error(w, "no user with that id", http.StatusNotFound)
 		return
 	}

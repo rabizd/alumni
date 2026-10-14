@@ -1,9 +1,9 @@
 package model
 
 import (
+	"context"
 	"errors"
 	"strings"
-	"sync"
 )
 
 // Alumni is one graduate. The json tags decide the field names in the API:
@@ -24,33 +24,35 @@ func (a *Alumni) Validate() error {
 	return nil
 }
 
-// AlumniStore keeps the graduates in memory for now, so everything is lost
-// when the server restarts. PostgreSQL replaces this later.
-type AlumniStore struct {
-	mu     sync.Mutex
-	nextID int
-	items  []Alumni
+// AlumniStore reads and writes the alumni table in PostgreSQL. The table and
+// the two starting graduates come from db/init.sql.
+type AlumniStore struct{}
+
+var Graduates = &AlumniStore{}
+
+func (s *AlumniStore) List() ([]Alumni, error) {
+	rows, err := db.Query(context.Background(),
+		"SELECT id, name, department, graduation_year FROM alumni ORDER BY id")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := []Alumni{}
+	for rows.Next() {
+		var a Alumni
+		if err := rows.Scan(&a.ID, &a.Name, &a.Department, &a.GraduationYear); err != nil {
+			return nil, err
+		}
+		out = append(out, a)
+	}
+	return out, rows.Err()
 }
 
-var Graduates = &AlumniStore{
-	nextID: 3,
-	items: []Alumni{
-		{ID: 1, Name: "Ayşe Yılmaz", Department: "Bilgisayar Mühendisliği", GraduationYear: 2021},
-		{ID: 2, Name: "Mehmet Demir", Department: "Hukuk", GraduationYear: 2019},
-	},
-}
-
-func (s *AlumniStore) List() []Alumni {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return append([]Alumni(nil), s.items...)
-}
-
-func (s *AlumniStore) Add(a Alumni) Alumni {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	a.ID = s.nextID
-	s.nextID++
-	s.items = append(s.items, a)
-	return a
+// Add stores the graduate. The database gives it the next id.
+func (s *AlumniStore) Add(a Alumni) (Alumni, error) {
+	err := db.QueryRow(context.Background(),
+		"INSERT INTO alumni (name, department, graduation_year) VALUES ($1, $2, $3) RETURNING id",
+		a.Name, a.Department, a.GraduationYear).Scan(&a.ID)
+	return a, err
 }

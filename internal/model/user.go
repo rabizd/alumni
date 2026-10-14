@@ -3,15 +3,16 @@
 package model
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
-// User is one account on the network. No database yet: the users live in
-// memory, so they are gone when the server restarts.
+// User is one account on the network.
 type User struct {
 	ID             int    `json:"id"`
 	Name           string `json:"name"`
@@ -90,8 +91,8 @@ func (p *UserPatch) Validate() error {
 	return nil
 }
 
-// apply returns u with every field the patch mentions replaced.
-func (u User) apply(p UserPatch) User {
+// Apply returns u with every field the patch mentions replaced.
+func (u User) Apply(p UserPatch) User {
 	if p.Name != nil {
 		u.Name = *p.Name
 	}
@@ -122,92 +123,73 @@ func (u User) apply(p UserPatch) User {
 	return u
 }
 
-type UserStore struct {
-	mu     sync.Mutex
-	nextID int
-	items  []User
+// UserStore reads and writes the users table in PostgreSQL, so users survive
+// a restart. The table and the two starting users come from db/init.sql.
+type UserStore struct{}
+
+var Users = &UserStore{}
+
+const userColumns = "id, name, email, department, start_year, graduation_year, double_major, minor, advisor, prep_exempt"
+
+func scanUser(row interface{ Scan(...any) error }) (User, error) {
+	var u User
+	err := row.Scan(&u.ID, &u.Name, &u.Email, &u.Department, &u.StartYear, &u.GraduationYear,
+		&u.DoubleMajor, &u.Minor, &u.Advisor, &u.PrepExempt)
+	return u, err
 }
 
-var Users = &UserStore{
-	nextID: 3,
-	items: []User{
-		{ID: 1, Name: "Ayşe Yılmaz", Email: "ayse@example.com", Department: "Bilgisayar Mühendisliği",
-			StartYear: 2017, GraduationYear: 2021, DoubleMajor: "Matematik", Advisor: "Prof. Dr. Ahmet Kaya", PrepExempt: true},
-		{ID: 2, Name: "Mehmet Demir", Email: "mehmet@example.com", Department: "Hukuk",
-			StartYear: 2015, GraduationYear: 2019, Minor: "İşletme"},
-	},
+func (s *UserStore) List() ([]User, error) {
+	rows, err := db.Query(context.Background(), "SELECT "+userColumns+" FROM users ORDER BY id")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := []User{}
+	for rows.Next() {
+		u, err := scanUser(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, u)
+	}
+	return out, rows.Err()
 }
 
-func (s *UserStore) List() []User {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return append([]User(nil), s.items...)
-}
-
-func (s *UserStore) Add(u User) User {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	u.ID = s.nextID
-	s.nextID++
-	s.items = append(s.items, u)
-	return u
+// Add stores the user. The database gives it the next id.
+func (s *UserStore) Add(u User) (User, error) {
+	return scanUser(db.QueryRow(context.Background(),
+		`INSERT INTO users (name, email, department, start_year, graduation_year, double_major, minor, advisor, prep_exempt)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING `+userColumns,
+		u.Name, u.Email, u.Department, u.StartYear, u.GraduationYear, u.DoubleMajor, u.Minor, u.Advisor, u.PrepExempt))
 }
 
 // Find returns the user with the given id. The bool reports whether it existed.
-func (s *UserStore) Find(id int) (User, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for _, u := range s.items {
-		if u.ID == id {
-			return u, true
-		}
-	}
-	return User{}, false
+func (s *UserStore) Find(id int) (User, bool, error) {
+	return foundUser(scanUser(db.QueryRow(context.Background(),
+		"SELECT "+userColumns+" FROM users WHERE id = $1", id)))
 }
 
 // Remove deletes the user with the given id, reporting whether it existed.
-func (s *UserStore) Remove(id int) bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, u := range s.items {
-		if u.ID == id {
-			s.items = append(s.items[:i], s.items[i+1:]...)
-			return true
-		}
-	}
-	return false
+func (s *UserStore) Remove(id int) (bool, error) {
+	tag, err := db.Exec(context.Background(), "DELETE FROM users WHERE id = $1", id)
+	return tag.RowsAffected() > 0, err
 }
 
 // Replace overwrites every field of the user with the given id. The bool
 // reports whether such a user existed.
-func (s *UserStore) Replace(id int, u User) (User, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, existing := range s.items {
-		if existing.ID == id {
-			u.ID = id // the id belongs to the server, not to the request body
-			s.items[i] = u
-			return u, true
-		}
-	}
-	return User{}, false
+func (s *UserStore) Replace(id int, u User) (User, bool, error) {
+	return foundUser(scanUser(db.QueryRow(context.Background(),
+		`UPDATE users SET name = $1, email = $2, department = $3, start_year = $4, graduation_year = $5,
+		 double_major = $6, minor = $7, advisor = $8, prep_exempt = $9
+		 WHERE id = $10 RETURNING `+userColumns,
+		u.Name, u.Email, u.Department, u.StartYear, u.GraduationYear, u.DoubleMajor, u.Minor, u.Advisor, u.PrepExempt, id)))
 }
 
-// Patch changes only the fields the client actually sent. The bool reports
-// whether the user existed; the error reports a patched user that would break
-// a rule, in which case nothing is saved.
-func (s *UserStore) Patch(id int, p UserPatch) (User, bool, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, existing := range s.items {
-		if existing.ID == id {
-			patched := existing.apply(p)
-			if err := patched.Validate(); err != nil {
-				return User{}, true, err
-			}
-			s.items[i] = patched
-			return patched, true, nil
-		}
+// foundUser turns "no row" into found=false instead of an error.
+func foundUser(u User, err error) (User, bool, error) {
+	if errors.Is(err, pgx.ErrNoRows) {
+		return User{}, false, nil
 	}
-	return User{}, false, nil
+	return u, err == nil, err
 }

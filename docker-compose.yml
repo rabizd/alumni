@@ -5,4 +5,42 @@ services:
       - "8080:8080"
     environment:
       APP_PORT: "8080"
+      DB_HOST: db
+      DB_USER: alumni
+      DB_NAME: alumni
+      DB_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: alumni
+      POSTGRES_DB: alumni
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    volumes:
+      # the named volume outlives `docker compose down`; only `down -v` deletes it
+      - db-data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alumni -d alumni"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
+# the password is a file, not an environment variable, and secrets/ is not committed
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+
+volumes:
+  db-data:
