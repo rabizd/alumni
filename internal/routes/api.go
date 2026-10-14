@@ -32,4 +32,7 @@ func API(mux *http.ServeMux) {
 
 	mux.HandleFunc("GET /alumni", controller.ListAlumni)
 	mux.HandleFunc("POST /alumni", controller.CreateAlumni)
+	mux.HandleFunc("GET /alumni/{id}", controller.ShowAlumni)
+	mux.HandleFunc("PUT /alumni/{id}", controller.UpdateAlumni)
+	mux.HandleFunc("DELETE /alumni/{id}", controller.DeleteAlumni)
 }

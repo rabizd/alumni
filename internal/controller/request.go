@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -27,4 +28,11 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
 		return false
 	}
 	return true
+}
+
+// dbError answers 500 when the database fails. The client only sees "database
+// error"; the real error goes to the log, where the developer can read it.
+func dbError(w http.ResponseWriter, err error) {
+	log.Printf("database error: %v", err)
+	http.Error(w, "database error", http.StatusInternalServerError)
 }

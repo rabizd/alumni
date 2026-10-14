@@ -160,6 +160,10 @@ so they survive a restart and `docker compose down`.
 | `PUT /api/announcements/{id}`, `DELETE /api/announcements/{id}` | replaces title, body and author; deletes (`204`) |
 | `GET /alumni` | every graduate, as a JSON array |
 | `POST /alumni` | creates a graduate; `201` with the assigned id |
+| `GET /alumni/{id}`, `PUT /alumni/{id}`, `DELETE /alumni/{id}` | one graduate; replace name, department and year; delete (`204`) |
+| `GET /graduates` | HTML page listing every graduate, with edit and delete buttons and a create form |
+| `GET /graduates/new`, `GET /graduates/{id}`, `GET /graduates/{id}/edit` | empty form, one graduate, edit form |
+| `POST /graduates`, `POST /graduates/{id}`, `POST /graduates/{id}/delete` | create, save an edit, delete; each redirects (`303`) |
 | `GET /hello`, `GET /hello/{name}` | greeting, from the lecture exercises |
 | `GET /sum/{number1}/{number2}` | the sum, or `400` on non-numeric input |
 | `GET /temporary` | `307` temporary redirect to `/main` |
@@ -251,15 +255,18 @@ Honest unknowns, written down so they are decided deliberately rather than by ac
 ```bash
 git clone https://github.com/rabizd/alumni.git
 cd alumni
-echo "pick-any-password" > secrets/db_password.txt   # the database password, never committed
-docker compose up --build
+cp .env.example .env                                  # settings: ports, database user and name
+echo "pick-any-password" > secrets/db_password.txt   # the database password
+docker compose up --build -d
+docker compose run --rm seed                          # fill the empty tables with sample data
 ```
 
-Then open <http://localhost:8080/main>. Compose starts two containers: `db` (PostgreSQL) and
-`app` (the Go server). The app waits until the database is healthy before it starts.
+Then open <http://localhost:8080/main>. Compose starts `db` (PostgreSQL), runs `migrate` to
+create the tables, then starts `app` (the Go server). The tables start empty; `seed` fills them
+(see [Factories and seeding](#factories-and-seeding)).
 
-`secrets/db_password.txt` must exist before the first `docker compose up`, otherwise Compose
-stops with an error. The password is set when the database is created for the first time;
+`.env` and `secrets/db_password.txt` must exist before the first `docker compose up`, otherwise
+Compose stops with an error that names what is missing. Neither file is committed. The password is set when the database is created for the first time;
 changing the file later does not change it (run `docker compose down -v` to start over).
 
 To run the Go code without Docker while the database container is up:
@@ -276,29 +283,93 @@ containers but not the volume, so the data is still there on the next `up`:
 4. `GET /api/users` — the record is still there
 
 Only `docker compose down -v` deletes the volume, and with it every record. On the next start
-`db/init.sql` runs again: it creates the tables and the sample rows, and it only runs when the
-volume is empty.
+the migrations run again from the first one and bring back the empty tables; run `seed` to fill them.
+
+### Migrations
+
+The database schema is built by **migrations**: numbered SQL files in `migrations/`, applied in
+order by [golang-migrate](https://github.com/golang-migrate/migrate). Each one has two halves:
+
+| File | Does |
+| --- | --- |
+| `000001_create_users.up.sql` | applies the change (`CREATE TABLE users …`) |
+| `000001_create_users.down.sql` | undoes it (`DROP TABLE users`) |
+
+On every `docker compose up`, the `migrate` service runs first, applies only the migrations the
+database has not seen yet, and exits; the app starts after it succeeds. The database remembers
+the last applied number in its `schema_migrations` table, so an `up` with nothing new prints
+`no change` and the data is untouched.
+
+**Changing the schema** never needs `down -v`: add the next pair of files, for example
+
+```
+migrations/000004_add_city_to_users.up.sql     ALTER TABLE users ADD COLUMN city TEXT NOT NULL DEFAULT '';
+migrations/000004_add_city_to_users.down.sql   ALTER TABLE users DROP COLUMN city;
+```
+
+and run `docker compose up -d` (or `docker compose run --rm migrate up`). The existing rows stay.
+
+| Command | What it does |
+| --- | --- |
+| `docker compose run --rm migrate up` | apply every new migration |
+| `docker compose run --rm migrate down 1` | undo the last migration |
+| `docker compose run --rm migrate version` | print the number of the last applied migration |
+
+> ⚠️ Never edit a migration that has already run — the database will not run it again. Add a
+> new one instead.
+
+Migrations hold only the **structure**. The rows come from the seeder.
+
+### Factories and seeding
+
+| Part | File | What it does |
+| --- | --- | --- |
+| **Factory** | `internal/seed/factory.go` | makes one random but valid record: `User()`, `Announcement()`, `Alumni()`. Names, departments and years are picked from Turkish lists; every user passes `User.Validate()` (start year in range, graduation after start, never in the future) and gets a unique email |
+| **Seeder** | `internal/seed/seeder.go` | puts the fixed samples (Ayşe Yılmaz, Mehmet Demir, two announcements) into any **empty** table, then adds the random records. Each record goes through `Validate()` and the normal store, like an API request |
+| **Command** | `cmd/seed/main.go` | runs the seeder; the `seed` service in `docker-compose.yml` runs it in Docker |
+
+| Command | What it does |
+| --- | --- |
+| `docker compose run --rm seed` | samples (if the table is empty) + 10 users, 5 announcements, 10 alumni |
+| `docker compose run --rm seed -users 50 -alumni 0` | choose how many random records of each kind |
+| `docker compose run --rm seed -fresh` | empty every table first (ids start from 1 again), then seed |
+| `docker compose run --rm seed -seed 42` | a fixed random seed: the same number always makes the same records |
+
+The `seed` service has the `tools` profile, so `docker compose up` does not start it; it only
+runs when you ask. Running it twice adds more random records but never a second copy of the
+samples.
 
 ## Configuration
 
-`docker-compose.yml` sets these for the app container. The defaults are for `go run` on your
-own machine:
+Settings live in a **`.env`** file in the project root. Docker Compose reads it automatically
+and puts the values into `docker-compose.yml` wherever it says `${...}`.
 
-| Variable | Description | Default |
+| File | Committed? | What it is |
 | --- | --- | --- |
-| `APP_PORT` | Port the API listens on | `8080` |
-| `DB_HOST` | PostgreSQL host (`db` inside Compose) | `localhost` |
-| `DB_USER` | Database user | `alumni` |
-| `DB_NAME` | Database name | `alumni` |
-| `DB_PASSWORD_FILE` | File the database password is read from | `secrets/db_password.txt` |
+| `.env.example` | ✅ yes | the template: every variable, with safe example values and a comment |
+| `.env` | ❌ no, in `.gitignore` | your own copy (`cp .env.example .env`), with your values |
+
+Each machine has its own `.env`, so changing a port on your laptop never ends up in someone
+else's checkout. When a new variable is added, it goes into `.env.example` too.
+
+| Variable (in `.env`) | Description | Example |
+| --- | --- | --- |
+| `APP_PORT` | Port the API listens on, inside the container and on your machine | `8080` |
+| `DB_USER` | PostgreSQL user | `alumni` |
+| `DB_NAME` | PostgreSQL database name | `alumni` |
+| `DB_PORT` | Port PostgreSQL is reachable on from your machine | `5432` |
+
+Compose also passes two fixed values to the app: `DB_HOST=db` (the database container's name)
+and `DB_PASSWORD_FILE=/run/secrets/db_password`. When you `go run ./cmd/api` outside Docker, the
+app falls back to `localhost`, `alumni` and `secrets/db_password.txt`.
 
 The password is a **Docker Compose secret**, not an environment variable. Compose mounts
 `secrets/db_password.txt` into both containers as `/run/secrets/db_password`; Postgres reads it
 through `POSTGRES_PASSWORD_FILE` and the app through `DB_PASSWORD_FILE`. Environment variables
 show up in `docker inspect` and in logs; a secret file does not.
 
-> 🔒 Never commit `secrets/db_password.txt`. `.gitignore` keeps everything in `secrets/` out of
-> git (except an empty `.gitkeep`), and `.dockerignore` keeps it out of the image.
+> 🔒 Never commit `.env` or `secrets/db_password.txt`. `.gitignore` keeps both out of git, and
+> `.dockerignore` keeps both out of the image. Only `.env.example` belongs in version control.
 
 *Planned:* `REDIS_URL` for sessions and `JWT_SECRET` for signing tokens.
 
@@ -349,8 +420,10 @@ view never import a controller, and they never import each other.
 ```
 alumni/
 ├── cmd/
-│   └── api/
-│       └── main.go             # entry point: registers the routes, reads APP_PORT, starts the server
+│   ├── api/
+│   │   └── main.go             # entry point: registers the routes, reads APP_PORT, starts the server
+│   └── seed/
+│       └── main.go             # seed command: -users, -announcements, -alumni, -fresh, -seed
 │
 ├── internal/                   # the application, split into the three MVC layers
 │   ├── routes/                 # ROUTES: which URL goes to which controller
@@ -361,8 +434,12 @@ alumni/
 │   │   ├── db.go               #   Connect(): opens the PostgreSQL pool, reads the password from the secret file
 │   │   ├── user.go             #   User (+ department, years, ÇAP, yandal, advisor, prep exemption) + Validate(), UserPatch, UserStore (List/Add/Find/Remove/Replace), Apply()
 │   │   ├── announcement.go     #   Announcement + Validate(), AnnouncementStore (List/Add/Find/Replace/Remove)
-│   │   ├── alumni.go           #   Alumni + Validate(), AlumniStore (List/Add)
+│   │   ├── alumni.go           #   Alumni + Validate(), AlumniStore (List/Add/Find/Replace/Remove)
 │   │   └── health.go           #   Health, the {"status":"ok"} shape
+│   │
+│   ├── seed/                   # FACTORIES + SEEDER
+│   │   ├── factory.go          #   random valid User / Announcement / Alumni
+│   │   └── seeder.go           #   Run(): samples into empty tables, then random records
 │   │
 │   ├── view/                   # VIEW
 │   │   ├── view.go             #   HTML() renders a template with data, JSON() writes a JSON body, OpenAPI() serves the spec
@@ -371,10 +448,13 @@ alumni/
 │   │       ├── main.html       #     landing page, lists every route
 │   │       ├── about.html      #     about page
 │   │       ├── swagger.html    #     Swagger UI, loads /api/swagger.json
-│   │       ├── layout.html     #     shared top and bottom of every page, and the form fields of both resources
+│   │       ├── layout.html     #     shared top and bottom of every page, and the form fields of each resource
 │   │       ├── announcements.html #  announcement list + create form
 │   │       ├── announcement.html #   one announcement
 │   │       ├── announcement_form.html # create and edit form
+│   │       ├── graduates.html  #     graduate list + create form
+│   │       ├── graduate.html   #     one graduate
+│   │       ├── graduate_form.html # create and edit form
 │   │       ├── users.html      #     user list
 │   │       ├── user.html       #     one user
 │   │       └── user_form.html  #     create and edit form
@@ -385,19 +465,20 @@ alumni/
 │       ├── user_controller.go  #   UserController: HTML at /users  (Index, Show, Create, Store, Edit, Update, Destroy)
 │       ├── api_announcement_controller.go # ApiAnnouncementController: JSON at /api/announcements  (Index, Show, Store, Update, Destroy)
 │       ├── announcement_controller.go     # AnnouncementController: HTML at /announcements  (Index, Show, Create, Store, Edit, Update, Destroy)
-│       ├── alumni.go           #   ListAlumni, CreateAlumni
+│       ├── alumni.go           #   JSON at /alumni: ListAlumni, CreateAlumni, ShowAlumni, UpdateAlumni, DeleteAlumni
+│       ├── graduate_controller.go # GraduateController: HTML at /graduates  (Index, Show, Create, Store, Edit, Update, Destroy)
 │       ├── api.go              #   Health, Swagger, SwaggerSpec
-│       └── request.go          #   shared helpers: pathID (reads {id}), decodeJSON (strict body parsing)
+│       └── request.go          #   shared helpers: pathID (reads {id}), decodeJSON (strict body parsing), dbError (logs, answers 500)
 │
-├── db/
-│   └── init.sql                # tables + sample rows; Postgres runs it once, when the volume is empty
+├── migrations/                 # numbered schema changes, NNNNNN_name.up.sql + .down.sql, applied in order
 ├── secrets/                    # db_password.txt lives here (not committed)
 │
 ├── requests.http               # every endpoint, for the VS Code REST Client (manual testing)
 ├── Dockerfile                  # two-stage build: compile in golang, run in a small alpine image
-├── docker-compose.yml          # app on port 8080 + PostgreSQL with the db-data volume and the password secret
+├── docker-compose.yml          # app on port 8080, migrate (runs migrations/), PostgreSQL with the db-data volume and the password secret
 ├── .dockerignore               # files kept out of the Docker build
-├── .gitignore                  # keeps secrets/ out of git
+├── .env.example                # template for .env: copy it, then change the values
+├── .gitignore                  # keeps .env and secrets/ out of git
 ├── go.mod                      # Go module: github.com/rabizd/alumni, Go 1.22, pgx (PostgreSQL driver)
 ├── README.md
 ├── DDD.md                      # Data Design Documentation: tables, columns, rules
@@ -413,12 +494,12 @@ The layers are the app's own parts, not a library for other projects.
 | --- | --- | --- | --- |
 | **Model** | `internal/model` | Structs (`User`, `UserPatch`, `Alumni`, `Health`), their `Validate()` rules (trimming spaces, required fields, the PATCH checks), and stores that run the SQL queries. The database assigns ids; a request body never does. | Touch `http.Request`, write a response, or know about HTML |
 | **View** | `internal/view` | `HTML()` for pages, `JSON()` for API bodies, `OpenAPI()` for the spec, plus the templates and `openapi.json` | Check input or read and change the stores |
-| **Controller** | `internal/controller` | One function per route; the two user controllers are structs whose methods are the CRUD actions. It returns `400` on bad input and `404` on a missing id, and otherwise calls the model and then a view. | Hold data itself, or build HTML or JSON by hand |
+| **Controller** | `internal/controller` | One function per route; the two user controllers are structs whose methods are the CRUD actions. It returns `400` on bad input, `404` on a missing id and `500` when the database fails (the real error goes to the log), and otherwise calls the model and then a view. | Hold data itself, or build HTML or JSON by hand |
 
 ### The User model: CRUD on PostgreSQL
 
 `internal/model/user.go` is the User model. `model.Users` reads and writes the `users` table;
-`db/init.sql` creates it with two sample users. Each CRUD operation is one method, and each
+`migrations/000001_create_users.up.sql` creates it and the seeder fills it. Each CRUD operation is one method, and each
 also returns an `error` when the database fails (the controllers answer `500`):
 
 | CRUD | Method on `model.Users` | What it does | Route that uses it |
@@ -472,7 +553,7 @@ A PATCH is applied first and the patched user is validated as a whole, so changi
 
 `internal/model/announcement.go` is the Announcement model. It has a title, a body, an author,
 and a `createdAt` time that the database sets. `model.Announcements` reads and writes the
-`announcements` table, which `db/init.sql` starts with two samples. `List()` returns the newest first.
+`announcements` table, which `migrations/000002_create_announcements.up.sql` creates and the seeder fills. `List()` returns the newest first.
 
 | CRUD | Model (`model.Announcements`) | `ApiAnnouncementController` (JSON) | `AnnouncementController` (HTML, the management interface) |
 | --- | --- | --- | --- |
@@ -483,12 +564,32 @@ and a `createdAt` time that the database sets. `model.Announcements` reads and w
 
 Title, body and author are required; `Announcement.Validate()` trims them and rejects any that
 are empty. The management interface is at `/announcements`, and the navigation bar on every
-`/users` and `/announcements` page links to both.
+page links to `/users`, `/announcements` and `/graduates`.
+
+### Graduates: the alumni table, with both interfaces
+
+The `alumni` table has the same full CRUD. Its JSON stays at `/alumni`, the address from the
+lecture exercise, and its HTML management interface is at `/graduates`.
+
+| CRUD | Model (`model.Graduates`) | JSON (`internal/controller/alumni.go`) | `GraduateController` (HTML) |
+| --- | --- | --- | --- |
+| **Create** | `Add` | `CreateAlumni` — `POST /alumni` → `201` | `Create` — `GET /graduates/new`; `Store` — `POST /graduates` |
+| **Read** | `List`, `Find` | `ListAlumni` — `GET /alumni`; `ShowAlumni` — `GET /alumni/{id}` | `Index` — `GET /graduates`; `Show` — `GET /graduates/{id}` |
+| **Update** | `Replace` | `UpdateAlumni` — `PUT /alumni/{id}` | `Edit` — `GET /graduates/{id}/edit`; `Update` — `POST /graduates/{id}` |
+| **Delete** | `Remove` | `DeleteAlumni` — `DELETE /alumni/{id}` → `204` | `Destroy` — `POST /graduates/{id}/delete` |
+
+Only the name is required; department and graduation year may be empty.
+
+### When the database fails
+
+Every controller sends database errors through `dbError` in `request.go`. The client gets
+`500 database error` and nothing more, because the details are not its business; the real
+error is written to the app's log, for example
+`database error: failed to connect to … lookup db: no such host` when the `db` container is
+stopped. Read it with `docker compose logs app`.
 
 ### What is still on the way
 
-- **No migrations yet.** `db/init.sql` only runs on an empty volume, so a new table needs
-  `docker compose down -v` (which deletes the data). Real migrations replace this later.
 - **No Redis yet.** Sessions and caching arrive with sign-in.
 
 ## Roadmap
@@ -503,7 +604,7 @@ are empty. The management interface is at `/announcements`, and the navigation b
 - [x] Announcements: in-memory model, `AnnouncementController` + `ApiAnnouncementController`, and a management interface at `/announcements`
 - [x] `docker-compose.yml` with PostgreSQL, a named volume and the password as a secret
 - [x] Users, announcements and alumni moved from memory onto PostgreSQL
-- [ ] Database migrations (today `db/init.sql` runs once, on an empty volume)
+- [x] Database migrations with golang-migrate (`migrations/`, run by the `migrate` service)
 - [ ] Redis in `docker-compose.yml`
 
 **Phase 2 — a usable core**

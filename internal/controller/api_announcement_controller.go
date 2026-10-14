@@ -15,7 +15,7 @@ type ApiAnnouncementController struct{}
 func (ApiAnnouncementController) Index(w http.ResponseWriter, r *http.Request) {
 	list, err := model.Announcements.List()
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 
@@ -31,7 +31,7 @@ func (ApiAnnouncementController) Show(w http.ResponseWriter, r *http.Request) {
 
 	a, found, err := model.Announcements.Find(id)
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 	if !found {
@@ -56,7 +56,7 @@ func (ApiAnnouncementController) Store(w http.ResponseWriter, r *http.Request) {
 
 	created, err := model.Announcements.Add(a)
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 
@@ -82,7 +82,7 @@ func (ApiAnnouncementController) Update(w http.ResponseWriter, r *http.Request) 
 
 	updated, found, err := model.Announcements.Replace(id, a)
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 	if !found {
@@ -102,7 +102,7 @@ func (ApiAnnouncementController) Destroy(w http.ResponseWriter, r *http.Request)
 
 	found, err := model.Announcements.Remove(id)
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 	if !found {

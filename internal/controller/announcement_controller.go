@@ -32,7 +32,7 @@ type announcementForm struct {
 func (AnnouncementController) Index(w http.ResponseWriter, r *http.Request) {
 	list, err := model.Announcements.List()
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 
@@ -48,7 +48,7 @@ func (AnnouncementController) Show(w http.ResponseWriter, r *http.Request) {
 
 	a, found, err := model.Announcements.Find(id)
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 	if !found {
@@ -75,7 +75,7 @@ func (AnnouncementController) Store(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := model.Announcements.Add(a); err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 	http.Redirect(w, r, "/announcements", http.StatusSeeOther)
@@ -90,7 +90,7 @@ func (AnnouncementController) Edit(w http.ResponseWriter, r *http.Request) {
 
 	a, found, err := model.Announcements.Find(id)
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 	if !found {
@@ -119,7 +119,7 @@ func (AnnouncementController) Update(w http.ResponseWriter, r *http.Request) {
 
 	_, found, err := model.Announcements.Replace(id, a)
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 	if !found {
@@ -139,7 +139,7 @@ func (AnnouncementController) Destroy(w http.ResponseWriter, r *http.Request) {
 
 	found, err := model.Announcements.Remove(id)
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 	if !found {

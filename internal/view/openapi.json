@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Alumni API",
-    "description": "İstanbul Üniversitesi mezun ağı. Kullanıcılar şimdilik bellekte tutuluyor, veritabanı henüz yok: sunucu yeniden başlayınca her şey sıfırlanır.",
+    "description": "İstanbul Üniversitesi mezun ağı. Kullanıcılar, duyurular ve mezunlar PostgreSQL'de tutulur; sunucu yeniden başlasa da kaybolmaz.",
     "version": "0.1.0"
   },
   "servers": [
@@ -10,10 +10,12 @@
   ],
   "tags": [
     { "name": "health", "description": "Sunucu ayakta mı?" },
-    { "name": "ApiUserController", "description": "Kullanıcılar, JSON olarak (/api/users) — programlar için. Bellekte tutulur." },
+    { "name": "ApiUserController", "description": "Kullanıcılar, JSON olarak (/api/users) — programlar için." },
     { "name": "UserController", "description": "Kullanıcılar, HTML sayfası olarak (/users) — tarayıcıdaki insanlar için. Formlar yalnızca GET ve POST gönderebildiğinden güncelleme ve silme burada POST'tur. Başarılı bir POST 303 ile yönlendirir; Swagger yönlendirmeyi takip edip varılan sayfayı gösterir." },
-    { "name": "ApiAnnouncementController", "description": "Duyurular, JSON olarak (/api/announcements) — programlar için. Bellekte tutulur; en yeni duyuru en üstte." },
-    { "name": "AnnouncementController", "description": "Duyuruları yönetme arayüzü, HTML sayfası olarak (/announcements). Güncelleme ve silme POST'tur; başarılı bir POST 303 ile yönlendirir." }
+    { "name": "ApiAnnouncementController", "description": "Duyurular, JSON olarak (/api/announcements) — programlar için. En yeni duyuru en üstte." },
+    { "name": "AnnouncementController", "description": "Duyuruları yönetme arayüzü, HTML sayfası olarak (/announcements). Güncelleme ve silme POST'tur; başarılı bir POST 303 ile yönlendirir." },
+    { "name": "Alumni", "description": "Mezunlar, JSON olarak (/alumni) — programlar için." },
+    { "name": "GraduateController", "description": "Mezunları yönetme arayüzü, HTML sayfası olarak (/graduates). Güncelleme ve silme POST'tur; başarılı bir POST 303 ile yönlendirir." }
   ],
   "paths": {
     "/api/health": {
@@ -448,6 +450,181 @@
           "404": { "$ref": "#/components/responses/AnnouncementNotFound" }
         }
       }
+    },
+    "/alumni": {
+      "get": {
+        "tags": ["Alumni"],
+        "operationId": "ListAlumni",
+        "summary": "Tüm mezunları listele",
+        "responses": {
+          "200": {
+            "description": "Mezunlar, id sırasıyla",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Alumni" } } } }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Alumni"],
+        "operationId": "CreateAlumni",
+        "summary": "Yeni mezun oluştur",
+        "description": "Ad zorunludur. id'yi veritabanı verir.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NewAlumni" },
+              "example": { "name": "Elif Kaya", "department": "Fizik", "graduationYear": 2023 }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Oluşturuldu",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Alumni" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/alumni/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/GraduateID" }],
+      "get": {
+        "tags": ["Alumni"],
+        "operationId": "ShowAlumni",
+        "summary": "Tek bir mezunu getir",
+        "responses": {
+          "200": {
+            "description": "Mezun bulundu",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Alumni" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/GraduateNotFound" }
+        }
+      },
+      "put": {
+        "tags": ["Alumni"],
+        "operationId": "UpdateAlumni",
+        "summary": "Mezunu bütünüyle değiştir",
+        "description": "Ad zorunludur. id değişmez.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NewAlumni" },
+              "example": { "name": "Elif Kaya", "department": "Kimya", "graduationYear": 2024 }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Değiştirildi",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Alumni" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/GraduateNotFound" }
+        }
+      },
+      "delete": {
+        "tags": ["Alumni"],
+        "operationId": "DeleteAlumni",
+        "summary": "Mezunu sil",
+        "responses": {
+          "204": { "description": "Silindi; geri gönderilecek gövde yok" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/GraduateNotFound" }
+        }
+      }
+    },
+    "/graduates": {
+      "get": {
+        "tags": ["GraduateController"],
+        "operationId": "GraduateController.Index",
+        "summary": "Mezun listesi ve altında yeni mezun formu",
+        "responses": { "200": { "$ref": "#/components/responses/HtmlPage" } }
+      },
+      "post": {
+        "tags": ["GraduateController"],
+        "operationId": "GraduateController.Store",
+        "summary": "Formdan yeni mezun oluştur",
+        "requestBody": {
+          "required": true,
+          "content": { "application/x-www-form-urlencoded": { "schema": { "$ref": "#/components/schemas/NewAlumni" } } }
+        },
+        "responses": {
+          "303": {
+            "description": "Tamam; tarayıcı mezun listesine (/graduates) gönderilir",
+            "headers": { "Location": { "schema": { "type": "string", "example": "/graduates" } } }
+          },
+          "400": { "$ref": "#/components/responses/FormWithError" }
+        }
+      }
+    },
+    "/graduates/new": {
+      "get": {
+        "tags": ["GraduateController"],
+        "operationId": "GraduateController.Create",
+        "summary": "Boş yeni mezun formu",
+        "responses": { "200": { "$ref": "#/components/responses/HtmlPage" } }
+      }
+    },
+    "/graduates/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/GraduateID" }],
+      "get": {
+        "tags": ["GraduateController"],
+        "operationId": "GraduateController.Show",
+        "summary": "Tek bir mezunun sayfası",
+        "responses": {
+          "200": { "$ref": "#/components/responses/HtmlPage" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/GraduateNotFound" }
+        }
+      },
+      "post": {
+        "tags": ["GraduateController"],
+        "operationId": "GraduateController.Update",
+        "summary": "Düzenleme formunu kaydet",
+        "requestBody": {
+          "required": true,
+          "content": { "application/x-www-form-urlencoded": { "schema": { "$ref": "#/components/schemas/NewAlumni" } } }
+        },
+        "responses": {
+          "303": {
+            "description": "Kaydedildi; tarayıcı mezunun sayfasına gönderilir",
+            "headers": { "Location": { "schema": { "type": "string", "example": "/graduates/1" } } }
+          },
+          "400": { "$ref": "#/components/responses/FormWithError" },
+          "404": { "$ref": "#/components/responses/GraduateNotFound" }
+        }
+      }
+    },
+    "/graduates/{id}/edit": {
+      "parameters": [{ "$ref": "#/components/parameters/GraduateID" }],
+      "get": {
+        "tags": ["GraduateController"],
+        "operationId": "GraduateController.Edit",
+        "summary": "Mevcut değerlerle doldurulmuş düzenleme formu",
+        "responses": {
+          "200": { "$ref": "#/components/responses/HtmlPage" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/GraduateNotFound" }
+        }
+      }
+    },
+    "/graduates/{id}/delete": {
+      "parameters": [{ "$ref": "#/components/parameters/GraduateID" }],
+      "post": {
+        "tags": ["GraduateController"],
+        "operationId": "GraduateController.Destroy",
+        "summary": "Mezunu sil",
+        "responses": {
+          "303": {
+            "description": "Silindi; tarayıcı mezun listesine (/graduates) gönderilir",
+            "headers": { "Location": { "schema": { "type": "string", "example": "/graduates" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/GraduateNotFound" }
+        }
+      }
     }
   },
   "components": {
@@ -464,6 +641,13 @@
         "in": "path",
         "required": true,
         "description": "Kullanıcının id'si",
+        "schema": { "type": "integer", "example": 1 }
+      },
+      "GraduateID": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Mezunun id'si",
         "schema": { "type": "integer", "example": 1 }
       }
     },
@@ -538,6 +722,24 @@
           "body": { "type": "string", "example": "Sınav haftası boyunca kütüphane 24 saat açık." },
           "author": { "type": "string", "example": "Kütüphane" }
         }
+      },
+      "Alumni": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "readOnly": true, "example": 1 },
+          "name": { "type": "string", "example": "Ayşe Yılmaz" },
+          "department": { "type": "string", "example": "Bilgisayar Mühendisliği" },
+          "graduationYear": { "type": "integer", "example": 2021, "description": "0: belirtilmemiş" }
+        }
+      },
+      "NewAlumni": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "example": "Elif Kaya" },
+          "department": { "type": "string", "example": "Fizik" },
+          "graduationYear": { "type": "integer", "example": 2023 }
+        }
       }
     },
     "responses": {
@@ -569,6 +771,12 @@
         "description": "Bu id'ye sahip kullanıcı yok",
         "content": {
           "text/plain": { "schema": { "type": "string" }, "example": "no user with that id" }
+        }
+      },
+      "GraduateNotFound": {
+        "description": "Bu id'ye sahip mezun yok",
+        "content": {
+          "text/plain": { "schema": { "type": "string" }, "example": "no graduate with that id" }
         }
       }
     }

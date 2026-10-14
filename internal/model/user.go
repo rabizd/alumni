@@ -124,7 +124,8 @@ func (u User) Apply(p UserPatch) User {
 }
 
 // UserStore reads and writes the users table in PostgreSQL, so users survive
-// a restart. The table and the two starting users come from db/init.sql.
+// a restart. The table comes from migrations/000001_create_users.up.sql, the
+// sample rows from the seeder.
 type UserStore struct{}
 
 var Users = &UserStore{}

@@ -1,0 +1,30 @@
+{{template "page_top"}}
+<h1>Mezunlar</h1>
+{{if .Graduates}}
+<table>
+  <thead><tr><th>Ad</th><th>Bölüm</th><th>Mezuniyet</th><th></th></tr></thead>
+  <tbody>
+  {{range .Graduates}}
+    <tr>
+      <td><a href="/graduates/{{.ID}}">{{.Name}}</a></td>
+      <td>{{.Department}}</td>
+      <td>{{if .GraduationYear}}{{.GraduationYear}}{{end}}</td>
+      <td class="actions">
+        <a class="btn ghost" href="/graduates/{{.ID}}/edit">Düzenle</a>
+        <form method="post" action="/graduates/{{.ID}}/delete">
+          <button class="ghost" type="submit">Sil</button>
+        </form>
+      </td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+{{else}}
+<p class="empty">Henüz mezun yok.</p>
+{{end}}
+<h2>Yeni mezun</h2>
+<form method="post" action="/graduates">
+  {{template "graduate_fields" .New}}
+  <button type="submit">Ekle</button>
+</form>
+{{template "page_bottom"}}
