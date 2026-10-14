@@ -2,9 +2,9 @@
 FROM golang:1.22-alpine AS build
 WORKDIR /src
 
-# go.mod has no external deps, but copy it first for cache efficiency
-COPY go.mod ./
-RUN go mod download 2>/dev/null || true
+# copy the module files first so dependencies are cached between builds
+COPY go.mod go.sum ./
+RUN go mod download
 
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o /out/alumni ./cmd/api

@@ -1,16 +1,22 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
 
+	"github.com/rabizd/alumni/internal/model"
 	"github.com/rabizd/alumni/internal/routes"
 )
 
 // main only wires things together: the routes package maps every URL to its
 // controller, and the controllers do the rest.
 func main() {
+	if err := model.Connect(context.Background()); err != nil {
+		log.Fatalf("database: %v", err)
+	}
+
 	mux := http.NewServeMux()
 	routes.Web(mux)
 	routes.API(mux)

@@ -1,20 +1,21 @@
 package model
 
 import (
+	"context"
 	"errors"
 	"strings"
-	"sync"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
-// Announcement is one post on the announcement board. Like the users, the
-// announcements live in memory for now and are gone when the server restarts.
+// Announcement is one post on the announcement board.
 type Announcement struct {
 	ID     int    `json:"id"`
 	Title  string `json:"title"`
 	Body   string `json:"body"`
 	Author string `json:"author"`
-	// CreatedAt is set by the server when the announcement is added.
+	// CreatedAt is set by the database when the announcement is added.
 	CreatedAt time.Time `json:"createdAt"`
 }
 
@@ -34,83 +35,72 @@ func (a *Announcement) Validate() error {
 	return nil
 }
 
-type AnnouncementStore struct {
-	mu     sync.Mutex
-	nextID int
-	items  []Announcement
-}
+// AnnouncementStore reads and writes the announcements table in PostgreSQL,
+// so announcements survive a restart. The table and the two starting
+// announcements come from db/init.sql.
+type AnnouncementStore struct{}
 
-var Announcements = &AnnouncementStore{
-	nextID: 3,
-	items: []Announcement{
-		{ID: 1, Title: "Mezunlar buluşması", Author: "Mezunlar Ofisi",
-			Body:      "Bu yılki mezunlar buluşması 15 Kasım'da Beyazıt kampüsünde. Kayıt için profilinizin güncel olması yeterli.",
-			CreatedAt: time.Date(2026, 10, 1, 10, 0, 0, 0, time.Local)},
-		{ID: 2, Title: "Kariyer günleri başvuruları açıldı", Author: "Kariyer Merkezi",
-			Body:      "Şirketinizle kariyer günlerine katılmak ve öğrencilerle tanışmak isteyen mezunlarımız 31 Ekim'e kadar başvurabilir.",
-			CreatedAt: time.Date(2026, 10, 5, 14, 30, 0, 0, time.Local)},
-	},
+var Announcements = &AnnouncementStore{}
+
+const announcementColumns = "id, title, body, author, created_at"
+
+func scanAnnouncement(row interface{ Scan(...any) error }) (Announcement, error) {
+	var a Announcement
+	err := row.Scan(&a.ID, &a.Title, &a.Body, &a.Author, &a.CreatedAt)
+	return a, err
 }
 
 // List returns every announcement, newest first.
-func (s *AnnouncementStore) List() []Announcement {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := make([]Announcement, len(s.items))
-	for i, a := range s.items {
-		out[len(s.items)-1-i] = a
+func (s *AnnouncementStore) List() ([]Announcement, error) {
+	rows, err := db.Query(context.Background(),
+		"SELECT "+announcementColumns+" FROM announcements ORDER BY created_at DESC, id DESC")
+	if err != nil {
+		return nil, err
 	}
-	return out
+	defer rows.Close()
+
+	out := []Announcement{}
+	for rows.Next() {
+		a, err := scanAnnouncement(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, a)
+	}
+	return out, rows.Err()
 }
 
-// Add gives the announcement the next id and the current time, and stores it.
-func (s *AnnouncementStore) Add(a Announcement) Announcement {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	a.ID = s.nextID
-	s.nextID++
-	a.CreatedAt = time.Now().Truncate(time.Second)
-	s.items = append(s.items, a)
-	return a
+// Add stores the announcement. The database gives it the next id and the current time.
+func (s *AnnouncementStore) Add(a Announcement) (Announcement, error) {
+	return scanAnnouncement(db.QueryRow(context.Background(),
+		"INSERT INTO announcements (title, body, author) VALUES ($1, $2, $3) RETURNING "+announcementColumns,
+		a.Title, a.Body, a.Author))
 }
 
 // Find returns the announcement with the given id. The bool reports whether it existed.
-func (s *AnnouncementStore) Find(id int) (Announcement, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for _, a := range s.items {
-		if a.ID == id {
-			return a, true
-		}
-	}
-	return Announcement{}, false
+func (s *AnnouncementStore) Find(id int) (Announcement, bool, error) {
+	return found(scanAnnouncement(db.QueryRow(context.Background(),
+		"SELECT "+announcementColumns+" FROM announcements WHERE id = $1", id)))
 }
 
 // Replace overwrites the title, body and author of the announcement with the
 // given id. The id and the creation time stay as they were.
-func (s *AnnouncementStore) Replace(id int, a Announcement) (Announcement, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, existing := range s.items {
-		if existing.ID == id {
-			a.ID = id
-			a.CreatedAt = existing.CreatedAt
-			s.items[i] = a
-			return a, true
-		}
-	}
-	return Announcement{}, false
+func (s *AnnouncementStore) Replace(id int, a Announcement) (Announcement, bool, error) {
+	return found(scanAnnouncement(db.QueryRow(context.Background(),
+		"UPDATE announcements SET title = $1, body = $2, author = $3 WHERE id = $4 RETURNING "+announcementColumns,
+		a.Title, a.Body, a.Author, id)))
 }
 
 // Remove deletes the announcement with the given id, reporting whether it existed.
-func (s *AnnouncementStore) Remove(id int) bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, a := range s.items {
-		if a.ID == id {
-			s.items = append(s.items[:i], s.items[i+1:]...)
-			return true
-		}
+func (s *AnnouncementStore) Remove(id int) (bool, error) {
+	tag, err := db.Exec(context.Background(), "DELETE FROM announcements WHERE id = $1", id)
+	return tag.RowsAffected() > 0, err
+}
+
+// found turns "no row" into found=false instead of an error.
+func found(a Announcement, err error) (Announcement, bool, error) {
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Announcement{}, false, nil
 	}
-	return false
+	return a, err == nil, err
 }

@@ -30,7 +30,13 @@ type announcementForm struct {
 
 // Index: GET /announcements -> the list page, with a create form
 func (AnnouncementController) Index(w http.ResponseWriter, r *http.Request) {
-	view.HTML(w, http.StatusOK, "announcements.html", announcementList{Announcements: model.Announcements.List()})
+	list, err := model.Announcements.List()
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+
+	view.HTML(w, http.StatusOK, "announcements.html", announcementList{Announcements: list})
 }
 
 // Show: GET /announcements/{id} -> one announcement's page, or 404
@@ -40,7 +46,11 @@ func (AnnouncementController) Show(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a, found := model.Announcements.Find(id)
+	a, found, err := model.Announcements.Find(id)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
 	if !found {
 		http.Error(w, "no announcement with that id", http.StatusNotFound)
 		return
@@ -64,7 +74,10 @@ func (AnnouncementController) Store(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	model.Announcements.Add(a)
+	if _, err := model.Announcements.Add(a); err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
 	http.Redirect(w, r, "/announcements", http.StatusSeeOther)
 }
 
@@ -75,7 +88,11 @@ func (AnnouncementController) Edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a, found := model.Announcements.Find(id)
+	a, found, err := model.Announcements.Find(id)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
 	if !found {
 		http.Error(w, "no announcement with that id", http.StatusNotFound)
 		return
@@ -100,7 +117,12 @@ func (AnnouncementController) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, found := model.Announcements.Replace(id, a); !found {
+	_, found, err := model.Announcements.Replace(id, a)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+	if !found {
 		http.Error(w, "no announcement with that id", http.StatusNotFound)
 		return
 	}
@@ -115,7 +137,12 @@ func (AnnouncementController) Destroy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !model.Announcements.Remove(id) {
+	found, err := model.Announcements.Remove(id)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+	if !found {
 		http.Error(w, "no announcement with that id", http.StatusNotFound)
 		return
 	}
