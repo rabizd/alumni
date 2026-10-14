@@ -58,6 +58,9 @@ services:
 
   db:
     image: postgres:17-alpine
+    # write every change (INSERT, UPDATE, DELETE, and CREATE/DROP from migrations)
+    # to the log, so it shows in `docker compose logs db`. Reads (SELECT) are not logged.
+    command: ["postgres", "-c", "log_statement=mod"]
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_DB: ${DB_NAME}
@@ -74,6 +77,20 @@ services:
       interval: 2s
       timeout: 3s
       retries: 15
+    restart: unless-stopped
+
+  # A database viewer in the browser: http://localhost:8081
+  # Log in with System: PostgreSQL, Server: db, the user and database from .env,
+  # and the password from secrets/db_password.txt.
+  adminer:
+    image: adminer:4.8.1
+    ports:
+      # 127.0.0.1: only this computer can open it
+      - "127.0.0.1:${ADMINER_PORT:-8081}:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    depends_on:
+      - db
     restart: unless-stopped
 
 # the password is a file, not an environment variable, and secrets/ is not committed
