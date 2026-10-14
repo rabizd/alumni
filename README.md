@@ -126,9 +126,9 @@ The feed is the one place where that split really earns itself. Building a gradu
 
 ## What Works Today
 
-The API skeleton runs on `http://localhost:8080` (`go run ./cmd/api`). Alumni are held in
-memory for now, so anything created is lost when the server restarts — PostgreSQL replaces
-that next.
+The API runs on `http://localhost:8080` (`docker compose up --build`, see
+[Getting Started](#getting-started)). Users, announcements and alumni are stored in PostgreSQL,
+so they survive a restart and `docker compose down`.
 
 | Route | Response |
 | --- | --- |
@@ -239,32 +239,64 @@ Honest unknowns, written down so they are decided deliberately rather than by ac
 
 ### Prerequisites
 
-- [Go](https://go.dev/dl/) 1.22 or newer — the only thing needed right now
-- [Docker](https://www.docker.com/) and Docker Compose — *later*, once PostgreSQL and Redis are wired in
+- [Docker](https://www.docker.com/) and Docker Compose
+- [Go](https://go.dev/dl/) 1.22 or newer — only to run the app outside Docker
 
 ### Run it
 
 ```bash
 git clone https://github.com/rabizd/alumni.git
 cd alumni
-go run ./cmd/api
+echo "pick-any-password" > secrets/db_password.txt   # the database password, never committed
+docker compose up --build
 ```
 
-Then open <http://localhost:8080/main>. There are no dependencies to download yet and nothing
-to configure — the server has no database behind it so far.
+Then open <http://localhost:8080/main>. Compose starts two containers: `db` (PostgreSQL) and
+`app` (the Go server). The app waits until the database is healthy before it starts.
+
+`secrets/db_password.txt` must exist before the first `docker compose up`, otherwise Compose
+stops with an error. The password is set when the database is created for the first time;
+changing the file later does not change it (run `docker compose down -v` to start over).
+
+To run the Go code without Docker while the database container is up:
+`docker compose up -d db`, then `go run ./cmd/api`.
+
+### The database survives `docker compose down`
+
+PostgreSQL keeps its files in the named volume `db-data`. `docker compose down` deletes the
+containers but not the volume, so the data is still there on the next `up`:
+
+1. Create a record, for example `POST /api/users` (see `requests.http`)
+2. `docker compose down`
+3. `docker compose up -d`
+4. `GET /api/users` — the record is still there
+
+Only `docker compose down -v` deletes the volume, and with it every record. On the next start
+`db/init.sql` runs again: it creates the tables and the sample rows, and it only runs when the
+volume is empty.
 
 ## Configuration
 
-`APP_PORT` is read today; the rest arrive with the database work:
+`docker-compose.yml` sets these for the app container. The defaults are for `go run` on your
+own machine:
 
-| Variable | Description | Example |
+| Variable | Description | Default |
 | --- | --- | --- |
-| `APP_PORT` | Port the API listens on (default `8080`) | `8080` |
-| `DATABASE_URL` | PostgreSQL connection string | `postgres://user:pass@localhost:5432/alumni?sslmode=disable` |
-| `REDIS_URL` | Redis connection string | `redis://localhost:6379/0` |
-| `JWT_SECRET` | Secret used to sign access tokens | *(a long random string)* |
+| `APP_PORT` | Port the API listens on | `8080` |
+| `DB_HOST` | PostgreSQL host (`db` inside Compose) | `localhost` |
+| `DB_USER` | Database user | `alumni` |
+| `DB_NAME` | Database name | `alumni` |
+| `DB_PASSWORD_FILE` | File the database password is read from | `secrets/db_password.txt` |
 
-> 🔒 Never commit your `.env` file. Only `.env.example` belongs in version control.
+The password is a **Docker Compose secret**, not an environment variable. Compose mounts
+`secrets/db_password.txt` into both containers as `/run/secrets/db_password`; Postgres reads it
+through `POSTGRES_PASSWORD_FILE` and the app through `DB_PASSWORD_FILE`. Environment variables
+show up in `docker inspect` and in logs; a secret file does not.
+
+> 🔒 Never commit `secrets/db_password.txt`. `.gitignore` keeps everything in `secrets/` out of
+> git (except an empty `.gitkeep`), and `.dockerignore` keeps it out of the image.
+
+*Planned:* `REDIS_URL` for sessions and `JWT_SECRET` for signing tokens.
 
 ## Project Structure (MVC)
 
@@ -322,7 +354,8 @@ alumni/
 │   │   └── api.go              #   API(): ApiUserController, ApiAnnouncementController, health, swagger, /alumni  (JSON)
 │   │
 │   ├── model/                  # MODEL
-│   │   ├── user.go             #   User (+ department, years, ÇAP, yandal, advisor, prep exemption) + Validate(), UserPatch, UserStore (List/Add/Find/Remove/Replace/Patch)
+│   │   ├── db.go               #   Connect(): opens the PostgreSQL pool, reads the password from the secret file
+│   │   ├── user.go             #   User (+ department, years, ÇAP, yandal, advisor, prep exemption) + Validate(), UserPatch, UserStore (List/Add/Find/Remove/Replace), Apply()
 │   │   ├── announcement.go     #   Announcement + Validate(), AnnouncementStore (List/Add/Find/Replace/Remove)
 │   │   ├── alumni.go           #   Alumni + Validate(), AlumniStore (List/Add)
 │   │   └── health.go           #   Health, the {"status":"ok"} shape
@@ -352,11 +385,16 @@ alumni/
 │       ├── api.go              #   Health, Swagger, SwaggerSpec
 │       └── request.go          #   shared helpers: pathID (reads {id}), decodeJSON (strict body parsing)
 │
+├── db/
+│   └── init.sql                # tables + sample rows; Postgres runs it once, when the volume is empty
+├── secrets/                    # db_password.txt lives here (not committed)
+│
 ├── requests.http               # every endpoint, for the VS Code REST Client (manual testing)
 ├── Dockerfile                  # two-stage build: compile in golang, run in a small alpine image
-├── docker-compose.yml          # runs the app container on port 8080
+├── docker-compose.yml          # app on port 8080 + PostgreSQL with the db-data volume and the password secret
 ├── .dockerignore               # files kept out of the Docker build
-├── go.mod                      # Go module: github.com/rabizd/alumni, Go 1.22, no dependencies
+├── .gitignore                  # keeps secrets/ out of git
+├── go.mod                      # Go module: github.com/rabizd/alumni, Go 1.22, pgx (PostgreSQL driver)
 ├── README.md
 └── LICENSE
 ```
@@ -368,24 +406,23 @@ The layers are the app's own parts, not a library for other projects.
 
 | Layer | Folder | What it contains | What it must not do |
 | --- | --- | --- | --- |
-| **Model** | `internal/model` | Structs (`User`, `UserPatch`, `Alumni`, `Health`), their `Validate()` rules (trimming spaces, required fields, the PATCH checks), and in-memory stores guarded by a mutex. The store assigns ids; a request body never does. | Touch `http.Request`, write a response, or know about HTML |
+| **Model** | `internal/model` | Structs (`User`, `UserPatch`, `Alumni`, `Health`), their `Validate()` rules (trimming spaces, required fields, the PATCH checks), and stores that run the SQL queries. The database assigns ids; a request body never does. | Touch `http.Request`, write a response, or know about HTML |
 | **View** | `internal/view` | `HTML()` for pages, `JSON()` for API bodies, `OpenAPI()` for the spec, plus the templates and `openapi.json` | Check input or read and change the stores |
 | **Controller** | `internal/controller` | One function per route; the two user controllers are structs whose methods are the CRUD actions. It returns `400` on bad input and `404` on a missing id, and otherwise calls the model and then a view. | Hold data itself, or build HTML or JSON by hand |
 
-### The User model: CRUD without a database
+### The User model: CRUD on PostgreSQL
 
-`internal/model/user.go` is the User model. It has no database connection: `model.Users` keeps
-the users in a slice in memory, guarded by a mutex, and starts with two sample users. Each CRUD
-operation is one method:
+`internal/model/user.go` is the User model. `model.Users` reads and writes the `users` table;
+`db/init.sql` creates it with two sample users. Each CRUD operation is one method, and each
+also returns an `error` when the database fails (the controllers answer `500`):
 
 | CRUD | Method on `model.Users` | What it does | Route that uses it |
 | --- | --- | --- | --- |
-| **Create** | `Add(u User) User` | gives the user the next id and stores it | `POST /api/users` |
-| **Read** | `List() []User` | returns a copy of every user | `GET /api/users` |
-| **Read** | `Find(id int) (User, bool)` | returns one user; `false` if the id does not exist | `GET /api/users/{id}` |
-| **Update** | `Replace(id int, u User) (User, bool)` | overwrites every field, keeps the id | `PUT /api/users/{id}` |
-| **Update** | `Patch(id int, p UserPatch) (User, bool, error)` | changes only the fields that were sent; saves nothing if the result breaks a rule | `PATCH /api/users/{id}` |
-| **Delete** | `Remove(id int) bool` | deletes the user; `false` if the id does not exist | `DELETE /api/users/{id}` |
+| **Create** | `Add(u User)` | `INSERT`; the database gives the next id | `POST /api/users` |
+| **Read** | `List()` | every user, by id | `GET /api/users` |
+| **Read** | `Find(id int)` | one user; `false` if the id does not exist | `GET /api/users/{id}` |
+| **Update** | `Replace(id int, u User)` | `UPDATE` of every field, keeps the id | `PUT /api/users/{id}`, and `PATCH` after `Find` + `Apply` |
+| **Delete** | `Remove(id int)` | `DELETE`; `false` if the id does not exist | `DELETE /api/users/{id}` |
 
 ### Two controllers for the same model
 
@@ -424,14 +461,13 @@ These trim spaces and enforce the rules below.
 | English prep exemption (İngilizce hazırlık muafiyeti) | `prepExempt` | `true` / `false`; in the HTML form a checkbox |
 
 A PATCH is applied first and the patched user is validated as a whole, so changing only
-`graduationYear` to a year before the existing `startYear` is still rejected. Because the data lives in memory,
-a server restart brings back the two sample users and loses everything else.
+`graduationYear` to a year before the existing `startYear` is still rejected, and nothing is saved.
 
 ### Announcements: the same pattern again
 
 `internal/model/announcement.go` is the Announcement model. It has a title, a body, an author,
-and a `createdAt` time that the server sets. Like the users, it has no database: `model.Announcements`
-keeps the announcements in memory and starts with two samples. `List()` returns the newest first.
+and a `createdAt` time that the database sets. `model.Announcements` reads and writes the
+`announcements` table, which `db/init.sql` starts with two samples. `List()` returns the newest first.
 
 | CRUD | Model (`model.Announcements`) | `ApiAnnouncementController` (JSON) | `AnnouncementController` (HTML, the management interface) |
 | --- | --- | --- | --- |
@@ -446,10 +482,9 @@ are empty. The management interface is at `/announcements`, and the navigation b
 
 ### What is still on the way
 
-- **The model has no database.** The stores are slices in memory, so restarting the server
-  resets them. When PostgreSQL arrives, the queries go in the model layer and the
-  controllers do not change.
-- **Planned:** `migrations/` for SQL schema migrations, and `.env.example` as a configuration template.
+- **No migrations yet.** `db/init.sql` only runs on an empty volume, so a new table needs
+  `docker compose down -v` (which deletes the data). Real migrations replace this later.
+- **No Redis yet.** Sessions and caching arrive with sign-in.
 
 ## Roadmap
 
@@ -461,9 +496,10 @@ are empty. The management interface is at `/announcements`, and the navigation b
 - [x] OpenAPI document and a Swagger UI page at `/api/swagger`
 - [x] Code split into `internal/model`, `internal/view`, and `internal/controller` (MVC)
 - [x] Announcements: in-memory model, `AnnouncementController` + `ApiAnnouncementController`, and a management interface at `/announcements`
-- [ ] `docker-compose.yml` for PostgreSQL and Redis
-- [ ] Database schema and migrations
-- [ ] Move the in-memory store onto PostgreSQL
+- [x] `docker-compose.yml` with PostgreSQL, a named volume and the password as a secret
+- [x] Users, announcements and alumni moved from memory onto PostgreSQL
+- [ ] Database migrations (today `db/init.sql` runs once, on an empty volume)
+- [ ] Redis in `docker-compose.yml`
 
 **Phase 2 — a usable core**
 - [ ] Sign-up, sign-in, and Redis-backed sessions
