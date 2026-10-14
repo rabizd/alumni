@@ -251,15 +251,16 @@ Honest unknowns, written down so they are decided deliberately rather than by ac
 ```bash
 git clone https://github.com/rabizd/alumni.git
 cd alumni
-echo "pick-any-password" > secrets/db_password.txt   # the database password, never committed
+cp .env.example .env                                  # settings: ports, database user and name
+echo "pick-any-password" > secrets/db_password.txt   # the database password
 docker compose up --build
 ```
 
 Then open <http://localhost:8080/main>. Compose starts two containers: `db` (PostgreSQL) and
 `app` (the Go server). The app waits until the database is healthy before it starts.
 
-`secrets/db_password.txt` must exist before the first `docker compose up`, otherwise Compose
-stops with an error. The password is set when the database is created for the first time;
+`.env` and `secrets/db_password.txt` must exist before the first `docker compose up`, otherwise
+Compose stops with an error that names what is missing. Neither file is committed. The password is set when the database is created for the first time;
 changing the file later does not change it (run `docker compose down -v` to start over).
 
 To run the Go code without Docker while the database container is up:
@@ -281,24 +282,35 @@ volume is empty.
 
 ## Configuration
 
-`docker-compose.yml` sets these for the app container. The defaults are for `go run` on your
-own machine:
+Settings live in a **`.env`** file in the project root. Docker Compose reads it automatically
+and puts the values into `docker-compose.yml` wherever it says `${...}`.
 
-| Variable | Description | Default |
+| File | Committed? | What it is |
 | --- | --- | --- |
-| `APP_PORT` | Port the API listens on | `8080` |
-| `DB_HOST` | PostgreSQL host (`db` inside Compose) | `localhost` |
-| `DB_USER` | Database user | `alumni` |
-| `DB_NAME` | Database name | `alumni` |
-| `DB_PASSWORD_FILE` | File the database password is read from | `secrets/db_password.txt` |
+| `.env.example` | ✅ yes | the template: every variable, with safe example values and a comment |
+| `.env` | ❌ no, in `.gitignore` | your own copy (`cp .env.example .env`), with your values |
+
+Each machine has its own `.env`, so changing a port on your laptop never ends up in someone
+else's checkout. When a new variable is added, it goes into `.env.example` too.
+
+| Variable (in `.env`) | Description | Example |
+| --- | --- | --- |
+| `APP_PORT` | Port the API listens on, inside the container and on your machine | `8080` |
+| `DB_USER` | PostgreSQL user | `alumni` |
+| `DB_NAME` | PostgreSQL database name | `alumni` |
+| `DB_PORT` | Port PostgreSQL is reachable on from your machine | `5432` |
+
+Compose also passes two fixed values to the app: `DB_HOST=db` (the database container's name)
+and `DB_PASSWORD_FILE=/run/secrets/db_password`. When you `go run ./cmd/api` outside Docker, the
+app falls back to `localhost`, `alumni` and `secrets/db_password.txt`.
 
 The password is a **Docker Compose secret**, not an environment variable. Compose mounts
 `secrets/db_password.txt` into both containers as `/run/secrets/db_password`; Postgres reads it
 through `POSTGRES_PASSWORD_FILE` and the app through `DB_PASSWORD_FILE`. Environment variables
 show up in `docker inspect` and in logs; a secret file does not.
 
-> 🔒 Never commit `secrets/db_password.txt`. `.gitignore` keeps everything in `secrets/` out of
-> git (except an empty `.gitkeep`), and `.dockerignore` keeps it out of the image.
+> 🔒 Never commit `.env` or `secrets/db_password.txt`. `.gitignore` keeps both out of git, and
+> `.dockerignore` keeps both out of the image. Only `.env.example` belongs in version control.
 
 *Planned:* `REDIS_URL` for sessions and `JWT_SECRET` for signing tokens.
 
@@ -397,7 +409,8 @@ alumni/
 ├── Dockerfile                  # two-stage build: compile in golang, run in a small alpine image
 ├── docker-compose.yml          # app on port 8080 + PostgreSQL with the db-data volume and the password secret
 ├── .dockerignore               # files kept out of the Docker build
-├── .gitignore                  # keeps secrets/ out of git
+├── .env.example                # template for .env: copy it, then change the values
+├── .gitignore                  # keeps .env and secrets/ out of git
 ├── go.mod                      # Go module: github.com/rabizd/alumni, Go 1.22, pgx (PostgreSQL driver)
 ├── README.md
 ├── DDD.md                      # Data Design Documentation: tables, columns, rules

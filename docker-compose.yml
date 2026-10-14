@@ -1,13 +1,15 @@
+# The values in ${...} come from .env (copy .env.example to .env); Compose stops
+# with the message after "?" if one is missing.
 services:
   app:
     build: .
     ports:
-      - "8080:8080"
+      - "${APP_PORT:?set APP_PORT in .env}:${APP_PORT}"
     environment:
-      APP_PORT: "8080"
+      APP_PORT: ${APP_PORT}
       DB_HOST: db
-      DB_USER: alumni
-      DB_NAME: alumni
+      DB_USER: ${DB_USER:?set DB_USER in .env}
+      DB_NAME: ${DB_NAME:?set DB_NAME in .env}
       DB_PASSWORD_FILE: /run/secrets/db_password
     secrets:
       - db_password
@@ -19,8 +21,8 @@ services:
   db:
     image: postgres:17-alpine
     environment:
-      POSTGRES_USER: alumni
-      POSTGRES_DB: alumni
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_DB: ${DB_NAME}
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
     secrets:
       - db_password
@@ -29,9 +31,9 @@ services:
       - db-data:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
-      - "5432:5432"
+      - "${DB_PORT:?set DB_PORT in .env}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U alumni -d alumni"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 2s
       timeout: 3s
       retries: 15
