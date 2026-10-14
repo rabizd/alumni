@@ -37,7 +37,7 @@ func (a *Announcement) Validate() error {
 
 // AnnouncementStore reads and writes the announcements table in PostgreSQL,
 // so announcements survive a restart. The table and the two starting
-// announcements come from db/init.sql.
+// announcements come from migrations/000002_create_announcements.up.sql.
 type AnnouncementStore struct{}
 
 var Announcements = &AnnouncementStore{}

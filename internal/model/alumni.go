@@ -25,7 +25,7 @@ func (a *Alumni) Validate() error {
 }
 
 // AlumniStore reads and writes the alumni table in PostgreSQL. The table and
-// the two starting graduates come from db/init.sql.
+// the two starting graduates come from migrations/000003_create_alumni.up.sql.
 type AlumniStore struct{}
 
 var Graduates = &AlumniStore{}

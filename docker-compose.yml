@@ -14,9 +14,28 @@ services:
     secrets:
       - db_password
     depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # Applies the new files in migrations/ in number order, then exits. The
+  # schema_migrations table in the database remembers which ones already ran.
+  # By hand: docker compose run --rm migrate down 1   (undo the last one)
+  migrate:
+    image: migrate/migrate:v4.18.1
+    environment:
+      DB_USER: ${DB_USER}
+      DB_NAME: ${DB_NAME}
+    secrets:
+      - db_password
+    volumes:
+      - ./migrations:/migrations:ro
+    # the password comes from the secret through PGPASSWORD, so it never sits in the URL
+    entrypoint: ["sh", "-c", 'PGPASSWORD="$$(cat /run/secrets/db_password)" exec migrate -path /migrations -database "postgres://$${DB_USER}@db:5432/$${DB_NAME}?sslmode=disable" "$$@"', "--"]
+    command: ["up"]
+    depends_on:
       db:
         condition: service_healthy
-    restart: unless-stopped
 
   db:
     image: postgres:17-alpine
@@ -29,7 +48,6 @@ services:
     volumes:
       # the named volume outlives `docker compose down`; only `down -v` deletes it
       - db-data:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "${DB_PORT:?set DB_PORT in .env}:5432"
     healthcheck:

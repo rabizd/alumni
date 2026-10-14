@@ -15,6 +15,7 @@ section.
   - [users](#users)
   - [announcements](#announcements)
   - [alumni](#alumni)
+- [Migrations](#migrations)
 - [Validation rules](#validation-rules)
 - [From a request to a row](#from-a-request-to-a-row)
 - [Design decisions](#design-decisions)
@@ -39,7 +40,7 @@ section.
 | --- | --- | --- |
 | **Database** | PostgreSQL 17, the only place the app stores data | `docker-compose.yml` → `db` |
 | **Volume `db-data`** | Postgres' data files. Survives `docker compose down`; only `down -v` deletes it | `docker-compose.yml` → `volumes` |
-| **Schema + sample rows** | `CREATE TABLE` statements and two sample rows per table. Postgres runs it only when the volume is empty | `db/init.sql` |
+| **Schema + sample rows** | Numbered migrations; the `migrate` service applies the new ones on every `up` | `migrations/`, `docker-compose.yml` → `migrate` |
 | **Password** | A Docker Compose secret, read from a file by both containers; never in git or in the image | `secrets/db_password.txt`, `docker-compose.yml` → `secrets` |
 | **Connection** | One `pgxpool` connection pool, opened at startup | `internal/model/db.go` |
 
@@ -126,6 +127,22 @@ A graduate in the simple directory. Model: `internal/model/alumni.go` · API: `/
 | `department` | `TEXT` | no | `''` | `department` | bölüm |
 | `graduation_year` | `INTEGER` | no | `0` | `graduationYear` | `0` means not given |
 
+## Migrations
+
+The tables are not created by hand: each change to the schema is a numbered migration in
+`migrations/`, with an `up` file that applies it and a `down` file that undoes it. The README's
+[Migrations](README.md#migrations) section has the commands.
+
+| # | Migration | Up | Down |
+| --- | --- | --- | --- |
+| 1 | `create_users` | creates `users` and inserts two sample users | drops `users` |
+| 2 | `create_announcements` | creates `announcements` and inserts two sample announcements | drops `announcements` |
+| 3 | `create_alumni` | creates `alumni` and inserts two sample graduates | drops `alumni` |
+
+Postgres keeps a one-row table, `schema_migrations`, with the number of the last migration
+applied (`version`) and whether one failed halfway (`dirty`). `migrate up` compares it with the
+files and runs only the newer ones, so existing rows are never touched by a restart.
+
 ## Validation rules
 
 The database only guarantees that a column is present (`NOT NULL`). The content rules live in
@@ -170,15 +187,13 @@ If the database itself fails (it is down, a query is wrong) the controller answe
 | **PostgreSQL in its own container** | The app container can be rebuilt and replaced at any time; the data must not depend on it. |
 | **Named volume `db-data`** | A container's own files are deleted with the container. A named volume outlives `docker compose down`, so records survive it (the "forgetting test"). |
 | **Password as a Compose secret** | An environment variable shows up in `docker inspect` and can leak into logs. A secret is a file mounted only inside the containers that need it, and `secrets/` is in `.gitignore` and `.dockerignore`. |
-| **Schema in `db/init.sql`** | Postgres runs files in `/docker-entrypoint-initdb.d/` once, on an empty database — the simplest way to create tables without a migration tool. |
+| **Schema as migrations (golang-migrate)** | The schema can change while the data stays: a new migration is applied on top of the existing tables, and a `down` file can undo it. The tool runs in its own container, so the Go app has no migration code. |
 | **Database assigns ids and `created_at`** | Two requests at the same moment can never get the same id, and a client cannot fake a creation time. |
 | **Store methods return `(value, found, error)`** | "No row with that id" (`404`) and "the database failed" (`500`) are different answers, so they are different return values. |
 | **Plain SQL with `pgx`, no ORM** | Each query is visible in the model file, and there is one small dependency. |
 
 ## Known limits and next steps
 
-- **No migrations.** `init.sql` only runs on an empty volume, so adding a table today needs
-  `docker compose down -v`, which deletes the data. A migration tool replaces this.
 - **No relations.** `announcements.author` should become a `user_id` foreign key to `users`.
 - **`users` and `alumni` overlap.** Both hold a name, department and graduation year. The
   README's [Data Model](README.md#data-model) plans one `users` table for accounts and an

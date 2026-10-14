@@ -277,8 +277,40 @@ containers but not the volume, so the data is still there on the next `up`:
 4. `GET /api/users` — the record is still there
 
 Only `docker compose down -v` deletes the volume, and with it every record. On the next start
-`db/init.sql` runs again: it creates the tables and the sample rows, and it only runs when the
-volume is empty.
+the migrations run again from the first one and bring back the tables and the sample rows.
+
+### Migrations
+
+The database schema is built by **migrations**: numbered SQL files in `migrations/`, applied in
+order by [golang-migrate](https://github.com/golang-migrate/migrate). Each one has two halves:
+
+| File | Does |
+| --- | --- |
+| `000001_create_users.up.sql` | applies the change (`CREATE TABLE users …` + sample rows) |
+| `000001_create_users.down.sql` | undoes it (`DROP TABLE users`) |
+
+On every `docker compose up`, the `migrate` service runs first, applies only the migrations the
+database has not seen yet, and exits; the app starts after it succeeds. The database remembers
+the last applied number in its `schema_migrations` table, so an `up` with nothing new prints
+`no change` and the data is untouched.
+
+**Changing the schema** never needs `down -v`: add the next pair of files, for example
+
+```
+migrations/000004_add_city_to_users.up.sql     ALTER TABLE users ADD COLUMN city TEXT NOT NULL DEFAULT '';
+migrations/000004_add_city_to_users.down.sql   ALTER TABLE users DROP COLUMN city;
+```
+
+and run `docker compose up -d` (or `docker compose run --rm migrate up`). The existing rows stay.
+
+| Command | What it does |
+| --- | --- |
+| `docker compose run --rm migrate up` | apply every new migration |
+| `docker compose run --rm migrate down 1` | undo the last migration |
+| `docker compose run --rm migrate version` | print the number of the last applied migration |
+
+> ⚠️ Never edit a migration that has already run — the database will not run it again. Add a
+> new one instead.
 
 ## Configuration
 
@@ -401,13 +433,12 @@ alumni/
 │       ├── api.go              #   Health, Swagger, SwaggerSpec
 │       └── request.go          #   shared helpers: pathID (reads {id}), decodeJSON (strict body parsing)
 │
-├── db/
-│   └── init.sql                # tables + sample rows; Postgres runs it once, when the volume is empty
+├── migrations/                 # numbered schema changes, NNNNNN_name.up.sql + .down.sql, applied in order
 ├── secrets/                    # db_password.txt lives here (not committed)
 │
 ├── requests.http               # every endpoint, for the VS Code REST Client (manual testing)
 ├── Dockerfile                  # two-stage build: compile in golang, run in a small alpine image
-├── docker-compose.yml          # app on port 8080 + PostgreSQL with the db-data volume and the password secret
+├── docker-compose.yml          # app on port 8080, migrate (runs migrations/), PostgreSQL with the db-data volume and the password secret
 ├── .dockerignore               # files kept out of the Docker build
 ├── .env.example                # template for .env: copy it, then change the values
 ├── .gitignore                  # keeps .env and secrets/ out of git
@@ -431,7 +462,7 @@ The layers are the app's own parts, not a library for other projects.
 ### The User model: CRUD on PostgreSQL
 
 `internal/model/user.go` is the User model. `model.Users` reads and writes the `users` table;
-`db/init.sql` creates it with two sample users. Each CRUD operation is one method, and each
+`migrations/000001_create_users.up.sql` creates it with two sample users. Each CRUD operation is one method, and each
 also returns an `error` when the database fails (the controllers answer `500`):
 
 | CRUD | Method on `model.Users` | What it does | Route that uses it |
@@ -485,7 +516,7 @@ A PATCH is applied first and the patched user is validated as a whole, so changi
 
 `internal/model/announcement.go` is the Announcement model. It has a title, a body, an author,
 and a `createdAt` time that the database sets. `model.Announcements` reads and writes the
-`announcements` table, which `db/init.sql` starts with two samples. `List()` returns the newest first.
+`announcements` table, which `migrations/000002_create_announcements.up.sql` starts with two samples. `List()` returns the newest first.
 
 | CRUD | Model (`model.Announcements`) | `ApiAnnouncementController` (JSON) | `AnnouncementController` (HTML, the management interface) |
 | --- | --- | --- | --- |
@@ -500,8 +531,6 @@ are empty. The management interface is at `/announcements`, and the navigation b
 
 ### What is still on the way
 
-- **No migrations yet.** `db/init.sql` only runs on an empty volume, so a new table needs
-  `docker compose down -v` (which deletes the data). Real migrations replace this later.
 - **No Redis yet.** Sessions and caching arrive with sign-in.
 
 ## Roadmap
@@ -516,7 +545,7 @@ are empty. The management interface is at `/announcements`, and the navigation b
 - [x] Announcements: in-memory model, `AnnouncementController` + `ApiAnnouncementController`, and a management interface at `/announcements`
 - [x] `docker-compose.yml` with PostgreSQL, a named volume and the password as a secret
 - [x] Users, announcements and alumni moved from memory onto PostgreSQL
-- [ ] Database migrations (today `db/init.sql` runs once, on an empty volume)
+- [x] Database migrations with golang-migrate (`migrations/`, run by the `migrate` service)
 - [ ] Redis in `docker-compose.yml`
 
 **Phase 2 — a usable core**
