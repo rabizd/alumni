@@ -359,6 +359,12 @@ network cannot reach it.
 **In the terminal — psql.** `docker compose exec db psql -U alumni -d alumni`, then SQL such as
 `SELECT * FROM alumni;`. `\dt` lists the tables, `\q` quits.
 
+**In the log — every change.** The `db` service runs Postgres with `log_statement=mod`, so each
+`INSERT`, `UPDATE` and `DELETE` is written to its log together with the values, for example
+`DELETE FROM alumni WHERE id = $1` / `Parameters: $1 = '15'`. Watch it with
+`docker compose logs -f db` (or the **Logs** tab of `alumni-db-1` in Docker Desktop). Reads
+(`SELECT`) are not logged, so the log stays short.
+
 ## Configuration
 
 Settings live in a **`.env`** file in the project root. Docker Compose reads it automatically

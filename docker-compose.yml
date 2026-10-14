@@ -58,6 +58,9 @@ services:
 
   db:
     image: postgres:17-alpine
+    # write every change (INSERT, UPDATE, DELETE, and CREATE/DROP from migrations)
+    # to the log, so it shows in `docker compose logs db`. Reads (SELECT) are not logged.
+    command: ["postgres", "-c", "log_statement=mod"]
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_DB: ${DB_NAME}
