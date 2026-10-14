@@ -32,3 +32,14 @@ CREATE TABLE users (
 INSERT INTO users (name, email, department, start_year, graduation_year, double_major, minor, advisor, prep_exempt) VALUES
     ('Ayşe Yılmaz', 'ayse@example.com', 'Bilgisayar Mühendisliği', 2017, 2021, 'Matematik', '', 'Prof. Dr. Ahmet Kaya', true),
     ('Mehmet Demir', 'mehmet@example.com', 'Hukuk', 2015, 2019, '', 'İşletme', '', false);
+
+CREATE TABLE alumni (
+    id              SERIAL PRIMARY KEY,
+    name            TEXT NOT NULL,
+    department      TEXT NOT NULL DEFAULT '',
+    graduation_year INTEGER NOT NULL DEFAULT 0
+);
+
+INSERT INTO alumni (name, department, graduation_year) VALUES
+    ('Ayşe Yılmaz', 'Bilgisayar Mühendisliği', 2021),
+    ('Mehmet Demir', 'Hukuk', 2019);
