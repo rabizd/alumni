@@ -160,6 +160,10 @@ so they survive a restart and `docker compose down`.
 | `PUT /api/announcements/{id}`, `DELETE /api/announcements/{id}` | replaces title, body and author; deletes (`204`) |
 | `GET /alumni` | every graduate, as a JSON array |
 | `POST /alumni` | creates a graduate; `201` with the assigned id |
+| `GET /alumni/{id}`, `PUT /alumni/{id}`, `DELETE /alumni/{id}` | one graduate; replace name, department and year; delete (`204`) |
+| `GET /graduates` | HTML page listing every graduate, with edit and delete buttons and a create form |
+| `GET /graduates/new`, `GET /graduates/{id}`, `GET /graduates/{id}/edit` | empty form, one graduate, edit form |
+| `POST /graduates`, `POST /graduates/{id}`, `POST /graduates/{id}/delete` | create, save an edit, delete; each redirects (`303`) |
 | `GET /hello`, `GET /hello/{name}` | greeting, from the lecture exercises |
 | `GET /sum/{number1}/{number2}` | the sum, or `400` on non-numeric input |
 | `GET /temporary` | `307` temporary redirect to `/main` |
@@ -430,7 +434,7 @@ alumni/
 │   │   ├── db.go               #   Connect(): opens the PostgreSQL pool, reads the password from the secret file
 │   │   ├── user.go             #   User (+ department, years, ÇAP, yandal, advisor, prep exemption) + Validate(), UserPatch, UserStore (List/Add/Find/Remove/Replace), Apply()
 │   │   ├── announcement.go     #   Announcement + Validate(), AnnouncementStore (List/Add/Find/Replace/Remove)
-│   │   ├── alumni.go           #   Alumni + Validate(), AlumniStore (List/Add)
+│   │   ├── alumni.go           #   Alumni + Validate(), AlumniStore (List/Add/Find/Replace/Remove)
 │   │   └── health.go           #   Health, the {"status":"ok"} shape
 │   │
 │   ├── seed/                   # FACTORIES + SEEDER
@@ -444,10 +448,13 @@ alumni/
 │   │       ├── main.html       #     landing page, lists every route
 │   │       ├── about.html      #     about page
 │   │       ├── swagger.html    #     Swagger UI, loads /api/swagger.json
-│   │       ├── layout.html     #     shared top and bottom of every page, and the form fields of both resources
+│   │       ├── layout.html     #     shared top and bottom of every page, and the form fields of each resource
 │   │       ├── announcements.html #  announcement list + create form
 │   │       ├── announcement.html #   one announcement
 │   │       ├── announcement_form.html # create and edit form
+│   │       ├── graduates.html  #     graduate list + create form
+│   │       ├── graduate.html   #     one graduate
+│   │       ├── graduate_form.html # create and edit form
 │   │       ├── users.html      #     user list
 │   │       ├── user.html       #     one user
 │   │       └── user_form.html  #     create and edit form
@@ -458,9 +465,10 @@ alumni/
 │       ├── user_controller.go  #   UserController: HTML at /users  (Index, Show, Create, Store, Edit, Update, Destroy)
 │       ├── api_announcement_controller.go # ApiAnnouncementController: JSON at /api/announcements  (Index, Show, Store, Update, Destroy)
 │       ├── announcement_controller.go     # AnnouncementController: HTML at /announcements  (Index, Show, Create, Store, Edit, Update, Destroy)
-│       ├── alumni.go           #   ListAlumni, CreateAlumni
+│       ├── alumni.go           #   JSON at /alumni: ListAlumni, CreateAlumni, ShowAlumni, UpdateAlumni, DeleteAlumni
+│       ├── graduate_controller.go # GraduateController: HTML at /graduates  (Index, Show, Create, Store, Edit, Update, Destroy)
 │       ├── api.go              #   Health, Swagger, SwaggerSpec
-│       └── request.go          #   shared helpers: pathID (reads {id}), decodeJSON (strict body parsing)
+│       └── request.go          #   shared helpers: pathID (reads {id}), decodeJSON (strict body parsing), dbError (logs, answers 500)
 │
 ├── migrations/                 # numbered schema changes, NNNNNN_name.up.sql + .down.sql, applied in order
 ├── secrets/                    # db_password.txt lives here (not committed)
@@ -486,7 +494,7 @@ The layers are the app's own parts, not a library for other projects.
 | --- | --- | --- | --- |
 | **Model** | `internal/model` | Structs (`User`, `UserPatch`, `Alumni`, `Health`), their `Validate()` rules (trimming spaces, required fields, the PATCH checks), and stores that run the SQL queries. The database assigns ids; a request body never does. | Touch `http.Request`, write a response, or know about HTML |
 | **View** | `internal/view` | `HTML()` for pages, `JSON()` for API bodies, `OpenAPI()` for the spec, plus the templates and `openapi.json` | Check input or read and change the stores |
-| **Controller** | `internal/controller` | One function per route; the two user controllers are structs whose methods are the CRUD actions. It returns `400` on bad input and `404` on a missing id, and otherwise calls the model and then a view. | Hold data itself, or build HTML or JSON by hand |
+| **Controller** | `internal/controller` | One function per route; the two user controllers are structs whose methods are the CRUD actions. It returns `400` on bad input, `404` on a missing id and `500` when the database fails (the real error goes to the log), and otherwise calls the model and then a view. | Hold data itself, or build HTML or JSON by hand |
 
 ### The User model: CRUD on PostgreSQL
 
@@ -556,7 +564,29 @@ and a `createdAt` time that the database sets. `model.Announcements` reads and w
 
 Title, body and author are required; `Announcement.Validate()` trims them and rejects any that
 are empty. The management interface is at `/announcements`, and the navigation bar on every
-`/users` and `/announcements` page links to both.
+page links to `/users`, `/announcements` and `/graduates`.
+
+### Graduates: the alumni table, with both interfaces
+
+The `alumni` table has the same full CRUD. Its JSON stays at `/alumni`, the address from the
+lecture exercise, and its HTML management interface is at `/graduates`.
+
+| CRUD | Model (`model.Graduates`) | JSON (`internal/controller/alumni.go`) | `GraduateController` (HTML) |
+| --- | --- | --- | --- |
+| **Create** | `Add` | `CreateAlumni` — `POST /alumni` → `201` | `Create` — `GET /graduates/new`; `Store` — `POST /graduates` |
+| **Read** | `List`, `Find` | `ListAlumni` — `GET /alumni`; `ShowAlumni` — `GET /alumni/{id}` | `Index` — `GET /graduates`; `Show` — `GET /graduates/{id}` |
+| **Update** | `Replace` | `UpdateAlumni` — `PUT /alumni/{id}` | `Edit` — `GET /graduates/{id}/edit`; `Update` — `POST /graduates/{id}` |
+| **Delete** | `Remove` | `DeleteAlumni` — `DELETE /alumni/{id}` → `204` | `Destroy` — `POST /graduates/{id}/delete` |
+
+Only the name is required; department and graduation year may be empty.
+
+### When the database fails
+
+Every controller sends database errors through `dbError` in `request.go`. The client gets
+`500 database error` and nothing more, because the details are not its business; the real
+error is written to the app's log, for example
+`database error: failed to connect to … lookup db: no such host` when the `db` container is
+stopped. Read it with `docker compose logs app`.
 
 ### What is still on the way
 

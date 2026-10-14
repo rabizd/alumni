@@ -214,6 +214,36 @@ Content-Type: application/json
 ### Wrong method on an existing path -> 405 Method Not Allowed
 DELETE {{host}}/alumni
 
+### One graduate by id
+GET {{host}}/alumni/1
+
+### Replace a graduate -> 200 with the new values
+PUT {{host}}/alumni/1
+Content-Type: application/json
+
+{
+  "name": "Ayşe Yılmaz",
+  "department": "Bilgisayar Mühendisliği",
+  "graduationYear": 2022
+}
+
+### Delete a graduate -> 204 No Content
+DELETE {{host}}/alumni/2
+
+### Deleting the same id again -> 404
+DELETE {{host}}/alumni/2
+
+### --- /graduates: the HTML side (GraduateController). Easiest in a browser: {{host}}/graduates
+
+### Graduate list page
+GET {{host}}/graduates
+
+### Create a graduate from the form -> 303 to /graduates
+POST {{host}}/graduates
+Content-Type: application/x-www-form-urlencoded
+
+name=Zeynep+Arslan&department=Fizik&graduationYear=2020
+
 ### --- /users: the HTML side (UserController). Easiest in a browser: {{host}}/users
 
 ### User list page

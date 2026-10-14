@@ -120,7 +120,7 @@ Lists are ordered newest first (`ORDER BY created_at DESC, id DESC`).
 
 ### alumni
 
-A graduate in the simple directory. Model: `internal/model/alumni.go` · API: `/alumni`
+A graduate in the simple directory. Model: `internal/model/alumni.go` · API: `/alumni` · Pages: `/graduates`
 
 | Column | Type | Null | Default | JSON field | Meaning |
 | --- | --- | --- | --- | --- | --- |
@@ -167,13 +167,13 @@ returns `400 Bad Request` and nothing is written.
 
 | Table | Rule | Where |
 | --- | --- | --- |
-| `users`, `announcements` | every text field is trimmed of surrounding spaces (in `alumni`, only `name`) | `Validate()` |
+| `users`, `announcements` | every text field is trimmed of surrounding spaces | `Validate()` |
 | `users` | `name`, `email`, `department`, `startYear`, `graduationYear` are required | `User.Validate()` |
 | `users` | `startYear` between 1900 and the current year | `User.Validate()` |
 | `users` | `graduationYear` not before `startYear` and not in the future | `User.Validate()` |
 | `users` | a PATCH must change at least one field, and the patched user must pass every rule above | `UserPatch.Validate()`, then `User.Validate()` |
 | `announcements` | `title`, `body`, `author` are required | `Announcement.Validate()` |
-| `alumni` | `name` is required | `Alumni.Validate()` |
+| `alumni` | `name` is required; `name` and `department` are trimmed | `Alumni.Validate()` |
 
 ## From a request to a row
 
@@ -194,7 +194,8 @@ Creating a user, step by step:
 5. The returned row is sent back as JSON with `201 Created`.
 
 If the database itself fails (it is down, a query is wrong) the controller answers
-`500 database error` and does not show the internal error to the client.
+`500 database error` and does not show the internal error to the client; `dbError` writes the
+real error to the app's log (`docker compose logs app`).
 
 ## Design decisions
 

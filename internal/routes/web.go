@@ -9,7 +9,7 @@ import (
 	"github.com/rabizd/alumni/internal/controller"
 )
 
-// Web registers the HTML routes: the pages, and the /users and /announcements screens.
+// Web registers the HTML routes: the pages, and the /users, /announcements and /graduates screens.
 func Web(mux *http.ServeMux) {
 	// Lecture exercises and plain pages.
 	mux.HandleFunc("GET /{$}", controller.Root)
@@ -40,4 +40,14 @@ func Web(mux *http.ServeMux) {
 	mux.HandleFunc("GET /announcements/{id}/edit", announcement.Edit)
 	mux.HandleFunc("POST /announcements/{id}", announcement.Update)
 	mux.HandleFunc("POST /announcements/{id}/delete", announcement.Destroy)
+
+	// Graduates (the alumni table) as HTML pages. The JSON is at /alumni.
+	graduate := controller.GraduateController{}
+	mux.HandleFunc("GET /graduates", graduate.Index)
+	mux.HandleFunc("GET /graduates/new", graduate.Create)
+	mux.HandleFunc("POST /graduates", graduate.Store)
+	mux.HandleFunc("GET /graduates/{id}", graduate.Show)
+	mux.HandleFunc("GET /graduates/{id}/edit", graduate.Edit)
+	mux.HandleFunc("POST /graduates/{id}", graduate.Update)
+	mux.HandleFunc("POST /graduates/{id}/delete", graduate.Destroy)
 }

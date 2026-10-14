@@ -17,7 +17,7 @@ type ApiUserController struct{}
 func (ApiUserController) Index(w http.ResponseWriter, r *http.Request) {
 	list, err := model.Users.List()
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 
@@ -33,7 +33,7 @@ func (ApiUserController) Show(w http.ResponseWriter, r *http.Request) {
 
 	u, found, err := model.Users.Find(id)
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 	if !found {
@@ -58,7 +58,7 @@ func (ApiUserController) Store(w http.ResponseWriter, r *http.Request) {
 
 	created, err := model.Users.Add(u)
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 
@@ -84,7 +84,7 @@ func (ApiUserController) Update(w http.ResponseWriter, r *http.Request) {
 
 	updated, found, err := model.Users.Replace(id, u)
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 	if !found {
@@ -114,7 +114,7 @@ func (ApiUserController) Patch(w http.ResponseWriter, r *http.Request) {
 
 	existing, found, err := model.Users.Find(id)
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 	if !found {
@@ -132,7 +132,7 @@ func (ApiUserController) Patch(w http.ResponseWriter, r *http.Request) {
 
 	updated, found, err := model.Users.Replace(id, patched)
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 	if !found {
@@ -152,7 +152,7 @@ func (ApiUserController) Destroy(w http.ResponseWriter, r *http.Request) {
 
 	found, err := model.Users.Remove(id)
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 	if !found {

@@ -33,7 +33,7 @@ type userList struct {
 func (UserController) Index(w http.ResponseWriter, r *http.Request) {
 	list, err := model.Users.List()
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 
@@ -49,7 +49,7 @@ func (UserController) Show(w http.ResponseWriter, r *http.Request) {
 
 	u, found, err := model.Users.Find(id)
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 	if !found {
@@ -76,7 +76,7 @@ func (UserController) Store(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := model.Users.Add(u); err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 	// 303 See Other: after a POST, send the browser to a page it can safely reload.
@@ -92,7 +92,7 @@ func (UserController) Edit(w http.ResponseWriter, r *http.Request) {
 
 	u, found, err := model.Users.Find(id)
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 	if !found {
@@ -121,7 +121,7 @@ func (UserController) Update(w http.ResponseWriter, r *http.Request) {
 
 	_, found, err := model.Users.Replace(id, u)
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 	if !found {
@@ -141,7 +141,7 @@ func (UserController) Destroy(w http.ResponseWriter, r *http.Request) {
 
 	found, err := model.Users.Remove(id)
 	if err != nil {
-		http.Error(w, "database error", http.StatusInternalServerError)
+		dbError(w, err)
 		return
 	}
 	if !found {

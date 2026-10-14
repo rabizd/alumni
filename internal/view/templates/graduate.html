@@ -1,0 +1,14 @@
+{{template "page_top"}}
+<h1>{{.Name}}</h1>
+<dl>
+  <dt>Bölüm</dt><dd>{{.Department}}</dd>
+  <dt>Mezuniyet</dt><dd>{{if .GraduationYear}}{{.GraduationYear}}{{else}}—{{end}}</dd>
+</dl>
+<div class="row">
+  <a class="btn" href="/graduates/{{.ID}}/edit">Düzenle</a>
+  <form method="post" action="/graduates/{{.ID}}/delete">
+    <button class="ghost" type="submit">Sil</button>
+  </form>
+  <a href="/graduates">← tüm mezunlar</a>
+</div>
+{{template "page_bottom"}}
