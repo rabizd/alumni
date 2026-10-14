@@ -31,7 +31,13 @@ type userList struct {
 
 // Index: GET /users -> the list page
 func (UserController) Index(w http.ResponseWriter, r *http.Request) {
-	view.HTML(w, http.StatusOK, "users.html", userList{Users: model.Users.List()})
+	list, err := model.Users.List()
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+
+	view.HTML(w, http.StatusOK, "users.html", userList{Users: list})
 }
 
 // Show: GET /users/{id} -> one user's page, or 404
@@ -41,7 +47,11 @@ func (UserController) Show(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, found := model.Users.Find(id)
+	u, found, err := model.Users.Find(id)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
 	if !found {
 		http.Error(w, "no user with that id", http.StatusNotFound)
 		return
@@ -65,7 +75,10 @@ func (UserController) Store(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	model.Users.Add(u)
+	if _, err := model.Users.Add(u); err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
 	// 303 See Other: after a POST, send the browser to a page it can safely reload.
 	http.Redirect(w, r, "/users", http.StatusSeeOther)
 }
@@ -77,7 +90,11 @@ func (UserController) Edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, found := model.Users.Find(id)
+	u, found, err := model.Users.Find(id)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
 	if !found {
 		http.Error(w, "no user with that id", http.StatusNotFound)
 		return
@@ -102,7 +119,12 @@ func (UserController) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, found := model.Users.Replace(id, u); !found {
+	_, found, err := model.Users.Replace(id, u)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+	if !found {
 		http.Error(w, "no user with that id", http.StatusNotFound)
 		return
 	}
@@ -117,7 +139,12 @@ func (UserController) Destroy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !model.Users.Remove(id) {
+	found, err := model.Users.Remove(id)
+	if err != nil {
+		http.Error(w, "database error", http.StatusInternalServerError)
+		return
+	}
+	if !found {
 		http.Error(w, "no user with that id", http.StatusNotFound)
 		return
 	}
