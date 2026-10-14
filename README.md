@@ -24,6 +24,7 @@
 - [Architecture](#architecture)
 - [What Works Today](#what-works-today)
 - [Data Model](#data-model)
+- [Data Design Documentation](add.md) ↗
 - [Prior Art](#prior-art)
 - [Open Design Questions](#open-design-questions)
 - [Getting Started](#getting-started)
@@ -186,7 +187,10 @@ each endpoint you touched, and confirm the real response matches what the page p
 
 ## Data Model
 
-The initial schema sketch. It will change as the code is written.
+> 📄 The tables that exist **today** (columns, types, rules, and why the data survives
+> `docker compose down`) are documented in **[add.md — Data Design Documentation](add.md)**.
+
+The initial schema sketch below is where the platform is heading. It will change as the code is written.
 
 | Table | Holds | Notes |
 | --- | --- | --- |
@@ -396,6 +400,7 @@ alumni/
 ├── .gitignore                  # keeps secrets/ out of git
 ├── go.mod                      # Go module: github.com/rabizd/alumni, Go 1.22, pgx (PostgreSQL driver)
 ├── README.md
+├── add.md                      # Data Design Documentation: tables, columns, rules
 └── LICENSE
 ```
 
