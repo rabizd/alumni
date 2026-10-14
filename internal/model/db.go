@@ -42,3 +42,10 @@ func env(key, fallback string) string {
 	}
 	return fallback
 }
+
+// Truncate empties every table and starts the ids from 1 again. Only the
+// seed command uses it, for `seed -fresh`.
+func Truncate(ctx context.Context) error {
+	_, err := db.Exec(ctx, "TRUNCATE users, announcements, alumni RESTART IDENTITY")
+	return err
+}

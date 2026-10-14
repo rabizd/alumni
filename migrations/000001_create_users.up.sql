@@ -1,4 +1,4 @@
--- Accounts on the network, with two sample users.
+-- Accounts on the network. The sample rows come from the seeder (cmd/seed).
 CREATE TABLE users (
     id              SERIAL PRIMARY KEY,
     name            TEXT NOT NULL,
@@ -11,7 +11,3 @@ CREATE TABLE users (
     advisor         TEXT NOT NULL DEFAULT '',
     prep_exempt     BOOLEAN NOT NULL DEFAULT false
 );
-
-INSERT INTO users (name, email, department, start_year, graduation_year, double_major, minor, advisor, prep_exempt) VALUES
-    ('Ayşe Yılmaz', 'ayse@example.com', 'Bilgisayar Mühendisliği', 2017, 2021, 'Matematik', '', 'Prof. Dr. Ahmet Kaya', true),
-    ('Mehmet Demir', 'mehmet@example.com', 'Hukuk', 2015, 2019, '', 'İşletme', '', false);

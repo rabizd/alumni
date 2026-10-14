@@ -253,11 +253,13 @@ git clone https://github.com/rabizd/alumni.git
 cd alumni
 cp .env.example .env                                  # settings: ports, database user and name
 echo "pick-any-password" > secrets/db_password.txt   # the database password
-docker compose up --build
+docker compose up --build -d
+docker compose run --rm seed                          # fill the empty tables with sample data
 ```
 
-Then open <http://localhost:8080/main>. Compose starts two containers: `db` (PostgreSQL) and
-`app` (the Go server). The app waits until the database is healthy before it starts.
+Then open <http://localhost:8080/main>. Compose starts `db` (PostgreSQL), runs `migrate` to
+create the tables, then starts `app` (the Go server). The tables start empty; `seed` fills them
+(see [Factories and seeding](#factories-and-seeding)).
 
 `.env` and `secrets/db_password.txt` must exist before the first `docker compose up`, otherwise
 Compose stops with an error that names what is missing. Neither file is committed. The password is set when the database is created for the first time;
@@ -277,7 +279,7 @@ containers but not the volume, so the data is still there on the next `up`:
 4. `GET /api/users` — the record is still there
 
 Only `docker compose down -v` deletes the volume, and with it every record. On the next start
-the migrations run again from the first one and bring back the tables and the sample rows.
+the migrations run again from the first one and bring back the empty tables; run `seed` to fill them.
 
 ### Migrations
 
@@ -286,7 +288,7 @@ order by [golang-migrate](https://github.com/golang-migrate/migrate). Each one h
 
 | File | Does |
 | --- | --- |
-| `000001_create_users.up.sql` | applies the change (`CREATE TABLE users …` + sample rows) |
+| `000001_create_users.up.sql` | applies the change (`CREATE TABLE users …`) |
 | `000001_create_users.down.sql` | undoes it (`DROP TABLE users`) |
 
 On every `docker compose up`, the `migrate` service runs first, applies only the migrations the
@@ -311,6 +313,27 @@ and run `docker compose up -d` (or `docker compose run --rm migrate up`). The ex
 
 > ⚠️ Never edit a migration that has already run — the database will not run it again. Add a
 > new one instead.
+
+Migrations hold only the **structure**. The rows come from the seeder.
+
+### Factories and seeding
+
+| Part | File | What it does |
+| --- | --- | --- |
+| **Factory** | `internal/seed/factory.go` | makes one random but valid record: `User()`, `Announcement()`, `Alumni()`. Names, departments and years are picked from Turkish lists; every user passes `User.Validate()` (start year in range, graduation after start, never in the future) and gets a unique email |
+| **Seeder** | `internal/seed/seeder.go` | puts the fixed samples (Ayşe Yılmaz, Mehmet Demir, two announcements) into any **empty** table, then adds the random records. Each record goes through `Validate()` and the normal store, like an API request |
+| **Command** | `cmd/seed/main.go` | runs the seeder; the `seed` service in `docker-compose.yml` runs it in Docker |
+
+| Command | What it does |
+| --- | --- |
+| `docker compose run --rm seed` | samples (if the table is empty) + 10 users, 5 announcements, 10 alumni |
+| `docker compose run --rm seed -users 50 -alumni 0` | choose how many random records of each kind |
+| `docker compose run --rm seed -fresh` | empty every table first (ids start from 1 again), then seed |
+| `docker compose run --rm seed -seed 42` | a fixed random seed: the same number always makes the same records |
+
+The `seed` service has the `tools` profile, so `docker compose up` does not start it; it only
+runs when you ask. Running it twice adds more random records but never a second copy of the
+samples.
 
 ## Configuration
 
@@ -393,8 +416,10 @@ view never import a controller, and they never import each other.
 ```
 alumni/
 ├── cmd/
-│   └── api/
-│       └── main.go             # entry point: registers the routes, reads APP_PORT, starts the server
+│   ├── api/
+│   │   └── main.go             # entry point: registers the routes, reads APP_PORT, starts the server
+│   └── seed/
+│       └── main.go             # seed command: -users, -announcements, -alumni, -fresh, -seed
 │
 ├── internal/                   # the application, split into the three MVC layers
 │   ├── routes/                 # ROUTES: which URL goes to which controller
@@ -407,6 +432,10 @@ alumni/
 │   │   ├── announcement.go     #   Announcement + Validate(), AnnouncementStore (List/Add/Find/Replace/Remove)
 │   │   ├── alumni.go           #   Alumni + Validate(), AlumniStore (List/Add)
 │   │   └── health.go           #   Health, the {"status":"ok"} shape
+│   │
+│   ├── seed/                   # FACTORIES + SEEDER
+│   │   ├── factory.go          #   random valid User / Announcement / Alumni
+│   │   └── seeder.go           #   Run(): samples into empty tables, then random records
 │   │
 │   ├── view/                   # VIEW
 │   │   ├── view.go             #   HTML() renders a template with data, JSON() writes a JSON body, OpenAPI() serves the spec
@@ -462,7 +491,7 @@ The layers are the app's own parts, not a library for other projects.
 ### The User model: CRUD on PostgreSQL
 
 `internal/model/user.go` is the User model. `model.Users` reads and writes the `users` table;
-`migrations/000001_create_users.up.sql` creates it with two sample users. Each CRUD operation is one method, and each
+`migrations/000001_create_users.up.sql` creates it and the seeder fills it. Each CRUD operation is one method, and each
 also returns an `error` when the database fails (the controllers answer `500`):
 
 | CRUD | Method on `model.Users` | What it does | Route that uses it |
@@ -516,7 +545,7 @@ A PATCH is applied first and the patched user is validated as a whole, so changi
 
 `internal/model/announcement.go` is the Announcement model. It has a title, a body, an author,
 and a `createdAt` time that the database sets. `model.Announcements` reads and writes the
-`announcements` table, which `migrations/000002_create_announcements.up.sql` starts with two samples. `List()` returns the newest first.
+`announcements` table, which `migrations/000002_create_announcements.up.sql` creates and the seeder fills. `List()` returns the newest first.
 
 | CRUD | Model (`model.Announcements`) | `ApiAnnouncementController` (JSON) | `AnnouncementController` (HTML, the management interface) |
 | --- | --- | --- | --- |

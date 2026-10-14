@@ -16,6 +16,7 @@ section.
   - [announcements](#announcements)
   - [alumni](#alumni)
 - [Migrations](#migrations)
+- [Seed data](#seed-data)
 - [Validation rules](#validation-rules)
 - [From a request to a row](#from-a-request-to-a-row)
 - [Design decisions](#design-decisions)
@@ -40,7 +41,8 @@ section.
 | --- | --- | --- |
 | **Database** | PostgreSQL 17, the only place the app stores data | `docker-compose.yml` → `db` |
 | **Volume `db-data`** | Postgres' data files. Survives `docker compose down`; only `down -v` deletes it | `docker-compose.yml` → `volumes` |
-| **Schema + sample rows** | Numbered migrations; the `migrate` service applies the new ones on every `up` | `migrations/`, `docker-compose.yml` → `migrate` |
+| **Schema** | Numbered migrations; the `migrate` service applies the new ones on every `up` | `migrations/`, `docker-compose.yml` → `migrate` |
+| **Seed data** | Fixed samples + random records from the factories, added on demand | `internal/seed/`, `cmd/seed/`, `docker-compose.yml` → `seed` |
 | **Password** | A Docker Compose secret, read from a file by both containers; never in git or in the image | `secrets/db_password.txt`, `docker-compose.yml` → `secrets` |
 | **Connection** | One `pgxpool` connection pool, opened at startup | `internal/model/db.go` |
 
@@ -135,13 +137,27 @@ The tables are not created by hand: each change to the schema is a numbered migr
 
 | # | Migration | Up | Down |
 | --- | --- | --- | --- |
-| 1 | `create_users` | creates `users` and inserts two sample users | drops `users` |
-| 2 | `create_announcements` | creates `announcements` and inserts two sample announcements | drops `announcements` |
-| 3 | `create_alumni` | creates `alumni` and inserts two sample graduates | drops `alumni` |
+| 1 | `create_users` | creates `users` | drops `users` |
+| 2 | `create_announcements` | creates `announcements` | drops `announcements` |
+| 3 | `create_alumni` | creates `alumni` | drops `alumni` |
 
 Postgres keeps a one-row table, `schema_migrations`, with the number of the last migration
 applied (`version`) and whether one failed halfway (`dirty`). `migrate up` compares it with the
 files and runs only the newer ones, so existing rows are never touched by a restart.
+
+## Seed data
+
+Migrations create empty tables; the **seeder** fills them. The README's
+[Factories and seeding](README.md#factories-and-seeding) section has the commands.
+
+| Table | Fixed samples (only into an empty table) | Random records from the factory |
+| --- | --- | --- |
+| `users` | Ayşe Yılmaz, Mehmet Demir | name from Turkish first/last name lists; email `first.last.N@example.com` (unique); department from a list; start year 4–20 years ago; graduation 4–6 years later, not in the future; optional fields filled only sometimes |
+| `announcements` | "Mezunlar buluşması", "Kariyer günleri başvuruları açıldı" | title and author from lists; body names a department |
+| `alumni` | Ayşe Yılmaz, Mehmet Demir | name and department from lists; graduation year in the last 30 years |
+
+Seeded rows go through the same `Validate()` and store methods as an API request, so the seeder
+can never put a row in the database that the API would reject.
 
 ## Validation rules
 

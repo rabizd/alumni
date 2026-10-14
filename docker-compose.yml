@@ -18,6 +18,25 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
+  # Fills the database with sample and random records. It does not start with
+  # `up`; run it by hand:
+  #   docker compose run --rm seed                    (2 samples + random records)
+  #   docker compose run --rm seed -fresh -users 50   (empty the tables first)
+  seed:
+    build: .
+    profiles: ["tools"]
+    entrypoint: ["./seed"]
+    environment:
+      DB_HOST: db
+      DB_USER: ${DB_USER}
+      DB_NAME: ${DB_NAME}
+      DB_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
   # Applies the new files in migrations/ in number order, then exits. The
   # schema_migrations table in the database remembers which ones already ran.
   # By hand: docker compose run --rm migrate down 1   (undo the last one)
