@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/rabizd/alumni/internal/controller"
+	"github.com/rabizd/alumni/internal/view"
 )
 
 // Web registers the HTML routes: the pages, and the /users, /announcements,
@@ -20,6 +21,9 @@ func Web(mux *http.ServeMux) {
 	mux.HandleFunc("GET /hello/{name}", controller.HelloName)
 	mux.HandleFunc("GET /sum/{number1}/{number2}", controller.Sum)
 	mux.HandleFunc("GET /temporary", controller.Temporary)
+
+	// Images the pages use, e.g. the campus photos behind the main page.
+	mux.Handle("GET /static/", view.Static)
 
 	// Users as HTML pages. HTML forms can only send GET and POST, so update
 	// and delete are POSTs here.

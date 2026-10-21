@@ -61,32 +61,57 @@
   nav.top a{ color:var(--ink); text-decoration:none; }
   nav.top a:hover{ color:var(--maroon); }
 
-  /* --- hero --- */
-  .hero{ padding:4.5rem 0 3.5rem; }
+  /* --- hero: campus photos fading one into the next, behind light text --- */
+  .hero{
+    position:relative; isolation:isolate; overflow:hidden;
+    padding:5.5rem 0 4rem; background:var(--ink); color:#f4ece2;
+  }
+  .hero .slides span{
+    position:absolute; inset:0; z-index:-2;
+    background-size:cover; background-position:center;
+    opacity:0; animation:slide 24s infinite;
+  }
+  .hero .slides span:nth-child(1){ background-image:url('/static/img/campus-1.jpg'); background-position:center 30%; }
+  .hero .slides span:nth-child(2){ background-image:url('/static/img/campus-2.jpg'); animation-delay:6s; }
+  .hero .slides span:nth-child(3){ background-image:url('/static/img/campus-3.jpg'); background-position:center 62%; animation-delay:12s; }
+  .hero .slides span:nth-child(4){ background-image:url('/static/img/campus-4.jpg'); animation-delay:18s; }
+  /* each photo shows for 6 of the 24 seconds, with a 1s crossfade, and drifts slightly closer */
+  @keyframes slide{
+    0%{ opacity:0; transform:scale(1); }
+    4%{ opacity:1; }
+    25%{ opacity:1; }
+    29%{ opacity:0; transform:scale(1.06); }
+    100%{ opacity:0; }
+  }
+  /* darkens the photos so the text stays readable, most on the left where it sits */
+  .hero::before{
+    content:''; position:absolute; inset:0; z-index:-1;
+    background:linear-gradient(90deg, rgba(24,16,14,0.86) 0%, rgba(24,16,14,0.62) 55%, rgba(24,16,14,0.4) 100%);
+  }
   .hero .kicker{
     display:flex; align-items:center; gap:0.6rem;
-    color:var(--maroon); font-size:0.85rem; margin-bottom:1.1rem;
+    color:#e2c27c; font-size:0.85rem; margin-bottom:1.1rem;
   }
   .hero .kicker .dot{
-    width:6px; height:6px; border-radius:50%; background:var(--maroon);
+    width:6px; height:6px; border-radius:50%; background:#e2c27c;
     display:inline-block;
   }
   .hero h1{ font-size:2.7rem; max-width:22ch; }
-  .hero h1 em{ font-style:italic; color:var(--maroon); }
+  .hero h1 em{ font-style:italic; color:#e2c27c; }
   .hero p.lede{
-    font-size:1.1rem; max-width:38rem; margin-top:1.2rem; color:#453e37;
+    font-size:1.1rem; max-width:38rem; margin-top:1.2rem; color:#e6dccf;
   }
   .founding{
     margin-top:2.3rem;
     display:flex; align-items:baseline; gap:1rem;
-    border-top:1px solid var(--line);
+    border-top:1px solid rgba(244,236,226,0.25);
     padding-top:1.3rem;
   }
   .founding .year{
-    font-family:'Spectral', serif; font-size:2.6rem; color:var(--maroon-deep);
+    font-family:'Spectral', serif; font-size:2.6rem; color:#e2c27c;
     font-weight:600;
   }
-  .founding p{ margin:0; font-size:0.9rem; color:#5b5248; max-width:30rem; }
+  .founding p{ margin:0; font-size:0.9rem; color:#d9cec0; max-width:30rem; }
 
   /* --- ledger sections (registry style, no cards) --- */
   section{ padding:3rem 0; border-top:1px solid var(--line); }
@@ -157,6 +182,9 @@
   @media (prefers-reduced-motion: reduce){
     html{ scroll-behavior:auto; }
     *{ transition:none !important; }
+    /* no slideshow: the first photo stays */
+    .hero .slides span{ animation:none; }
+    .hero .slides span:nth-child(1){ opacity:1; }
   }
 </style>
 </head>
@@ -173,6 +201,7 @@
 </nav>
 
 <header class="hero">
+  <div class="slides" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
   <div class="wrap">
     <p class="kicker"><span class="dot"></span> geliştirme aşamasında</p>
     <h1>Mezuniyet bir son değil, <em>yeni bir sicilin</em> başlangıcıdır.</h1>
