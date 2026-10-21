@@ -24,6 +24,15 @@ var templates = template.Must(template.ParseFS(templateFiles, "templates/*.html"
 //go:embed openapi.json
 var openAPISpec []byte
 
+// Images and other files the pages link to are baked in too, under static/.
+//
+//go:embed static
+var staticFiles embed.FS
+
+// Static serves the files in static/ at the same path, e.g.
+// /static/img/campus-1.jpg.
+var Static = http.FileServerFS(staticFiles)
+
 // HTML renders one page from templates/ with the given status code. data is
 // what the page shows; pages that show nothing take nil.
 func HTML(w http.ResponseWriter, status int, page string, data any) {
