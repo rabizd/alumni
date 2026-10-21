@@ -14,6 +14,7 @@
     { "name": "UserController", "description": "Kullanıcılar, HTML sayfası olarak (/users) — tarayıcıdaki insanlar için. Formlar yalnızca GET ve POST gönderebildiğinden güncelleme ve silme burada POST'tur. Başarılı bir POST 303 ile yönlendirir; Swagger yönlendirmeyi takip edip varılan sayfayı gösterir." },
     { "name": "ApiAnnouncementController", "description": "Duyurular, JSON olarak (/api/announcements) — programlar için. En yeni duyuru en üstte." },
     { "name": "ApiJobPostingController", "description": "İş ve staj ilanları, JSON olarak. Doğrudan: /api/job-postings/{id}. İç içe (nested), ilanı açan kullanıcı üzerinden: /api/users/{id}/job-postings. En yeni ilan en üstte." },
+    { "name": "ApiApplicationController", "description": "İlanlara başvurular, JSON olarak. Doğrudan: /api/applications/{id}. İç içe (nested): bir ilana gelen başvurular /api/job-postings/{id}/applications, bir kullanıcının yaptığı başvurular /api/users/{id}/applications. Bir kullanıcı aynı ilana bir kez başvurabilir." },
     { "name": "AnnouncementController", "description": "Duyuruları yönetme arayüzü, HTML sayfası olarak (/announcements). Güncelleme ve silme POST'tur; başarılı bir POST 303 ile yönlendirir." },
     { "name": "Alumni", "description": "Mezunlar, JSON olarak (/alumni) — programlar için." },
     { "name": "GraduateController", "description": "Mezunları yönetme arayüzü, HTML sayfası olarak (/graduates). Güncelleme ve silme POST'tur; başarılı bir POST 303 ile yönlendirir." }
@@ -492,6 +493,160 @@
         }
       }
     },
+    "/api/applications": {
+      "get": {
+        "tags": ["ApiApplicationController"],
+        "operationId": "ApiApplicationController.Index",
+        "summary": "Bütün başvuruları listele (en yeni en üstte)",
+        "responses": {
+          "200": {
+            "description": "Başvuru dizisi",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Application" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["ApiApplicationController"],
+        "operationId": "ApiApplicationController.Store",
+        "summary": "Yeni başvuru oluştur",
+        "description": "id ve createdAt alanlarını sunucu verir. status gönderilmezse pending olur. jobPostingId ve userId var olmalı, yoksa 400; aynı kullanıcı aynı ilana ikinci kez başvurursa 409.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NewApplication" },
+              "example": { "jobPostingId": 1, "userId": 2, "coverLetter": "Go ile iki yıllık deneyimim var, ilanınız tam bana göre." }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Oluşturuldu",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Application" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "409": { "$ref": "#/components/responses/AlreadyApplied" }
+        }
+      }
+    },
+    "/api/applications/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/ApplicationID" }],
+      "get": {
+        "tags": ["ApiApplicationController"],
+        "operationId": "ApiApplicationController.Show",
+        "summary": "Tek bir başvuruyu getir",
+        "responses": {
+          "200": {
+            "description": "Başvuru bulundu",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Application" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/ApplicationNotFound" }
+        }
+      },
+      "put": {
+        "tags": ["ApiApplicationController"],
+        "operationId": "ApiApplicationController.Update",
+        "summary": "Başvuruyu bütünüyle değiştir (örneğin durumunu accepted yap)",
+        "description": "jobPostingId ve userId gönderilmeli. id ve createdAt değişmez.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NewApplication" },
+              "example": { "jobPostingId": 1, "userId": 2, "coverLetter": "Go ile iki yıllık deneyimim var, ilanınız tam bana göre.", "status": "accepted" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Değiştirildi",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Application" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/ApplicationNotFound" },
+          "409": { "$ref": "#/components/responses/AlreadyApplied" }
+        }
+      },
+      "delete": {
+        "tags": ["ApiApplicationController"],
+        "operationId": "ApiApplicationController.Destroy",
+        "summary": "Başvuruyu sil (geri çek)",
+        "responses": {
+          "204": { "description": "Silindi; geri gönderilecek gövde yok" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/ApplicationNotFound" }
+        }
+      }
+    },
+    "/api/job-postings/{id}/applications": {
+      "parameters": [{ "$ref": "#/components/parameters/JobPostingID" }],
+      "get": {
+        "tags": ["ApiApplicationController"],
+        "operationId": "ApiApplicationController.JobPostingIndex",
+        "summary": "Bir ilana gelen başvurular (nested)",
+        "responses": {
+          "200": {
+            "description": "İlanın başvuruları; hiç yoksa boş dizi",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Application" } }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/JobPostingNotFound" }
+        }
+      },
+      "post": {
+        "tags": ["ApiApplicationController"],
+        "operationId": "ApiApplicationController.JobPostingStore",
+        "summary": "Bu ilana başvur (nested)",
+        "description": "İlan URL'deki id'dir; gövdede jobPostingId gönderilirse onun yerine URL'deki geçer. Başvuran kullanıcı gövdedeki userId.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NewApplication" },
+              "example": { "userId": 2, "coverLetter": "Staj için başvuruyorum." }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Oluşturuldu",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Application" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/JobPostingNotFound" },
+          "409": { "$ref": "#/components/responses/AlreadyApplied" }
+        }
+      }
+    },
+    "/api/users/{id}/applications": {
+      "parameters": [{ "$ref": "#/components/parameters/UserID" }],
+      "get": {
+        "tags": ["ApiApplicationController"],
+        "operationId": "ApiApplicationController.UserIndex",
+        "summary": "Bir kullanıcının yaptığı başvurular (nested)",
+        "responses": {
+          "200": {
+            "description": "Kullanıcının başvuruları; hiç yoksa boş dizi",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Application" } }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
     "/announcements": {
       "get": {
         "tags": ["AnnouncementController"],
@@ -775,6 +930,13 @@
         "description": "İlanın id'si",
         "schema": { "type": "integer", "example": 1 }
       },
+      "ApplicationID": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Başvurunun id'si",
+        "schema": { "type": "integer", "example": 1 }
+      },
       "UserID": {
         "name": "id",
         "in": "path",
@@ -891,6 +1053,27 @@
           "deadline": { "type": "string", "format": "date", "nullable": true, "example": "2026-12-31", "description": "Bugünden önce olamaz" }
         }
       },
+      "Application": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "readOnly": true, "example": 1 },
+          "jobPostingId": { "type": "integer", "example": 1, "description": "Başvurulan ilan" },
+          "userId": { "type": "integer", "example": 2, "description": "Başvuran kullanıcı" },
+          "coverLetter": { "type": "string", "example": "Go ile iki yıllık deneyimim var, ilanınız tam bana göre.", "description": "İlanı açana kısa not; yoksa boş" },
+          "status": { "type": "string", "enum": ["pending", "accepted", "rejected"], "example": "pending" },
+          "createdAt": { "type": "string", "format": "date-time", "readOnly": true, "example": "2026-10-21T10:00:00+03:00" }
+        }
+      },
+      "NewApplication": {
+        "type": "object",
+        "required": ["jobPostingId", "userId"],
+        "properties": {
+          "jobPostingId": { "type": "integer", "example": 1, "description": "Var olan bir ilan. Nested route'ta gerekmez, URL'deki id kullanılır." },
+          "userId": { "type": "integer", "example": 2, "description": "Var olan bir kullanıcı" },
+          "coverLetter": { "type": "string", "example": "Go ile iki yıllık deneyimim var, ilanınız tam bana göre." },
+          "status": { "type": "string", "enum": ["pending", "accepted", "rejected"], "example": "pending", "description": "Gönderilmezse pending" }
+        }
+      },
       "Alumni": {
         "type": "object",
         "properties": {
@@ -921,6 +1104,18 @@
         "description": "Bu id'ye sahip ilan yok",
         "content": {
           "text/plain": { "schema": { "type": "string" }, "example": "no job posting with that id" }
+        }
+      },
+      "ApplicationNotFound": {
+        "description": "Bu id'ye sahip başvuru yok",
+        "content": {
+          "text/plain": { "schema": { "type": "string" }, "example": "no application with that id" }
+        }
+      },
+      "AlreadyApplied": {
+        "description": "Bu kullanıcı bu ilana zaten başvurmuş",
+        "content": {
+          "text/plain": { "schema": { "type": "string" }, "example": "this user has already applied to this job posting" }
         }
       },
       "BadRequest": {

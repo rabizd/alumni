@@ -16,6 +16,7 @@ section.
   - [announcements](#announcements)
   - [alumni](#alumni)
   - [job_postings](#job_postings)
+  - [applications](#applications)
 - [Migrations](#migrations)
 - [Seed data](#seed-data)
 - [Validation rules](#validation-rules)
@@ -88,12 +89,24 @@ erDiagram
         DATE deadline
         TIMESTAMPTZ created_at
     }
+    applications {
+        SERIAL id PK
+        INTEGER job_posting_id FK
+        INTEGER user_id FK
+        TEXT cover_letter
+        TEXT status
+        TIMESTAMPTZ created_at
+    }
     users ||--o{ job_postings : posts
+    job_postings ||--o{ applications : receives
+    users ||--o{ applications : submits
 ```
 
-`job_postings` is the first table with a foreign key: every posting belongs to the user who
-posted it, and a user can post many. The other tables are still **independent**:
-`announcements.author` is free text, not a link to `users`. See
+`job_postings` and `applications` are linked to `users` by foreign keys: every posting belongs
+to the user who posted it, and every application belongs to one posting and to the user who
+applied. Through `applications`, users and job postings are **many-to-many**: a user can apply
+to many postings, and a posting can receive applications from many users. The other tables
+are still **independent**: `announcements.author` is free text, not a link to `users`. See
 [Known limits](#known-limits-and-next-steps).
 
 ## Tables
@@ -168,6 +181,24 @@ for a user that does not exist, and deleting a user deletes their postings with 
 `deadline` is the only nullable column in the schema, because "no deadline" is not a date.
 Lists are ordered newest first (`ORDER BY created_at DESC, id DESC`).
 
+### applications
+
+A user's application to a job posting. Model: `internal/model/application.go` · API:
+`/api/applications`
+
+| Column | Type | Null | Default | JSON field | Meaning |
+| --- | --- | --- | --- | --- | --- |
+| `id` | `SERIAL` | no | next number | `id` | primary key |
+| `job_posting_id` | `INTEGER` | no | — | `jobPostingId` | the posting applied to; foreign key to `job_postings.id` |
+| `user_id` | `INTEGER` | no | — | `userId` | who applied; foreign key to `users.id` |
+| `cover_letter` | `TEXT` | no | `''` | `coverLetter` | a short note to the poster; `''` means none |
+| `status` | `TEXT` | no | `'pending'` | `status` | `pending`, `accepted` or `rejected` |
+| `created_at` | `TIMESTAMPTZ` | no | `now()`, rounded to the second | `createdAt` | set by the database; an update keeps it |
+
+Both foreign keys are `ON DELETE CASCADE`: deleting a posting deletes its applications, and
+deleting a user deletes the applications they made. The pair `(job_posting_id, user_id)` is
+`UNIQUE`, so a user can apply to the same posting only once. Lists are ordered newest first.
+
 ## Migrations
 
 The tables are not created by hand: each change to the schema is a numbered migration in
@@ -180,6 +211,7 @@ The tables are not created by hand: each change to the schema is a numbered migr
 | 2 | `create_announcements` | creates `announcements` | drops `announcements` |
 | 3 | `create_alumni` | creates `alumni` | drops `alumni` |
 | 4 | `create_job_postings` | creates `job_postings` with its foreign key to `users` | drops `job_postings` |
+| 5 | `create_applications` | creates `applications` with its foreign keys to `job_postings` and `users` | drops `applications` |
 
 Postgres keeps a one-row table, `schema_migrations`, with the number of the last migration
 applied (`version`) and whether one failed halfway (`dirty`). `migrate up` compares it with the
@@ -195,7 +227,6 @@ Migrations create empty tables; the **seeder** fills them. The README's
 | `users` | Ayşe Yılmaz, Mehmet Demir | name from Turkish first/last name lists; email `first.last.N@example.com` (unique); department from a list; start year 4–20 years ago; graduation 4–6 years later, not in the future; optional fields filled only sometimes |
 | `announcements` | "Mezunlar buluşması", "Kariyer günleri başvuruları açıldı" | title and author from lists; body names a department |
 | `alumni` | Ayşe Yılmaz, Mehmet Demir | name and department from lists; graduation year in the last 30 years |
-
 Seeded rows go through the same `Validate()` and store methods as an API request, so the seeder
 can never put a row in the database that the API would reject.
 
@@ -218,6 +249,10 @@ returns `400 Bad Request` and nothing is written.
 | `job_postings` | `employmentType` is one of `full_time`, `part_time`, `internship` | `JobPosting.Validate()` |
 | `job_postings` | `deadline`, when given, is not in the past | `JobPosting.Validate()` |
 | `job_postings` | `userId` must be an existing user — checked by the database (foreign key), answered with `400` | Postgres |
+| `applications` | `jobPostingId` and `userId` are required; `coverLetter` is trimmed; an empty `status` becomes `pending` | `Application.Validate()` |
+| `applications` | `status` is one of `pending`, `accepted`, `rejected` | `Application.Validate()` |
+| `applications` | `jobPostingId` and `userId` must exist — checked by the database (foreign keys), answered with `400` | Postgres |
+| `applications` | one application per user per posting — checked by the database (`UNIQUE`), answered with `409 Conflict` | Postgres |
 
 ## From a request to a row
 
@@ -255,7 +290,7 @@ real error to the app's log (`docker compose logs app`).
 
 ## Known limits and next steps
 
-- **Few relations.** Only `job_postings.user_id` is a foreign key so far;
+- **Few relations.** Only `job_postings` and `applications` have foreign keys so far;
   `announcements.author` should become one too.
 - **`users` and `alumni` overlap.** Both hold a name, department and graduation year. The
   README's [Data Model](README.md#data-model) plans one `users` table for accounts and an

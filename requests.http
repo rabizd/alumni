@@ -420,3 +420,87 @@ Content-Type: application/json
   "description": "3. sınıf öğrencileri için 8 haftalık staj.",
   "deadline": "2027-03-01"
 }
+
+##############################################
+# Applications
+##############################################
+
+### --- Direct routes: an application by its own id
+
+### List every application, newest first
+GET {{host}}/api/applications
+
+### Apply -> 201; status starts as "pending"
+POST {{host}}/api/applications
+Content-Type: application/json
+
+{
+  "jobPostingId": 1,
+  "userId": 2,
+  "coverLetter": "Go ile iki yıllık deneyimim var, ilanınız tam bana göre."
+}
+
+### The same user applies to the same posting again -> 409 Conflict
+POST {{host}}/api/applications
+Content-Type: application/json
+
+{
+  "jobPostingId": 1,
+  "userId": 2
+}
+
+### A posting that does not exist -> 400
+POST {{host}}/api/applications
+Content-Type: application/json
+
+{
+  "jobPostingId": 999999,
+  "userId": 2
+}
+
+### One application
+GET {{host}}/api/applications/1
+
+### Accept it -> 200
+PUT {{host}}/api/applications/1
+Content-Type: application/json
+
+{
+  "jobPostingId": 1,
+  "userId": 2,
+  "coverLetter": "Go ile iki yıllık deneyimim var, ilanınız tam bana göre.",
+  "status": "accepted"
+}
+
+### A status outside the list -> 400
+PUT {{host}}/api/applications/1
+Content-Type: application/json
+
+{
+  "jobPostingId": 1,
+  "userId": 2,
+  "status": "maybe"
+}
+
+### Withdraw it -> 204
+DELETE {{host}}/api/applications/1
+
+### --- Nested routes: through the posting, or through the user
+
+### The applications posting 1 received
+GET {{host}}/api/job-postings/1/applications
+
+### Apply to posting 1 -> 201; the posting comes from the URL
+POST {{host}}/api/job-postings/1/applications
+Content-Type: application/json
+
+{
+  "userId": 2,
+  "coverLetter": "Staj için başvuruyorum."
+}
+
+### A posting that does not exist -> 404
+GET {{host}}/api/job-postings/999999/applications
+
+### The applications user 2 made
+GET {{host}}/api/users/2/applications
