@@ -17,10 +17,23 @@ var (
 	departments = []string{"Bilgisayar Mühendisliği", "Hukuk", "Tıp", "İktisat", "Psikoloji", "Fizik", "Matematik", "İşletme", "Mimarlık", "Felsefe"}
 	titles      = []string{"Mezunlar buluşması", "Kariyer günleri", "Mentorluk programı", "Staj ilanı", "Seminer duyurusu", "Burs başvuruları"}
 	authors     = []string{"Mezunlar Ofisi", "Kariyer Merkezi", "Öğrenci İşleri", "Rektörlük"}
-	jobTitles   = []string{"Junior Backend Developer", "Frontend Developer", "Veri Analisti", "Hukuk Stajyeri", "Asistan Hekim", "Finans Uzmanı", "Klinik Psikolog", "Mimari Tasarımcı", "Ürün Yöneticisi", "Araştırma Asistanı"}
-	companies   = []string{"Trendyol", "Getir", "Aselsan", "Koç Holding", "Türk Telekom", "Garanti BBVA", "Acıbadem", "Turkcell", "Baykar", "Peak Games"}
 	locations   = []string{"İstanbul", "Ankara", "İzmir", "Remote", ""}
 )
+
+// jobsByDepartment lists, for each department, positions and companies that
+// fit it: a graduate posts openings in their own field.
+var jobsByDepartment = map[string]struct{ titles, companies []string }{
+	"Bilgisayar Mühendisliği": {[]string{"Junior Backend Developer", "Frontend Developer", "Gömülü Yazılım Mühendisi", "DevOps Mühendisi"}, []string{"Trendyol", "Getir", "Baykar", "Aselsan", "Peak Games"}},
+	"Hukuk":                   {[]string{"Hukuk Stajyeri", "Avukat", "Hukuk Müşaviri"}, []string{"Demir Hukuk Bürosu", "Koç Holding", "Garanti BBVA"}},
+	"Tıp":                     {[]string{"Asistan Hekim", "Pratisyen Hekim", "Klinik Araştırma Uzmanı"}, []string{"Acıbadem", "Memorial", "Medipol Hastanesi"}},
+	"İktisat":                 {[]string{"Ekonomist", "Veri Analisti", "Risk Analisti"}, []string{"Garanti BBVA", "Türkiye İş Bankası", "Koç Holding"}},
+	"Psikoloji":               {[]string{"Klinik Psikolog", "Psikolojik Danışman", "Nöropsikolog"}, []string{"Acıbadem", "Memorial", "Medipol Hastanesi"}},
+	"Fizik":                   {[]string{"Araştırma Asistanı", "Ar-Ge Mühendisi", "Veri Analisti"}, []string{"Aselsan", "TÜBİTAK", "Baykar"}},
+	"Matematik":               {[]string{"Veri Analisti", "Aktüer", "Kantitatif Analist"}, []string{"Garanti BBVA", "Anadolu Sigorta", "Turkcell"}},
+	"İşletme":                 {[]string{"Finans Uzmanı", "Ürün Yöneticisi", "Pazarlama Uzmanı"}, []string{"Koç Holding", "Türk Telekom", "Getir"}},
+	"Mimarlık":                {[]string{"Mimari Tasarımcı", "Şantiye Mimarı", "İç Mimar"}, []string{"Rönesans Holding", "Limak", "Tabanlıoğlu Mimarlık"}},
+	"Felsefe":                 {[]string{"Editör", "Redaktör", "İçerik Yazarı"}, []string{"İletişim Yayınları", "Can Yayınları", "Yapı Kredi Yayınları"}},
+}
 
 // Factory makes random records. The same seed gives the same records, so a
 // run can be repeated exactly.
@@ -91,15 +104,21 @@ func (f *Factory) Alumni() model.Alumni {
 }
 
 // JobPosting returns a posting by the given user that passes JobPosting.Validate.
+// The position and company fit the poster's department; a department not in
+// jobsByDepartment (one typed in through the API) gets a computer engineering job.
 // Some have an apply link or a deadline (1–12 weeks from today), like in real data.
-func (f *Factory) JobPosting(userID int) model.JobPosting {
+func (f *Factory) JobPosting(poster model.User) model.JobPosting {
+	jobs, ok := jobsByDepartment[poster.Department]
+	if !ok {
+		jobs = jobsByDepartment["Bilgisayar Mühendisliği"]
+	}
 	p := model.JobPosting{
-		UserID:         userID,
-		Title:          f.pick(jobTitles),
-		Company:        f.pick(companies),
+		UserID:         poster.ID,
+		Title:          f.pick(jobs.titles),
+		Company:        f.pick(jobs.companies),
 		Location:       f.pick(locations),
 		EmploymentType: f.pick(model.EmploymentTypes),
-		Description:    fmt.Sprintf("%s mezunlarını ekibimizde görmek isteriz. Ayrıntılar için başvurun ya da ilanı açan mezuna yazın.", f.pick(departments)),
+		Description:    fmt.Sprintf("Ekibimize %s mezunu bir arkadaş arıyoruz. Ayrıntılar için başvurun ya da bana yazın.", poster.Department),
 	}
 	if f.r.Intn(2) == 0 {
 		p.ApplyURL = fmt.Sprintf("https://example.com/jobs/%d", 1000+f.r.Intn(9000))

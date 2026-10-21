@@ -127,7 +127,7 @@ func Run(f *Factory, c Counts) error {
 		}
 	}
 	for range c.JobPostings {
-		jobPostings = append(jobPostings, f.JobPosting(f.pickUser(allUsers).ID))
+		jobPostings = append(jobPostings, f.JobPosting(f.pickUser(allUsers)))
 	}
 	for _, p := range jobPostings {
 		if err := p.Validate(); err != nil {
