@@ -15,6 +15,7 @@ section.
   - [users](#users)
   - [announcements](#announcements)
   - [alumni](#alumni)
+  - [job_postings](#job_postings)
 - [Migrations](#migrations)
 - [Seed data](#seed-data)
 - [Validation rules](#validation-rules)
@@ -75,10 +76,25 @@ erDiagram
         TEXT department
         INTEGER graduation_year
     }
+    job_postings {
+        SERIAL id PK
+        INTEGER user_id FK
+        TEXT title
+        TEXT company
+        TEXT location
+        TEXT employment_type
+        TEXT description
+        TEXT apply_url
+        DATE deadline
+        TIMESTAMPTZ created_at
+    }
+    users ||--o{ job_postings : posts
 ```
 
-The three tables are **independent**: there are no foreign keys yet. `announcements.author` is
-free text, not a link to `users`. See [Known limits](#known-limits-and-next-steps).
+`job_postings` is the first table with a foreign key: every posting belongs to the user who
+posted it, and a user can post many. The other tables are still **independent**:
+`announcements.author` is free text, not a link to `users`. See
+[Known limits](#known-limits-and-next-steps).
 
 ## Tables
 
@@ -129,6 +145,29 @@ A graduate in the simple directory. Model: `internal/model/alumni.go` · API: `/
 | `department` | `TEXT` | no | `''` | `department` | bölüm |
 | `graduation_year` | `INTEGER` | no | `0` | `graduationYear` | `0` means not given |
 
+### job_postings
+
+A job or internship opening posted by a graduate, for graduates. Model:
+`internal/model/job_posting.go` · API: `/api/job-postings` · Pages: `/job-postings`
+
+| Column | Type | Null | Default | JSON field | Meaning |
+| --- | --- | --- | --- | --- | --- |
+| `id` | `SERIAL` | no | next number | `id` | primary key |
+| `user_id` | `INTEGER` | no | — | `userId` | who posted it; foreign key to `users.id` |
+| `title` | `TEXT` | no | — | `title` | position, e.g. "Junior Backend Developer" |
+| `company` | `TEXT` | no | — | `company` | the hiring company |
+| `location` | `TEXT` | no | `''` | `location` | city, or "Remote"; `''` means not given |
+| `employment_type` | `TEXT` | no | — | `employmentType` | `full_time`, `part_time` or `internship` |
+| `description` | `TEXT` | no | — | `description` | the posting text |
+| `apply_url` | `TEXT` | no | `''` | `applyUrl` | where to apply; `''` means contact the poster |
+| `deadline` | `DATE` | **yes** | `NULL` | `deadline` | last day to apply; `null` means open until filled |
+| `created_at` | `TIMESTAMPTZ` | no | `now()`, rounded to the second | `createdAt` | set by the database; an update keeps it |
+
+`user_id` is declared `REFERENCES users(id) ON DELETE CASCADE`: Postgres refuses a posting
+for a user that does not exist, and deleting a user deletes their postings with them.
+`deadline` is the only nullable column in the schema, because "no deadline" is not a date.
+Lists are ordered newest first (`ORDER BY created_at DESC, id DESC`).
+
 ## Migrations
 
 The tables are not created by hand: each change to the schema is a numbered migration in
@@ -140,6 +179,7 @@ The tables are not created by hand: each change to the schema is a numbered migr
 | 1 | `create_users` | creates `users` | drops `users` |
 | 2 | `create_announcements` | creates `announcements` | drops `announcements` |
 | 3 | `create_alumni` | creates `alumni` | drops `alumni` |
+| 4 | `create_job_postings` | creates `job_postings` with its foreign key to `users` | drops `job_postings` |
 
 Postgres keeps a one-row table, `schema_migrations`, with the number of the last migration
 applied (`version`) and whether one failed halfway (`dirty`). `migrate up` compares it with the
@@ -174,6 +214,10 @@ returns `400 Bad Request` and nothing is written.
 | `users` | a PATCH must change at least one field, and the patched user must pass every rule above | `UserPatch.Validate()`, then `User.Validate()` |
 | `announcements` | `title`, `body`, `author` are required | `Announcement.Validate()` |
 | `alumni` | `name` is required; `name` and `department` are trimmed | `Alumni.Validate()` |
+| `job_postings` | every text field is trimmed; `userId`, `title`, `company`, `employmentType`, `description` are required | `JobPosting.Validate()` |
+| `job_postings` | `employmentType` is one of `full_time`, `part_time`, `internship` | `JobPosting.Validate()` |
+| `job_postings` | `deadline`, when given, is not in the past | `JobPosting.Validate()` |
+| `job_postings` | `userId` must be an existing user — checked by the database (foreign key), answered with `400` | Postgres |
 
 ## From a request to a row
 
@@ -211,7 +255,8 @@ real error to the app's log (`docker compose logs app`).
 
 ## Known limits and next steps
 
-- **No relations.** `announcements.author` should become a `user_id` foreign key to `users`.
+- **Few relations.** Only `job_postings.user_id` is a foreign key so far;
+  `announcements.author` should become one too.
 - **`users` and `alumni` overlap.** Both hold a name, department and graduation year. The
   README's [Data Model](README.md#data-model) plans one `users` table for accounts and an
   `alumni_profiles` table linked one-to-one.
