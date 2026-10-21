@@ -644,7 +644,8 @@ stopped. Read it with `docker compose logs app`.
 - [ ] Posts and a newest-first feed
 - [ ] Follows, reactions, and comments
 - [ ] Faculty / department circles and class-year pages
-- [ ] Job & internship board
+- [x] Job & internship board: postings, applications (`/job-postings`, `/applications`)
+- [ ] "Ağımızdan yüzler" on the main page: a strip of graduates' profile photos, like Stanford's alumni site. Only graduates who opt in, so it needs sign-in and photo upload first
 - [ ] Direct messaging
 - [ ] Reporting and moderation queue
 
