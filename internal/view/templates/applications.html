@@ -1,0 +1,32 @@
+{{template "page_top"}}
+<h1>Başvurular</h1>
+{{if .Applications}}
+<table>
+  <thead><tr><th>İlan</th><th>Başvuran</th><th>Tarih</th><th>Durum</th><th></th></tr></thead>
+  <tbody>
+  {{range .Applications}}
+    <tr>
+      <td><a href="/job-postings/{{.JobPostingID}}">{{.PostingTitle}}</a></td>
+      <td>{{.Applicant}}</td>
+      <td>{{.CreatedAt.Format "02.01.2006"}}</td>
+      <td>{{template "status_label" .Status}}</td>
+      <td class="actions">
+        <form method="post" action="/applications/{{.ID}}">
+          <select name="status" aria-label="Durum">
+            {{$current := .Status}}
+            {{range $.Statuses}}<option value="{{.}}"{{if eq . $current}} selected{{end}}>{{template "status_text" .}}</option>{{end}}
+          </select>
+          <button class="ghost" type="submit">Kaydet</button>
+        </form>
+        <form method="post" action="/applications/{{.ID}}/delete">
+          <button class="ghost" type="submit">Sil</button>
+        </form>
+      </td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+{{else}}
+<p class="empty">Henüz başvuru yok. Bir <a href="/job-postings">ilanın</a> sayfasından başvurabilirsiniz.</p>
+{{end}}
+{{template "page_bottom"}}

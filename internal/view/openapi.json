@@ -15,6 +15,8 @@
     { "name": "ApiAnnouncementController", "description": "Duyurular, JSON olarak (/api/announcements) — programlar için. En yeni duyuru en üstte." },
     { "name": "ApiJobPostingController", "description": "İş ve staj ilanları, JSON olarak. Doğrudan: /api/job-postings/{id}. İç içe (nested), ilanı açan kullanıcı üzerinden: /api/users/{id}/job-postings. En yeni ilan en üstte." },
     { "name": "ApiApplicationController", "description": "İlanlara başvurular, JSON olarak. Doğrudan: /api/applications/{id}. İç içe (nested): bir ilana gelen başvurular /api/job-postings/{id}/applications, bir kullanıcının yaptığı başvurular /api/users/{id}/applications. Bir kullanıcı aynı ilana bir kez başvurabilir." },
+    { "name": "JobPostingController", "description": "İlanlar, HTML sayfası olarak (/job-postings). İlanın sayfası, o ilana gelen başvuruları ve bir başvuru formunu da gösterir. Güncelleme ve silme POST'tur; başarılı bir POST 303 ile yönlendirir." },
+    { "name": "ApplicationController", "description": "Başvurular, HTML olarak. Başvuru ilanın sayfasından yapılır (POST /job-postings/{id}/applications); /applications bütün başvuruları listeler, durum orada değiştirilir ya da başvuru silinir." },
     { "name": "AnnouncementController", "description": "Duyuruları yönetme arayüzü, HTML sayfası olarak (/announcements). Güncelleme ve silme POST'tur; başarılı bir POST 303 ile yönlendirir." },
     { "name": "Alumni", "description": "Mezunlar, JSON olarak (/alumni) — programlar için." },
     { "name": "GraduateController", "description": "Mezunları yönetme arayüzü, HTML sayfası olarak (/graduates). Güncelleme ve silme POST'tur; başarılı bir POST 303 ile yönlendirir." }
@@ -735,6 +737,184 @@
           },
           "400": { "$ref": "#/components/responses/BadRequest" },
           "404": { "$ref": "#/components/responses/AnnouncementNotFound" }
+        }
+      }
+    },
+    "/job-postings": {
+      "get": {
+        "tags": ["JobPostingController"],
+        "operationId": "JobPostingController.Index",
+        "summary": "İlan listesi",
+        "responses": { "200": { "$ref": "#/components/responses/HtmlPage" } }
+      },
+      "post": {
+        "tags": ["JobPostingController"],
+        "operationId": "JobPostingController.Store",
+        "summary": "Formdan yeni ilan oluştur",
+        "requestBody": {
+          "required": true,
+          "content": { "application/x-www-form-urlencoded": { "schema": { "$ref": "#/components/schemas/NewJobPosting" } } }
+        },
+        "responses": {
+          "303": {
+            "description": "Tamam; tarayıcı yeni ilanın sayfasına gönderilir",
+            "headers": { "Location": { "schema": { "type": "string", "example": "/job-postings/1" } } }
+          },
+          "400": { "$ref": "#/components/responses/FormWithError" }
+        }
+      }
+    },
+    "/job-postings/new": {
+      "get": {
+        "tags": ["JobPostingController"],
+        "operationId": "JobPostingController.Create",
+        "summary": "Boş yeni ilan formu",
+        "responses": { "200": { "$ref": "#/components/responses/HtmlPage" } }
+      }
+    },
+    "/job-postings/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/JobPostingID" }],
+      "get": {
+        "tags": ["JobPostingController"],
+        "operationId": "JobPostingController.Show",
+        "summary": "Tek bir ilanın sayfası: başvuruları ve başvuru formuyla",
+        "responses": {
+          "200": { "$ref": "#/components/responses/HtmlPage" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/JobPostingNotFound" }
+        }
+      },
+      "post": {
+        "tags": ["JobPostingController"],
+        "operationId": "JobPostingController.Update",
+        "summary": "Düzenleme formunu kaydet",
+        "requestBody": {
+          "required": true,
+          "content": { "application/x-www-form-urlencoded": { "schema": { "$ref": "#/components/schemas/NewJobPosting" } } }
+        },
+        "responses": {
+          "303": {
+            "description": "Kaydedildi; tarayıcı ilanın sayfasına gönderilir",
+            "headers": { "Location": { "schema": { "type": "string", "example": "/job-postings/1" } } }
+          },
+          "400": { "$ref": "#/components/responses/FormWithError" },
+          "404": { "$ref": "#/components/responses/JobPostingNotFound" }
+        }
+      }
+    },
+    "/job-postings/{id}/edit": {
+      "parameters": [{ "$ref": "#/components/parameters/JobPostingID" }],
+      "get": {
+        "tags": ["JobPostingController"],
+        "operationId": "JobPostingController.Edit",
+        "summary": "Mevcut değerlerle doldurulmuş düzenleme formu",
+        "responses": {
+          "200": { "$ref": "#/components/responses/HtmlPage" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/JobPostingNotFound" }
+        }
+      }
+    },
+    "/job-postings/{id}/delete": {
+      "parameters": [{ "$ref": "#/components/parameters/JobPostingID" }],
+      "post": {
+        "tags": ["JobPostingController"],
+        "operationId": "JobPostingController.Destroy",
+        "summary": "İlanı (ve başvurularını) sil",
+        "responses": {
+          "303": {
+            "description": "Silindi; tarayıcı ilan listesine gönderilir",
+            "headers": { "Location": { "schema": { "type": "string", "example": "/job-postings" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/JobPostingNotFound" }
+        }
+      }
+    },
+    "/job-postings/{id}/applications": {
+      "parameters": [{ "$ref": "#/components/parameters/JobPostingID" }],
+      "post": {
+        "tags": ["ApplicationController"],
+        "operationId": "ApplicationController.Store",
+        "summary": "İlanın sayfasındaki formdan başvur",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["userId"],
+                "properties": {
+                  "userId": { "type": "integer", "example": 2 },
+                  "coverLetter": { "type": "string", "example": "Staj için başvuruyorum." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "303": {
+            "description": "Başvuruldu; tarayıcı ilanın sayfasına geri gönderilir",
+            "headers": { "Location": { "schema": { "type": "string", "example": "/job-postings/1" } } }
+          },
+          "400": { "$ref": "#/components/responses/FormWithError" },
+          "404": { "$ref": "#/components/responses/JobPostingNotFound" },
+          "409": { "description": "Bu kullanıcı bu ilana zaten başvurmuş: ilanın sayfası hata mesajıyla yeniden gösterilir", "content": { "text/html": { "schema": { "type": "string" } } } }
+        }
+      }
+    },
+    "/applications": {
+      "get": {
+        "tags": ["ApplicationController"],
+        "operationId": "ApplicationController.Index",
+        "summary": "Bütün başvurular, durum değiştirme ve silme düğmeleriyle",
+        "responses": { "200": { "$ref": "#/components/responses/HtmlPage" } }
+      }
+    },
+    "/applications/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/ApplicationID" }],
+      "post": {
+        "tags": ["ApplicationController"],
+        "operationId": "ApplicationController.Update",
+        "summary": "Başvurunun yalnızca durumunu değiştir",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["status"],
+                "properties": {
+                  "status": { "type": "string", "enum": ["pending", "accepted", "rejected"], "example": "accepted" },
+                  "back": { "type": "string", "example": "/job-postings/1", "description": "Sonra dönülecek sayfa; yalnızca site içi bir yol. Yoksa /applications" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "303": {
+            "description": "Kaydedildi; tarayıcı back alanındaki sayfaya ya da /applications'a gönderilir",
+            "headers": { "Location": { "schema": { "type": "string", "example": "/applications" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/ApplicationNotFound" }
+        }
+      }
+    },
+    "/applications/{id}/delete": {
+      "parameters": [{ "$ref": "#/components/parameters/ApplicationID" }],
+      "post": {
+        "tags": ["ApplicationController"],
+        "operationId": "ApplicationController.Destroy",
+        "summary": "Başvuruyu sil",
+        "responses": {
+          "303": {
+            "description": "Silindi; tarayıcı back alanındaki sayfaya ya da /applications'a gönderilir",
+            "headers": { "Location": { "schema": { "type": "string", "example": "/applications" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/ApplicationNotFound" }
         }
       }
     },

@@ -504,3 +504,35 @@ GET {{host}}/api/job-postings/999999/applications
 
 ### The applications user 2 made
 GET {{host}}/api/users/2/applications
+
+### --- The HTML side (JobPostingController, ApplicationController). Easiest in a browser: {{host}}/job-postings
+
+### Job posting list page
+GET {{host}}/job-postings
+
+### Create from the form -> 303 redirect to the new posting's page
+POST {{host}}/job-postings
+Content-Type: application/x-www-form-urlencoded
+
+userId=1&title=Veri Analisti&company=Acme&location=Ankara&employmentType=part_time&description=Haftada üç gün, SQL bilen.&deadline=2026-12-31
+
+### A posting's page: its applications and an apply form
+GET {{host}}/job-postings/1
+
+### Apply from that page -> 303 back to the posting
+POST {{host}}/job-postings/1/applications
+Content-Type: application/x-www-form-urlencoded
+
+userId=2&coverLetter=Staj için başvuruyorum.
+
+### Every application
+GET {{host}}/applications
+
+### Change only the status -> 303 back to the posting's page
+POST {{host}}/applications/1
+Content-Type: application/x-www-form-urlencoded
+
+status=accepted&back=/job-postings/1
+
+### Delete an application -> 303 redirect to /applications
+POST {{host}}/applications/1/delete

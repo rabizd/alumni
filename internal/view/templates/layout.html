@@ -1,6 +1,8 @@
-{{/* Shared parts of the /users, /announcements and /graduates pages:
-page_top and page_bottom wrap every page; user_fields, announcement_fields and
-graduate_fields are the inputs each resource's create and edit forms share. */}}
+{{/* Shared parts of the /users, /announcements, /graduates, /job-postings and
+/applications pages: page_top and page_bottom wrap every page; user_fields,
+announcement_fields and graduate_fields are the inputs each resource's create
+and edit forms share; employment_type and status_label turn stored values
+into Turkish labels. */}}
 {{define "page_top"}}<!doctype html>
 <html lang="tr">
 <head>
@@ -28,7 +30,7 @@ graduate_fields are the inputs each resource's create and edit forms share. */}}
   h1{ font-family:'Spectral', Georgia, serif; font-weight:500; line-height:1.2; margin:0 0 1.5rem; font-size:2rem; }
   h2{ font-family:'Spectral', Georgia, serif; font-weight:500; margin:2.5rem 0 1rem; font-size:1.3rem; }
   a{ color:var(--maroon); }
-  a:focus-visible, button:focus-visible, input:focus-visible{ outline:2px solid var(--maroon); outline-offset:3px; }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{ outline:2px solid var(--maroon); outline-offset:3px; }
   .wrap{ max-width:44rem; margin:0 auto; padding:0 1.5rem; }
 
   nav.top{ border-bottom:1px solid var(--line); }
@@ -50,7 +52,7 @@ graduate_fields are the inputs each resource's create and edit forms share. */}}
   dd{ margin:0; }
 
   label{ display:block; font-size:0.9rem; color:var(--muted); margin-bottom:0.3rem; }
-  input[type=text], input[type=email], input[type=number], textarea{
+  input[type=text], input[type=email], input[type=number], input[type=url], input[type=date], select, textarea{
     width:100%; padding:0.6rem 0.7rem; margin-bottom:1.1rem;
     font:inherit; color:var(--ink); background:#f6f2ea;
     border:1px solid var(--line); border-radius:3px;
@@ -72,6 +74,19 @@ graduate_fields are the inputs each resource's create and edit forms share. */}}
   .btn.ghost, button.ghost{ background:transparent; color:var(--maroon); }
   .row{ display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center; }
   .empty{ color:var(--muted); }
+
+  .tag{ display:inline-block; font-size:0.78rem; padding:0.1rem 0.5rem; border-radius:3px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
+  .tag.accepted{ background:#dfe8d6; color:#2f4a1f; border-color:transparent; }
+  .tag.rejected{ background:#f3dcd8; color:var(--maroon); border-color:transparent; }
+  td.actions select{ width:auto; margin:0; padding:0.35rem 0.4rem; font-size:0.85rem; }
+  .apply{ border-top:1px solid var(--line); padding-top:0.5rem; }
+  nav.top .row{ gap:0.4rem 1rem; justify-content:flex-end; }
+  @media (max-width:640px){
+    nav.top .wrap{ flex-direction:column; align-items:flex-start; gap:0.5rem; }
+    nav.top .row{ justify-content:flex-start; }
+    table{ display:block; overflow-x:auto; }
+    .pair{ grid-template-columns:1fr; }
+  }
 </style>
 </head>
 <body>
@@ -82,6 +97,8 @@ graduate_fields are the inputs each resource's create and edit forms share. */}}
       <a class="link" href="/users">Kullanıcılar</a>
       <a class="link" href="/announcements">Duyurular</a>
       <a class="link" href="/graduates">Mezunlar</a>
+      <a class="link" href="/job-postings">İlanlar</a>
+      <a class="link" href="/applications">Başvurular</a>
     </span>
   </div>
 </nav>
@@ -136,6 +153,12 @@ graduate_fields are the inputs each resource's create and edit forms share. */}}
   <label for="author">Duyuruyu yapan</label>
   <input type="text" id="author" name="author" value="{{.Author}}" required>
 {{end}}
+
+{{define "employment_type"}}{{if eq . "full_time"}}Tam zamanlı{{else if eq . "part_time"}}Yarı zamanlı{{else if eq . "internship"}}Staj{{else}}{{.}}{{end}}{{end}}
+
+{{define "status_text"}}{{if eq . "accepted"}}Kabul edildi{{else if eq . "rejected"}}Reddedildi{{else}}Beklemede{{end}}{{end}}
+
+{{define "status_label"}}<span class="tag {{.}}">{{template "status_text" .}}</span>{{end}}
 
 {{define "graduate_fields"}}
   <label for="name">Ad</label>

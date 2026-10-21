@@ -1,0 +1,22 @@
+{{template "page_top"}}
+<h1>İş ve staj ilanları</h1>
+{{if .}}
+<table>
+  <thead><tr><th>Pozisyon</th><th>Şirket</th><th>Tür</th><th>Son gün</th><th>İlanı açan</th></tr></thead>
+  <tbody>
+  {{range .}}
+    <tr>
+      <td><a href="/job-postings/{{.ID}}">{{.Title}}</a></td>
+      <td>{{.Company}}{{if .Location}} · {{.Location}}{{end}}</td>
+      <td><span class="tag">{{template "employment_type" .EmploymentType}}</span></td>
+      <td>{{if .Deadline}}{{.Deadline}}{{else}}<span class="empty">açık</span>{{end}}</td>
+      <td>{{.Poster}}</td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+{{else}}
+<p class="empty">Henüz ilan yok.</p>
+{{end}}
+<a class="btn" href="/job-postings/new">Yeni ilan</a>
+{{template "page_bottom"}}

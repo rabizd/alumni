@@ -1,0 +1,61 @@
+{{template "page_top"}}
+<h1>{{.Posting.Title}}</h1>
+<p class="meta">{{.Posting.Company}}{{if .Posting.Location}} · {{.Posting.Location}}{{end}} · {{.Posting.CreatedAt.Format "02.01.2006"}}</p>
+<dl>
+  <dt>Tür</dt><dd>{{template "employment_type" .Posting.EmploymentType}}</dd>
+  <dt>İlanı açan</dt><dd>{{.Poster.Name}}{{if .Poster.Department}} · {{.Poster.Department}}{{end}}</dd>
+  <dt>Son gün</dt><dd>{{if .Posting.Deadline}}{{.Posting.Deadline}}{{else}}dolana kadar açık{{end}}</dd>
+  <dt>Başvuru</dt><dd>{{if .Posting.ApplyURL}}<a href="{{.Posting.ApplyURL}}" rel="noopener">{{.Posting.ApplyURL}}</a>{{else}}ilanı açana ya da aşağıdaki formdan{{end}}</dd>
+</dl>
+<p class="body">{{.Posting.Description}}</p>
+<div class="row">
+  <a class="btn" href="/job-postings/{{.Posting.ID}}/edit">Düzenle</a>
+  <form method="post" action="/job-postings/{{.Posting.ID}}/delete">
+    <button class="ghost" type="submit">Sil</button>
+  </form>
+  <a href="/job-postings">← tüm ilanlar</a>
+</div>
+
+<h2>Başvurular ({{len .Applications}})</h2>
+{{if .Applications}}
+<table>
+  <thead><tr><th>Başvuran</th><th>Tarih</th><th>Durum</th><th></th></tr></thead>
+  <tbody>
+  {{range .Applications}}
+    <tr>
+      <td>{{.Applicant}}{{if .CoverLetter}}<br><span class="empty">{{.CoverLetter}}</span>{{end}}</td>
+      <td>{{.CreatedAt.Format "02.01.2006"}}</td>
+      <td>{{template "status_label" .Status}}</td>
+      <td class="actions">
+        <form method="post" action="/applications/{{.ID}}">
+          <input type="hidden" name="back" value="/job-postings/{{.JobPostingID}}">
+          <select name="status" aria-label="Durum">
+            {{$current := .Status}}
+            {{range $.Statuses}}<option value="{{.}}"{{if eq . $current}} selected{{end}}>{{template "status_text" .}}</option>{{end}}
+          </select>
+          <button class="ghost" type="submit">Kaydet</button>
+        </form>
+      </td>
+    </tr>
+  {{end}}
+  </tbody>
+</table>
+{{else}}
+<p class="empty">Bu ilana henüz başvuru yok.</p>
+{{end}}
+
+<div class="apply">
+  <h2>Başvur</h2>
+  {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
+  <form method="post" action="/job-postings/{{.Posting.ID}}/applications">
+    <label for="userId">Başvuran</label>
+    <select id="userId" name="userId" required>
+      <option value="">Bir kullanıcı seçin</option>
+      {{range .Users}}<option value="{{.ID}}"{{if eq .ID $.Apply.UserID}} selected{{end}}>{{.Name}} · {{.Department}}</option>{{end}}
+    </select>
+    <label for="coverLetter">Kısa not (isteğe bağlı)</label>
+    <textarea id="coverLetter" name="coverLetter">{{.Apply.CoverLetter}}</textarea>
+    <button type="submit">Başvur</button>
+  </form>
+</div>
+{{template "page_bottom"}}
