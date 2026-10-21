@@ -9,7 +9,8 @@ import (
 	"github.com/rabizd/alumni/internal/controller"
 )
 
-// Web registers the HTML routes: the pages, and the /users, /announcements and /graduates screens.
+// Web registers the HTML routes: the pages, and the /users, /announcements,
+// /graduates, /job-postings and /applications screens.
 func Web(mux *http.ServeMux) {
 	// Lecture exercises and plain pages.
 	mux.HandleFunc("GET /{$}", controller.Root)
@@ -50,4 +51,22 @@ func Web(mux *http.ServeMux) {
 	mux.HandleFunc("GET /graduates/{id}/edit", graduate.Edit)
 	mux.HandleFunc("POST /graduates/{id}", graduate.Update)
 	mux.HandleFunc("POST /graduates/{id}/delete", graduate.Destroy)
+
+	// Job postings as HTML pages. A posting's page lists its applications.
+	jobPosting := controller.JobPostingController{}
+	mux.HandleFunc("GET /job-postings", jobPosting.Index)
+	mux.HandleFunc("GET /job-postings/new", jobPosting.Create)
+	mux.HandleFunc("POST /job-postings", jobPosting.Store)
+	mux.HandleFunc("GET /job-postings/{id}", jobPosting.Show)
+	mux.HandleFunc("GET /job-postings/{id}/edit", jobPosting.Edit)
+	mux.HandleFunc("POST /job-postings/{id}", jobPosting.Update)
+	mux.HandleFunc("POST /job-postings/{id}/delete", jobPosting.Destroy)
+
+	// Applications as HTML. Applying is nested under the posting; the status
+	// form and delete work on the application's own id.
+	application := controller.ApplicationController{}
+	mux.HandleFunc("GET /applications", application.Index)
+	mux.HandleFunc("POST /job-postings/{id}/applications", application.Store)
+	mux.HandleFunc("POST /applications/{id}", application.Update)
+	mux.HandleFunc("POST /applications/{id}/delete", application.Destroy)
 }

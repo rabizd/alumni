@@ -269,6 +269,10 @@
         <tr><td>PUT /alumni/{id}</td><td>mezunu bütünüyle değiştirir</td></tr>
         <tr><td>DELETE /alumni/{id}</td><td>mezunu siler</td></tr>
         <tr><td><a href="/graduates">GET /graduates</a></td><td>mezunlar sayfası: liste, ekle, düzenle, sil</td></tr>
+        <tr><td><a href="/job-postings">GET /job-postings</a></td><td>ilanlar sayfası: liste, ekle, düzenle, sil; ilan sayfasından başvurulur</td></tr>
+        <tr><td><a href="/applications">GET /applications</a></td><td>başvurular sayfası: durum değiştir, sil</td></tr>
+        <tr><td><a href="/api/job-postings">GET /api/job-postings</a></td><td>tüm ilanlar, JSON olarak (nested: /api/users/{id}/job-postings)</td></tr>
+        <tr><td><a href="/api/applications">GET /api/applications</a></td><td>tüm başvurular, JSON olarak (nested: /api/job-postings/{id}/applications)</td></tr>
       </tbody>
     </table>
   </div>

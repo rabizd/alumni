@@ -1,0 +1,43 @@
+{{template "page_top"}}
+<h1>{{.Title}}</h1>
+{{if .Error}}<p class="error">{{.Error}}</p>{{end}}
+<form method="post" action="{{.Action}}">
+  <label for="userId">İlanı açan</label>
+  <select id="userId" name="userId" required>
+    <option value="">Bir kullanıcı seçin</option>
+    {{range .Users}}<option value="{{.ID}}"{{if eq .ID $.Posting.UserID}} selected{{end}}>{{.Name}} · {{.Department}}</option>{{end}}
+  </select>
+  <label for="title">Pozisyon</label>
+  <input type="text" id="title" name="title" value="{{.Posting.Title}}" placeholder="Junior Backend Developer" required>
+  <div class="pair">
+    <div>
+      <label for="company">Şirket</label>
+      <input type="text" id="company" name="company" value="{{.Posting.Company}}" required>
+    </div>
+    <div>
+      <label for="location">Şehir (isteğe bağlı)</label>
+      <input type="text" id="location" name="location" value="{{.Posting.Location}}" placeholder="İstanbul ya da Remote">
+    </div>
+  </div>
+  <div class="pair">
+    <div>
+      <label for="employmentType">Tür</label>
+      <select id="employmentType" name="employmentType" required>
+        {{range .Types}}<option value="{{.}}"{{if eq . $.Posting.EmploymentType}} selected{{end}}>{{template "employment_type" .}}</option>{{end}}
+      </select>
+    </div>
+    <div>
+      <label for="deadline">Son başvuru günü (boş: dolana kadar)</label>
+      <input type="date" id="deadline" name="deadline" value="{{if .Posting.Deadline}}{{.Posting.Deadline}}{{end}}">
+    </div>
+  </div>
+  <label for="description">İlan metni</label>
+  <textarea id="description" name="description" required>{{.Posting.Description}}</textarea>
+  <label for="applyUrl">Başvuru linki (isteğe bağlı)</label>
+  <input type="url" id="applyUrl" name="applyUrl" value="{{.Posting.ApplyURL}}" placeholder="https://">
+  <div class="row">
+    <button type="submit">Kaydet</button>
+    <a href="/job-postings">Vazgeç</a>
+  </div>
+</form>
+{{template "page_bottom"}}

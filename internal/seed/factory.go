@@ -17,6 +17,9 @@ var (
 	departments = []string{"Bilgisayar Mühendisliği", "Hukuk", "Tıp", "İktisat", "Psikoloji", "Fizik", "Matematik", "İşletme", "Mimarlık", "Felsefe"}
 	titles      = []string{"Mezunlar buluşması", "Kariyer günleri", "Mentorluk programı", "Staj ilanı", "Seminer duyurusu", "Burs başvuruları"}
 	authors     = []string{"Mezunlar Ofisi", "Kariyer Merkezi", "Öğrenci İşleri", "Rektörlük"}
+	jobTitles   = []string{"Junior Backend Developer", "Frontend Developer", "Veri Analisti", "Hukuk Stajyeri", "Asistan Hekim", "Finans Uzmanı", "Klinik Psikolog", "Mimari Tasarımcı", "Ürün Yöneticisi", "Araştırma Asistanı"}
+	companies   = []string{"Trendyol", "Getir", "Aselsan", "Koç Holding", "Türk Telekom", "Garanti BBVA", "Acıbadem", "Turkcell", "Baykar", "Peak Games"}
+	locations   = []string{"İstanbul", "Ankara", "İzmir", "Remote", ""}
 )
 
 // Factory makes random records. The same seed gives the same records, so a
@@ -32,6 +35,10 @@ func NewFactory(seed int64) *Factory {
 
 func (f *Factory) pick(list []string) string {
 	return list[f.r.Intn(len(list))]
+}
+
+func (f *Factory) pickUser(users []model.User) model.User {
+	return users[f.r.Intn(len(users))]
 }
 
 func (f *Factory) name() string {
@@ -81,6 +88,27 @@ func (f *Factory) Alumni() model.Alumni {
 		Department:     f.pick(departments),
 		GraduationYear: time.Now().Year() - f.r.Intn(30),
 	}
+}
+
+// JobPosting returns a posting by the given user that passes JobPosting.Validate.
+// Some have an apply link or a deadline (1–12 weeks from today), like in real data.
+func (f *Factory) JobPosting(userID int) model.JobPosting {
+	p := model.JobPosting{
+		UserID:         userID,
+		Title:          f.pick(jobTitles),
+		Company:        f.pick(companies),
+		Location:       f.pick(locations),
+		EmploymentType: f.pick(model.EmploymentTypes),
+		Description:    fmt.Sprintf("%s mezunlarını ekibimizde görmek isteriz. Ayrıntılar için başvurun ya da ilanı açan mezuna yazın.", f.pick(departments)),
+	}
+	if f.r.Intn(2) == 0 {
+		p.ApplyURL = fmt.Sprintf("https://example.com/jobs/%d", 1000+f.r.Intn(9000))
+	}
+	if f.r.Intn(2) == 0 {
+		d := time.Now().AddDate(0, 0, 7*(1+f.r.Intn(12))).Format("2006-01-02")
+		p.Deadline = &d
+	}
+	return p
 }
 
 // emailPart turns "Şule Öztürk" into "sule.ozturk".
