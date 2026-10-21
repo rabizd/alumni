@@ -331,3 +331,92 @@ title=Mezunlar buluşması&body=Yeni tarih: 22 Kasım.&author=Mezunlar Ofisi
 
 ### Delete -> 303 redirect to /announcements
 POST {{host}}/announcements/1/delete
+
+##############################################
+# Job postings
+##############################################
+
+### --- Direct routes: a posting by its own id
+
+### List every posting, newest first
+GET {{host}}/api/job-postings
+
+### Create -> 201; userId must be an existing user
+POST {{host}}/api/job-postings
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "title": "Junior Backend Developer",
+  "company": "Acme",
+  "location": "İstanbul",
+  "employmentType": "full_time",
+  "description": "Go ve PostgreSQL bilen, yeni mezun bir arkadaş arıyoruz.",
+  "applyUrl": "https://example.com/jobs/1",
+  "deadline": "2026-12-31"
+}
+
+### A userId that is not a user -> 400 (the foreign key refuses it)
+POST {{host}}/api/job-postings
+Content-Type: application/json
+
+{
+  "userId": 999999,
+  "title": "Hayalet ilan",
+  "company": "Acme",
+  "employmentType": "full_time",
+  "description": "Böyle bir kullanıcı yok."
+}
+
+### An employmentType outside the list -> 400
+POST {{host}}/api/job-postings
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "title": "Serbest iş",
+  "company": "Acme",
+  "employmentType": "freelance",
+  "description": "freelance kabul edilmiyor."
+}
+
+### One posting
+GET {{host}}/api/job-postings/1
+
+### Replace -> 200; no deadline (null) means open until filled
+PUT {{host}}/api/job-postings/1
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "title": "Backend Developer",
+  "company": "Acme",
+  "location": "Remote",
+  "employmentType": "full_time",
+  "description": "Pozisyon uzaktan çalışmaya açıldı.",
+  "deadline": null
+}
+
+### Delete -> 204
+DELETE {{host}}/api/job-postings/1
+
+### --- Nested routes: through the user who posted it
+
+### The postings of user 1
+GET {{host}}/api/users/1/job-postings
+
+### A user that does not exist -> 404
+GET {{host}}/api/users/999999/job-postings
+
+### Create for user 1 -> 201; the user comes from the URL, no userId needed
+POST {{host}}/api/users/1/job-postings
+Content-Type: application/json
+
+{
+  "title": "Yaz stajı",
+  "company": "Acme",
+  "location": "İstanbul",
+  "employmentType": "internship",
+  "description": "3. sınıf öğrencileri için 8 haftalık staj.",
+  "deadline": "2027-03-01"
+}

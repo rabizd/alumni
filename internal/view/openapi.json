@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Alumni API",
-    "description": "İstanbul Üniversitesi mezun ağı. Kullanıcılar, duyurular ve mezunlar PostgreSQL'de tutulur; sunucu yeniden başlasa da kaybolmaz.",
+    "description": "İstanbul Üniversitesi mezun ağı. Kullanıcılar, duyurular, iş ilanları ve mezunlar PostgreSQL'de tutulur; sunucu yeniden başlasa da kaybolmaz.",
     "version": "0.1.0"
   },
   "servers": [
@@ -13,6 +13,7 @@
     { "name": "ApiUserController", "description": "Kullanıcılar, JSON olarak (/api/users) — programlar için." },
     { "name": "UserController", "description": "Kullanıcılar, HTML sayfası olarak (/users) — tarayıcıdaki insanlar için. Formlar yalnızca GET ve POST gönderebildiğinden güncelleme ve silme burada POST'tur. Başarılı bir POST 303 ile yönlendirir; Swagger yönlendirmeyi takip edip varılan sayfayı gösterir." },
     { "name": "ApiAnnouncementController", "description": "Duyurular, JSON olarak (/api/announcements) — programlar için. En yeni duyuru en üstte." },
+    { "name": "ApiJobPostingController", "description": "İş ve staj ilanları, JSON olarak. Doğrudan: /api/job-postings/{id}. İç içe (nested), ilanı açan kullanıcı üzerinden: /api/users/{id}/job-postings. En yeni ilan en üstte." },
     { "name": "AnnouncementController", "description": "Duyuruları yönetme arayüzü, HTML sayfası olarak (/announcements). Güncelleme ve silme POST'tur; başarılı bir POST 303 ile yönlendirir." },
     { "name": "Alumni", "description": "Mezunlar, JSON olarak (/alumni) — programlar için." },
     { "name": "GraduateController", "description": "Mezunları yönetme arayüzü, HTML sayfası olarak (/graduates). Güncelleme ve silme POST'tur; başarılı bir POST 303 ile yönlendirir." }
@@ -360,6 +361,137 @@
         }
       }
     },
+    "/api/job-postings": {
+      "get": {
+        "tags": ["ApiJobPostingController"],
+        "operationId": "ApiJobPostingController.Index",
+        "summary": "Bütün ilanları listele (en yeni en üstte)",
+        "responses": {
+          "200": {
+            "description": "İlan dizisi",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/JobPosting" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["ApiJobPostingController"],
+        "operationId": "ApiJobPostingController.Store",
+        "summary": "Yeni ilan oluştur (kullanıcı gövdedeki userId)",
+        "description": "id ve createdAt alanlarını sunucu verir. userId var olan bir kullanıcı olmalı, yoksa 400.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NewJobPosting" },
+              "example": { "userId": 1, "title": "Junior Backend Developer", "company": "Acme", "location": "İstanbul", "employmentType": "full_time", "description": "Go ve PostgreSQL bilen, yeni mezun bir arkadaş arıyoruz.", "applyUrl": "https://example.com/jobs/1", "deadline": "2026-12-31" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Oluşturuldu",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobPosting" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/job-postings/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/JobPostingID" }],
+      "get": {
+        "tags": ["ApiJobPostingController"],
+        "operationId": "ApiJobPostingController.Show",
+        "summary": "Tek bir ilanı getir",
+        "responses": {
+          "200": {
+            "description": "İlan bulundu",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobPosting" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/JobPostingNotFound" }
+        }
+      },
+      "put": {
+        "tags": ["ApiJobPostingController"],
+        "operationId": "ApiJobPostingController.Update",
+        "summary": "İlanı bütünüyle değiştir",
+        "description": "Zorunlu alanların hepsi gönderilmeli. id ve createdAt değişmez.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NewJobPosting" },
+              "example": { "userId": 1, "title": "Backend Developer", "company": "Acme", "location": "Remote", "employmentType": "full_time", "description": "Pozisyon uzaktan çalışmaya açıldı.", "applyUrl": "", "deadline": null }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Değiştirildi",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobPosting" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/JobPostingNotFound" }
+        }
+      },
+      "delete": {
+        "tags": ["ApiJobPostingController"],
+        "operationId": "ApiJobPostingController.Destroy",
+        "summary": "İlanı sil",
+        "responses": {
+          "204": { "description": "Silindi; geri gönderilecek gövde yok" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/JobPostingNotFound" }
+        }
+      }
+    },
+    "/api/users/{id}/job-postings": {
+      "parameters": [{ "$ref": "#/components/parameters/UserID" }],
+      "get": {
+        "tags": ["ApiJobPostingController"],
+        "operationId": "ApiJobPostingController.UserIndex",
+        "summary": "Bir kullanıcının ilanları (nested)",
+        "responses": {
+          "200": {
+            "description": "Kullanıcının ilanları; hiç yoksa boş dizi",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/JobPosting" } }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "post": {
+        "tags": ["ApiJobPostingController"],
+        "operationId": "ApiJobPostingController.UserStore",
+        "summary": "Bu kullanıcı adına ilan oluştur (nested)",
+        "description": "Kullanıcı URL'deki id'dir; gövdede userId gönderilirse onun yerine URL'deki geçer.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NewJobPosting" },
+              "example": { "title": "Yaz stajı", "company": "Acme", "location": "İstanbul", "employmentType": "internship", "description": "3. sınıf öğrencileri için 8 haftalık staj.", "deadline": "2027-03-01" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Oluşturuldu",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobPosting" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
     "/announcements": {
       "get": {
         "tags": ["AnnouncementController"],
@@ -636,6 +768,13 @@
         "description": "Duyurunun id'si",
         "schema": { "type": "integer", "example": 1 }
       },
+      "JobPostingID": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "İlanın id'si",
+        "schema": { "type": "integer", "example": 1 }
+      },
       "UserID": {
         "name": "id",
         "in": "path",
@@ -723,6 +862,35 @@
           "author": { "type": "string", "example": "Kütüphane" }
         }
       },
+      "JobPosting": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "readOnly": true, "example": 1 },
+          "userId": { "type": "integer", "example": 1, "description": "İlanı açan kullanıcı" },
+          "title": { "type": "string", "example": "Junior Backend Developer" },
+          "company": { "type": "string", "example": "Acme" },
+          "location": { "type": "string", "example": "İstanbul", "description": "Şehir ya da Remote; yoksa boş" },
+          "employmentType": { "type": "string", "enum": ["full_time", "part_time", "internship"], "example": "full_time" },
+          "description": { "type": "string", "example": "Go ve PostgreSQL bilen, yeni mezun bir arkadaş arıyoruz." },
+          "applyUrl": { "type": "string", "example": "https://example.com/jobs/1", "description": "Başvuru linki; yoksa boş (ilanı açana ulaşılır)" },
+          "deadline": { "type": "string", "format": "date", "nullable": true, "example": "2026-12-31", "description": "Son başvuru günü; null: dolana kadar açık" },
+          "createdAt": { "type": "string", "format": "date-time", "readOnly": true, "example": "2026-10-21T10:00:00+03:00" }
+        }
+      },
+      "NewJobPosting": {
+        "type": "object",
+        "required": ["userId", "title", "company", "employmentType", "description"],
+        "properties": {
+          "userId": { "type": "integer", "example": 1, "description": "Var olan bir kullanıcı. Nested route'ta gerekmez, URL'deki id kullanılır." },
+          "title": { "type": "string", "example": "Junior Backend Developer" },
+          "company": { "type": "string", "example": "Acme" },
+          "location": { "type": "string", "example": "İstanbul" },
+          "employmentType": { "type": "string", "enum": ["full_time", "part_time", "internship"], "example": "full_time" },
+          "description": { "type": "string", "example": "Go ve PostgreSQL bilen, yeni mezun bir arkadaş arıyoruz." },
+          "applyUrl": { "type": "string", "example": "https://example.com/jobs/1" },
+          "deadline": { "type": "string", "format": "date", "nullable": true, "example": "2026-12-31", "description": "Bugünden önce olamaz" }
+        }
+      },
       "Alumni": {
         "type": "object",
         "properties": {
@@ -747,6 +915,12 @@
         "description": "Bu id'ye sahip duyuru yok",
         "content": {
           "text/plain": { "schema": { "type": "string" }, "example": "no announcement with that id" }
+        }
+      },
+      "JobPostingNotFound": {
+        "description": "Bu id'ye sahip ilan yok",
+        "content": {
+          "text/plain": { "schema": { "type": "string" }, "example": "no job posting with that id" }
         }
       },
       "BadRequest": {
