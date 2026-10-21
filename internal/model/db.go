@@ -46,6 +46,8 @@ func env(key, fallback string) string {
 // Truncate empties every table and starts the ids from 1 again. Only the
 // seed command uses it, for `seed -fresh`.
 func Truncate(ctx context.Context) error {
-	_, err := db.Exec(ctx, "TRUNCATE users, announcements, alumni RESTART IDENTITY")
+	// job_postings and applications point at users, so Postgres only empties
+	// users together with them.
+	_, err := db.Exec(ctx, "TRUNCATE users, announcements, alumni, job_postings, applications RESTART IDENTITY")
 	return err
 }

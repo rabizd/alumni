@@ -25,11 +25,20 @@ var (
 		{Name: "Ayşe Yılmaz", Department: "Bilgisayar Mühendisliği", GraduationYear: 2021},
 		{Name: "Mehmet Demir", Department: "Hukuk", GraduationYear: 2019},
 	}
+	// UserID is filled in by Run: the first sample goes to the first user, the
+	// second to the second, which are Ayşe and Mehmet in a fresh database.
+	sampleJobPostings = []model.JobPosting{
+		{Title: "Junior Backend Developer", Company: "Trendyol", Location: "İstanbul", EmploymentType: "full_time",
+			Description: "Go ve PostgreSQL ile çalışacak yeni mezun bir arkadaş arıyoruz. Bilgisayar Mühendisliği mezunlarına öncelik.",
+			ApplyURL:    "https://example.com/jobs/1"},
+		{Title: "Hukuk Stajyeri", Company: "Demir Hukuk Bürosu", Location: "Ankara", EmploymentType: "internship",
+			Description: "Hukuk fakültesi 3. ve 4. sınıf öğrencileri için yaz stajı. Başvurular için bana yazabilirsiniz."},
+	}
 )
 
 // Counts is how many random records the factories add on top of the samples.
 type Counts struct {
-	Users, Announcements, Alumni int
+	Users, Announcements, Alumni, JobPostings int
 }
 
 // Run stores the samples, then the random records. The samples go into empty
@@ -93,6 +102,38 @@ func Run(f *Factory, c Counts) error {
 			return fmt.Errorf("alumni %q: %w", a.Name, err)
 		}
 		if _, err := model.Graduates.Add(a); err != nil {
+			return err
+		}
+	}
+
+	// Job postings come last: each one belongs to a user, picked from the
+	// users now in the database.
+	allUsers, err := model.Users.List()
+	if err != nil {
+		return err
+	}
+	if len(allUsers) == 0 {
+		return nil
+	}
+	existingJobPostings, err := model.JobPostings.List()
+	if err != nil {
+		return err
+	}
+	var jobPostings []model.JobPosting
+	if len(existingJobPostings) == 0 {
+		for i, p := range sampleJobPostings {
+			p.UserID = allUsers[i%len(allUsers)].ID
+			jobPostings = append(jobPostings, p)
+		}
+	}
+	for range c.JobPostings {
+		jobPostings = append(jobPostings, f.JobPosting(f.pickUser(allUsers).ID))
+	}
+	for _, p := range jobPostings {
+		if err := p.Validate(); err != nil {
+			return fmt.Errorf("job posting %q: %w", p.Title, err)
+		}
+		if _, err := model.JobPostings.Add(p); err != nil {
 			return err
 		}
 	}

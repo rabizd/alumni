@@ -324,14 +324,14 @@ Migrations hold only the **structure**. The rows come from the seeder.
 
 | Part | File | What it does |
 | --- | --- | --- |
-| **Factory** | `internal/seed/factory.go` | makes one random but valid record: `User()`, `Announcement()`, `Alumni()`. Names, departments and years are picked from Turkish lists; every user passes `User.Validate()` (start year in range, graduation after start, never in the future) and gets a unique email |
-| **Seeder** | `internal/seed/seeder.go` | puts the fixed samples (Ayşe Yılmaz, Mehmet Demir, two announcements) into any **empty** table, then adds the random records. Each record goes through `Validate()` and the normal store, like an API request |
+| **Factory** | `internal/seed/factory.go` | makes one random but valid record: `User()`, `Announcement()`, `Alumni()`, `JobPosting(userID)`. Names, departments and years are picked from Turkish lists; every user passes `User.Validate()` (start year in range, graduation after start, never in the future) and gets a unique email |
+| **Seeder** | `internal/seed/seeder.go` | puts the fixed samples (Ayşe Yılmaz, Mehmet Demir, two announcements, two job postings) into any **empty** table, then adds the random records. Job postings come last, each by a random user already in the database. Each record goes through `Validate()` and the normal store, like an API request |
 | **Command** | `cmd/seed/main.go` | runs the seeder; the `seed` service in `docker-compose.yml` runs it in Docker |
 
 | Command | What it does |
 | --- | --- |
-| `docker compose run --rm seed` | samples (if the table is empty) + 10 users, 5 announcements, 10 alumni |
-| `docker compose run --rm seed -users 50 -alumni 0` | choose how many random records of each kind |
+| `docker compose run --rm seed` | samples (if the table is empty) + 10 users, 5 announcements, 10 alumni, 10 job postings |
+| `docker compose run --rm seed -users 50 -alumni 0 -jobs 20` | choose how many random records of each kind |
 | `docker compose run --rm seed -fresh` | empty every table first (ids start from 1 again), then seed |
 | `docker compose run --rm seed -seed 42` | a fixed random seed: the same number always makes the same records |
 

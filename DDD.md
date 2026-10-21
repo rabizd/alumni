@@ -227,6 +227,8 @@ Migrations create empty tables; the **seeder** fills them. The README's
 | `users` | Ayşe Yılmaz, Mehmet Demir | name from Turkish first/last name lists; email `first.last.N@example.com` (unique); department from a list; start year 4–20 years ago; graduation 4–6 years later, not in the future; optional fields filled only sometimes |
 | `announcements` | "Mezunlar buluşması", "Kariyer günleri başvuruları açıldı" | title and author from lists; body names a department |
 | `alumni` | Ayşe Yılmaz, Mehmet Demir | name and department from lists; graduation year in the last 30 years |
+| `job_postings` | "Junior Backend Developer" at Trendyol (first user), "Hukuk Stajyeri" (second user) | posted by a random existing user; title, company, location and type from lists; an apply link and a deadline (1–12 weeks ahead) only sometimes |
+| `applications` | — | not seeded yet |
 Seeded rows go through the same `Validate()` and store methods as an API request, so the seeder
 can never put a row in the database that the API would reject.
 
