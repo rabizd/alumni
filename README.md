@@ -176,6 +176,11 @@ Routing uses the Go 1.22 standard-library `ServeMux` — no third-party router. 
 `requests.http` at the repository root fires every endpoint, including the error cases, from
 the VS Code REST Client extension.
 
+`postman/alumni-invalid-requests.postman_collection.json` holds twelve requests the API must
+refuse (bad id, broken JSON, missing field, wrong method, unknown route…), each with a test for
+the expected status code. In Postman: **Import** → pick the file → open the collection →
+**Run**. Every test should pass.
+
 ### Keep the API documentation current
 
 `internal/view/openapi.json` describes the API in the [OpenAPI 3](https://swagger.io/specification/)
