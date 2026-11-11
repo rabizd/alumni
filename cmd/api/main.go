@@ -5,7 +5,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	_ "time/tzdata" // the alpine image has no time zone files; this makes TZ work
 
+	"github.com/rabizd/alumni/internal/middleware"
 	"github.com/rabizd/alumni/internal/model"
 	"github.com/rabizd/alumni/internal/routes"
 )
@@ -28,7 +30,7 @@ func main() {
 
 	addr := ":" + port
 	log.Printf("listening on http://localhost%s", addr)
-	if err := http.ListenAndServe(addr, mux); err != nil {
+	if err := http.ListenAndServe(addr, middleware.Logger(mux)); err != nil {
 		log.Fatal(err)
 	}
 }
