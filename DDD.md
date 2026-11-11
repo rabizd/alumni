@@ -267,7 +267,7 @@ Lengths count characters, not bytes, so a Turkish letter like `ş` counts as one
 | --- | --- | --- |
 | `title` | 3 to 120 characters | not in code yet |
 | `company` | at most 100 characters | not in code yet |
-| `location` | optional (city or "Remote"); at most 100 characters | not in code yet |
+| `location` | required (a city, or "Remote"); at most 100 characters. Today it is optional and `''` means not given | not in code yet |
 | `description` | 30 to 5000 characters | not in code yet |
 | `applyUrl` | optional; when given, starts with `http://` or `https://` | not in code yet |
 | `deadline` | at most one year from today | not in code yet |
