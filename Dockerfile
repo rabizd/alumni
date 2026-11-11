@@ -18,5 +18,6 @@ COPY --from=build /out/alumni /out/seed ./
 ENV APP_PORT=8080
 EXPOSE 8080
 
+RUN mkdir logs && chown appuser logs
 USER appuser
 ENTRYPOINT ["./alumni"]

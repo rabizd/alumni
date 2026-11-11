@@ -12,6 +12,8 @@ services:
       DB_USER: ${DB_USER:?set DB_USER in .env}
       DB_NAME: ${DB_NAME:?set DB_NAME in .env}
       DB_PASSWORD_FILE: /run/secrets/db_password
+    volumes:
+      - ./logs:/app/logs # logs/error.log shows up next to the code
     secrets:
       - db_password
     depends_on:

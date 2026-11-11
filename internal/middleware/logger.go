@@ -4,6 +4,7 @@ package middleware
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 )
@@ -32,7 +33,16 @@ func Logger(next http.Handler) http.Handler {
 		next.ServeHTTP(rec, r)
 
 		ms := float64(time.Since(start).Microseconds()) / 1000
-		fmt.Printf("%s  %-7s %s  %d  %.1fms\n",
+		line := fmt.Sprintf("%s  %-7s %s  %d  %.1fms\n",
 			start.Format("15:04:05"), r.Method, r.URL.Path, rec.status, ms)
+		fmt.Print(line)
+		if rec.status >= 400 {
+			// The file keeps lines for days, so it also needs the date.
+			fmt.Fprint(ErrorLog, start.Format("2006/01/02 ")+line)
+		}
 	})
 }
+
+// ErrorLog receives the line of every request that ends in 4xx or 5xx.
+// main points it at logs/error.log.
+var ErrorLog io.Writer = io.Discard

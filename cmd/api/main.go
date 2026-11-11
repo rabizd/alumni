@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -15,6 +17,17 @@ import (
 // main only wires things together: the routes package maps every URL to its
 // controller, and the controllers do the rest.
 func main() {
+	// Errors go to the terminal and to logs/error.log; the file survives a restart.
+	if err := os.MkdirAll("logs", 0o755); err != nil {
+		log.Fatalf("logs folder: %v", err)
+	}
+	errorLog, err := os.OpenFile("logs/error.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		log.Fatalf("error log: %v", err)
+	}
+	log.SetOutput(io.MultiWriter(os.Stderr, errorLog))
+	middleware.ErrorLog = errorLog
+
 	if err := model.Connect(context.Background()); err != nil {
 		log.Fatalf("database: %v", err)
 	}
@@ -29,7 +42,7 @@ func main() {
 	}
 
 	addr := ":" + port
-	log.Printf("listening on http://localhost%s", addr)
+	fmt.Println("listening on http://localhost" + addr) // not an error, so not log
 	if err := http.ListenAndServe(addr, middleware.Logger(middleware.ServerErrorGuardian(middleware.NotFoundGuardian(mux)))); err != nil {
 		log.Fatal(err)
 	}
