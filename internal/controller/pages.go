@@ -24,6 +24,14 @@ func About(w http.ResponseWriter, r *http.Request) {
 	view.HTML(w, http.StatusOK, "about.html", nil)
 }
 
+// GET /404 -> the page browsers are redirected to when something is not found.
+// NotFoundGuardian puts the reason and the requested path in the query.
+func NotFound(w http.ResponseWriter, r *http.Request) {
+	view.HTML(w, http.StatusNotFound, "not_found.html", struct{ Reason, Path string }{
+		r.URL.Query().Get("reason"), r.URL.Query().Get("path"),
+	})
+}
+
 // GET /hello -> Hello, World!
 func Hello(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Hello, World!")

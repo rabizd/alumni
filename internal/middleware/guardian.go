@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"net/url"
 	"runtime/debug"
 	"strings"
 )
@@ -54,11 +55,16 @@ func (g *guardWriter) send(r *http.Request, reason string) {
 	})
 }
 
-// NotFoundGuardian turns every 404 into the same JSON with a reason. A
-// controller's own message ("no user with that id") becomes the reason; when
-// no route matched at all, it writes the reason itself.
+// NotFoundGuardian gives every 404 a reason. A controller's own message ("no
+// user with that id") becomes the reason; when no route matched at all, it
+// writes the reason itself. A browser is redirected to the /404 page; any
+// other client (Postman, a program) gets the reason as JSON.
 func NotFoundGuardian(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/404" { // the 404 page itself; redirecting it would loop
+			next.ServeHTTP(w, r)
+			return
+		}
 		g := &guardWriter{ResponseWriter: w, catch: func(code int) bool { return code == http.StatusNotFound }}
 		next.ServeHTTP(g, r)
 		if !g.caught {
@@ -68,6 +74,11 @@ func NotFoundGuardian(next http.Handler) http.Handler {
 		reason := strings.TrimSpace(g.body.String())
 		if reason == "" || reason == "404 page not found" { // Go's answer when no route matches
 			reason = "no route matches " + r.Method + " " + r.URL.Path
+		}
+		if strings.Contains(r.Header.Get("Accept"), "text/html") { // browsers ask for HTML
+			q := url.Values{"reason": {reason}, "path": {r.URL.Path}}
+			http.Redirect(g.ResponseWriter, r, "/404?"+q.Encode(), http.StatusFound)
+			return
 		}
 		g.send(r, reason)
 	})

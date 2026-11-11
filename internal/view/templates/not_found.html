@@ -1,0 +1,7 @@
+{{template "page_top"}}
+<p class="meta">404</p>
+<h1>Aradığın sayfa bulunamadı</h1>
+{{if .Reason}}<p>Sebep: <strong>{{.Reason}}</strong></p>{{end}}
+{{if .Path}}<p class="meta">İstenen adres: <code>{{.Path}}</code></p>{{end}}
+<p><a href="/main">← Ana sayfaya dön</a></p>
+{{template "page_bottom"}}

@@ -17,6 +17,7 @@ func Web(mux *http.ServeMux) {
 	mux.HandleFunc("GET /{$}", controller.Root)
 	mux.HandleFunc("GET /main", controller.Main)
 	mux.HandleFunc("GET /about", controller.About)
+	mux.HandleFunc("GET /404", controller.NotFound)
 	mux.HandleFunc("GET /hello", controller.Hello)
 	mux.HandleFunc("GET /hello/{name}", controller.HelloName)
 	mux.HandleFunc("GET /sum/{number1}/{number2}", controller.Sum)
