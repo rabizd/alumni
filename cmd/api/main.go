@@ -30,7 +30,7 @@ func main() {
 
 	addr := ":" + port
 	log.Printf("listening on http://localhost%s", addr)
-	if err := http.ListenAndServe(addr, middleware.Logger(middleware.Guardian(mux))); err != nil {
+	if err := http.ListenAndServe(addr, middleware.Logger(middleware.ServerErrorGuardian(middleware.NotFoundGuardian(mux)))); err != nil {
 		log.Fatal(err)
 	}
 }
