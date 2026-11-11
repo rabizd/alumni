@@ -20,6 +20,7 @@ section.
 - [Migrations](#migrations)
 - [Seed data](#seed-data)
 - [Validation rules](#validation-rules)
+  - [Planned rules for job postings](#planned-rules-for-job-postings)
 - [From a request to a row](#from-a-request-to-a-row)
 - [Design decisions](#design-decisions)
 - [Known limits and next steps](#known-limits-and-next-steps)
@@ -255,6 +256,25 @@ returns `400 Bad Request` and nothing is written.
 | `applications` | `status` is one of `pending`, `accepted`, `rejected` | `Application.Validate()` |
 | `applications` | `jobPostingId` and `userId` must exist — checked by the database (foreign keys), answered with `400` | Postgres |
 | `applications` | one application per user per posting — checked by the database (`UNIQUE`), answered with `409 Conflict` | Postgres |
+
+### Planned rules for job postings
+
+These rules are agreed but **not written in code yet**: the API still accepts a posting that
+breaks them. When a rule is implemented, move it into the table above and delete it here.
+Lengths count characters, not bytes, so a Turkish letter like `ş` counts as one.
+
+| Field / action | Rule | Status |
+| --- | --- | --- |
+| `title` | 3 to 120 characters | not in code yet |
+| `company` | at most 100 characters | not in code yet |
+| `location` | optional (city or "Remote"); at most 100 characters | not in code yet |
+| `description` | 30 to 5000 characters | not in code yet |
+| `applyUrl` | optional; when given, starts with `http://` or `https://` | not in code yet |
+| `deadline` | at most one year from today | not in code yet |
+| new posting | the same user cannot have two open postings with the same `company` and `title` | not in code yet |
+| applying | no application after the posting's `deadline` | not in code yet |
+| applying | a user cannot apply to their own posting | not in code yet |
+| edit / delete | only the user who posted it may change or delete a posting (needs sign-in first) | not in code yet |
 
 ## From a request to a row
 
