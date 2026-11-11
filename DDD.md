@@ -294,9 +294,10 @@ Creating a user, step by step:
 4. `model.Users.Add` runs `INSERT … RETURNING …`; Postgres assigns `id`.
 5. The returned row is sent back as JSON with `201 Created`.
 
-If the database itself fails (it is down, a query is wrong) the controller answers
-`500 database error` and does not show the internal error to the client; `dbError` writes the
-real error to the app's log (`docker compose logs app`).
+If the database itself fails (it is down, a query is wrong) the controller answers `500` with
+the reason `database error` (as JSON, written by `ServerErrorGuardian`) and does not show the
+internal error to the client; `dbError` writes the real error to the terminal and to
+`logs/error.log`. A missing row is a `404` with a reason such as `no user with that id`.
 
 ## Design decisions
 

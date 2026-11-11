@@ -167,6 +167,7 @@ so they survive a restart and `docker compose down`.
 | `GET /hello`, `GET /hello/{name}` | greeting, from the lecture exercises |
 | `GET /sum/{number1}/{number2}` | the sum, or `400` on non-numeric input |
 | `GET /temporary` | `307` temporary redirect to `/main` |
+| `GET /404` | the generic "page not found" page; browsers are redirected here (`302`) when something is not found |
 
 Routing uses the Go 1.22 standard-library `ServeMux` — no third-party router. HTML lives in
 `internal/view/templates/`, embedded into the binary with `go:embed` and rendered through
@@ -188,6 +189,38 @@ the endpoint, not as a chore that follows it.
 
 A quick way to check yourself before opening a PR: open `/api/swagger`, press **Try it out** on
 each endpoint you touched, and confirm the real response matches what the page promises.
+
+### Logs and error answers
+
+Every request passes through three middlewares (`internal/middleware/`) before it reaches a
+route, wrapped in `cmd/api/main.go` as `Logger(ServerErrorGuardian(NotFoundGuardian(mux)))`:
+
+| Middleware | What it does |
+| --- | --- |
+| `Logger` | prints one line per request to the terminal: `10:20:30  POST    /api/users  201  18.0ms` (time, method, route, status, duration) |
+| `NotFoundGuardian` | gives every `404` a reason. A browser (`Accept: text/html`) is redirected (`302`) to the `/404` page; Postman and programs get JSON |
+| `ServerErrorGuardian` | answers every `5xx` as JSON, and turns a panic into a `500` instead of a dropped connection. The details go to the log, never to the client |
+
+The JSON error shape, for both guardians:
+
+```json
+{"status":404,"error":"Not Found","reason":"no user with that id","path":"/api/users/999"}
+```
+
+When no route matches, the reason is written by the guardian: `no route matches GET /api/olmayan`.
+
+**`logs/error.log`.** Errors are also appended to this file, so they outlive the terminal: the
+line of every `4xx`/`5xx` request (with the date) and the details of server errors (database
+errors, panics). Successful requests stay in the terminal only. `./logs` is mounted into the
+app container and kept out of git.
+
+```bash
+docker compose logs -f app            # every request, live
+Get-Content logs\error.log -Wait      # only the errors, live (PowerShell)
+```
+
+Log times are Istanbul time: Compose sets `TZ=Europe/Istanbul`, and the binary embeds the time
+zone data because the alpine image has none.
 
 ## Data Model
 
@@ -386,8 +419,8 @@ else's checkout. When a new variable is added, it goes into `.env.example` too.
 | `DB_PORT` | Port PostgreSQL is reachable on from your machine | `5432` |
 | `ADMINER_PORT` | Port of Adminer, the database viewer (optional; `8081` if unset) | `8081` |
 
-Compose also passes two fixed values to the app: `DB_HOST=db` (the database container's name)
-and `DB_PASSWORD_FILE=/run/secrets/db_password`. When you `go run ./cmd/api` outside Docker, the
+Compose also passes three fixed values to the app: `DB_HOST=db` (the database container's name),
+`DB_PASSWORD_FILE=/run/secrets/db_password`, and `TZ=Europe/Istanbul` (so log times are local). When you `go run ./cmd/api` outside Docker, the
 app falls back to `localhost`, `alumni` and `secrets/db_password.txt`.
 
 The password is a **Docker Compose secret**, not an environment variable. Compose mounts
@@ -419,6 +452,11 @@ Routes sit outside the three layers, in `internal/routes`: `web.go` maps the HTM
     │  GET /api/users/1
     ▼
 ┌───────────────────────────────────────┐
+│ Middleware  internal/middleware/      │  Logger, ServerErrorGuardian,
+│                                       │  NotFoundGuardian (on the way back too)
+└───────────────────┬───────────────────┘
+                    ▼
+┌───────────────────────────────────────┐
 │ Router      internal/routes/api.go    │  ServeMux matches method + path
 └───────────────────┬───────────────────┘
                     ▼
@@ -448,11 +486,15 @@ view never import a controller, and they never import each other.
 alumni/
 ├── cmd/
 │   ├── api/
-│   │   └── main.go             # entry point: registers the routes, reads APP_PORT, starts the server
+│   │   └── main.go             # entry point: opens logs/error.log, registers the routes, wraps them in the middlewares, starts the server
 │   └── seed/
 │       └── main.go             # seed command: -users, -announcements, -alumni, -fresh, -seed
 │
 ├── internal/                   # the application, split into the three MVC layers
+│   ├── middleware/             # runs around every request, before and after the controller
+│   │   ├── logger.go           #   Logger: one line per request to the terminal; 4xx/5xx also to logs/error.log
+│   │   └── guardian.go         #   NotFoundGuardian (404 JSON or redirect to /404), ServerErrorGuardian (5xx JSON, panics)
+│   │
 │   ├── routes/                 # ROUTES: which URL goes to which controller
 │   │   ├── web.go              #   Web(): pages, UserController at /users, AnnouncementController at /announcements  (HTML)
 │   │   └── api.go              #   API(): ApiUserController, ApiAnnouncementController, health, swagger, /alumni  (JSON)
@@ -474,6 +516,7 @@ alumni/
 │   │   └── templates/          #   HTML pages (embedded with go:embed)
 │   │       ├── main.html       #     landing page, lists every route
 │   │       ├── about.html      #     about page
+│   │       ├── not_found.html  #     the generic 404 page: reason, requested path, link home
 │   │       ├── swagger.html    #     Swagger UI, loads /api/swagger.json
 │   │       ├── layout.html     #     shared top and bottom of every page, and the form fields of each resource
 │   │       ├── announcements.html #  announcement list + create form
@@ -487,7 +530,7 @@ alumni/
 │   │       └── user_form.html  #     create and edit form
 │   │
 │   └── controller/             # CONTROLLER
-│       ├── pages.go            #   Root, Main, About, Hello, HelloName, Sum, Temporary
+│       ├── pages.go            #   Root, Main, About, NotFound, Hello, HelloName, Sum, Temporary
 │       ├── api_user_controller.go # ApiUserController: JSON at /api/users  (Index, Show, Store, Update, Patch, Destroy)
 │       ├── user_controller.go  #   UserController: HTML at /users  (Index, Show, Create, Store, Edit, Update, Destroy)
 │       ├── api_announcement_controller.go # ApiAnnouncementController: JSON at /api/announcements  (Index, Show, Store, Update, Destroy)
@@ -499,13 +542,14 @@ alumni/
 │
 ├── migrations/                 # numbered schema changes, NNNNNN_name.up.sql + .down.sql, applied in order
 ├── secrets/                    # db_password.txt lives here (not committed)
+├── logs/                       # error.log, written by the app (not committed)
 │
 ├── requests.http               # every endpoint, for the VS Code REST Client (manual testing)
 ├── Dockerfile                  # two-stage build: compile in golang, run in a small alpine image
 ├── docker-compose.yml          # app on port 8080, migrate (runs migrations/), PostgreSQL with the db-data volume and the password secret
 ├── .dockerignore               # files kept out of the Docker build
 ├── .env.example                # template for .env: copy it, then change the values
-├── .gitignore                  # keeps .env and secrets/ out of git
+├── .gitignore                  # keeps .env, secrets/ and logs/ out of git
 ├── go.mod                      # Go module: github.com/rabizd/alumni, Go 1.22, pgx (PostgreSQL driver)
 ├── README.md
 ├── DDD.md                      # Data Design Documentation: tables, columns, rules
@@ -609,11 +653,13 @@ Only the name is required; department and graduation year may be empty.
 
 ### When the database fails
 
-Every controller sends database errors through `dbError` in `request.go`. The client gets
-`500 database error` and nothing more, because the details are not its business; the real
-error is written to the app's log, for example
+Every controller sends database errors through `dbError` in `request.go`, and
+`ServerErrorGuardian` turns the answer into JSON. The client gets
+`{"status":500,"error":"Internal Server Error","reason":"database error",…}` and nothing more,
+because the details are not its business; the real error is written to the terminal and to
+`logs/error.log`, for example
 `database error: failed to connect to … lookup db: no such host` when the `db` container is
-stopped. Read it with `docker compose logs app`.
+stopped. Try it with `docker compose stop db`, then `docker compose start db`.
 
 ### What is still on the way
 
@@ -632,6 +678,7 @@ stopped. Read it with `docker compose logs app`.
 - [x] `docker-compose.yml` with PostgreSQL, a named volume and the password as a secret
 - [x] Users, announcements and alumni moved from memory onto PostgreSQL
 - [x] Database migrations with golang-migrate (`migrations/`, run by the `migrate` service)
+- [x] Middleware: request logger, 404 and 5xx guardians with JSON reasons, `logs/error.log`, a generic 404 page
 - [ ] Redis in `docker-compose.yml`
 
 **Phase 2 — a usable core**

@@ -1133,6 +1133,16 @@
       }
     },
     "schemas": {
+      "Error": {
+        "type": "object",
+        "description": "Every 404 and 5xx, written by the guardian middleware",
+        "properties": {
+          "status": { "type": "integer", "example": 404 },
+          "error": { "type": "string", "example": "Not Found" },
+          "reason": { "type": "string", "example": "no user with that id" },
+          "path": { "type": "string", "example": "/api/users/999" }
+        }
+      },
       "Health": {
         "type": "object",
         "properties": {
@@ -1277,19 +1287,19 @@
       "AnnouncementNotFound": {
         "description": "Bu id'ye sahip duyuru yok",
         "content": {
-          "text/plain": { "schema": { "type": "string" }, "example": "no announcement with that id" }
+          "application/json": { "schema": { "$ref": "#/components/schemas/Error" }, "example": { "status": 404, "error": "Not Found", "reason": "no announcement with that id", "path": "/api/announcements/999" } }
         }
       },
       "JobPostingNotFound": {
         "description": "Bu id'ye sahip ilan yok",
         "content": {
-          "text/plain": { "schema": { "type": "string" }, "example": "no job posting with that id" }
+          "application/json": { "schema": { "$ref": "#/components/schemas/Error" }, "example": { "status": 404, "error": "Not Found", "reason": "no job posting with that id", "path": "/api/job-postings/999" } }
         }
       },
       "ApplicationNotFound": {
         "description": "Bu id'ye sahip başvuru yok",
         "content": {
-          "text/plain": { "schema": { "type": "string" }, "example": "no application with that id" }
+          "application/json": { "schema": { "$ref": "#/components/schemas/Error" }, "example": { "status": 404, "error": "Not Found", "reason": "no application with that id", "path": "/api/applications/999" } }
         }
       },
       "AlreadyApplied": {
@@ -1319,13 +1329,13 @@
       "NotFound": {
         "description": "Bu id'ye sahip kullanıcı yok",
         "content": {
-          "text/plain": { "schema": { "type": "string" }, "example": "no user with that id" }
+          "application/json": { "schema": { "$ref": "#/components/schemas/Error" }, "example": { "status": 404, "error": "Not Found", "reason": "no user with that id", "path": "/api/users/999" } }
         }
       },
       "GraduateNotFound": {
         "description": "Bu id'ye sahip mezun yok",
         "content": {
-          "text/plain": { "schema": { "type": "string" }, "example": "no graduate with that id" }
+          "application/json": { "schema": { "$ref": "#/components/schemas/Error" }, "example": { "status": 404, "error": "Not Found", "reason": "no graduate with that id", "path": "/alumni/999" } }
         }
       }
     }
