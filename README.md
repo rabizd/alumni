@@ -25,6 +25,7 @@
 - [What Works Today](#what-works-today)
 - [Data Model](#data-model)
 - [Data Design Documentation](DDD.md) ↗
+- [Brand](brand.md) ↗
 - [Prior Art](#prior-art)
 - [Open Design Questions](#open-design-questions)
 - [Getting Started](#getting-started)
@@ -558,6 +559,7 @@ alumni/
 ├── go.mod                      # Go module: github.com/rabizd/alumni, Go 1.22, pgx (PostgreSQL driver)
 ├── README.md
 ├── DDD.md                      # Data Design Documentation: tables, columns, rules
+├── brand.md                    # Brand: name, voice, colors, fonts, photos, layout
 └── LICENSE
 ```
 
