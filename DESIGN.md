@@ -86,6 +86,16 @@ maroon 2px focus outline.
 **Navigation** — wordmark (*İ.Ü.* maroon + *Alumni*) left; at most five links right,
 as 12px uppercase labels. Transparent over the hero, hairline under it elsewhere.
 
+**Centered growing object** — the one signature moment, used once per page, right after the hero.
+An ink band about 2.5 screens tall whose content sticks while the visitor scrolls through it:
+- In the middle: the Alumni medallion, *İ.Ü.* in light gold Spectral with *1453* under it and
+  "İSTANBUL ÜNİVERSİTESİ · MEZUN AĞI · ALUMNI" around the edge. It is Alumni's own mark,
+  not the university's official logo.
+- As the band scrolls, the medallion stands up from tilted (`rotateX` 58° → 0°), grows
+  (scale 0.42 → 1) and its ring of text turns (0° → 140°).
+- A Spectral heading sits on its left and a short paragraph on its right, 18px gutters;
+  both fade from 35% to full as the object grows, never from invisible.
+
 **Tags** (application status) — pill, 12px label, soft fill:
 accepted `#dfe8d6` / `#2f4a1f`, rejected `#f3dcd8` / maroon.
 
@@ -97,6 +107,7 @@ accepted `#dfe8d6` / `#2f4a1f`, rejected `#f3dcd8` / maroon.
   Bands are full-bleed; the content inside them is not.
 - Left-aligned text. Only the hero headline may sit centered.
 - Two-column rows alternate sides (text left / image right, then the reverse).
+- The growing-object band is the one three-column row: text · object · text.
 - Generous whitespace is the design: when in doubt, add space, not a border.
 
 ## 6. Depth & Elevation
@@ -119,6 +130,7 @@ The hero photo sits under a dark gradient so text stays readable; that gradient 
 - Don't add drop shadows, gradients on buttons, or cards inside cards.
 - Don't use a border-radius between 1px and 998px.
 - Don't put more than one filled button in a section.
+- Don't use the growing object more than once on a page, or for anything but the medallion.
 - Don't center body copy or use gold for large areas.
 - Don't use stock photos; only real campus photography from `internal/view/static/img/`.
 
@@ -128,7 +140,9 @@ The hero photo sits under a dark gradient so text stays readable; that gradient 
   nav links wrap under the wordmark.
 - Touch targets at least 44px tall.
 - Wide tables scroll sideways inside their own box; the page itself never scrolls sideways.
-- With *prefers-reduced-motion*, the hero slideshow stops on the first photo and transitions are off.
+- The growing-object band stacks on phones: medallion on top (240px), heading, then paragraph.
+- With *prefers-reduced-motion*, the hero slideshow stops on the first photo, transitions are off,
+  and the growing-object band becomes a normal-height band with the medallion already full size.
 - Motion otherwise: `cubic-bezier(0.19, 1, 0.22, 1)`, 0.4s for color, 0.8s for movement.
 
 ## 9. Agent Prompt Guide
