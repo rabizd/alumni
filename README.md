@@ -24,6 +24,7 @@
 - [Architecture](#architecture)
 - [What Works Today](#what-works-today)
 - [Data Model](#data-model)
+- [Design](DESIGN.md) ↗
 - [Data Design Documentation](DDD.md) ↗
 - [Prior Art](#prior-art)
 - [Open Design Questions](#open-design-questions)
@@ -557,6 +558,7 @@ alumni/
 ├── .gitignore                  # keeps .env, secrets/ and logs/ out of git
 ├── go.mod                      # Go module: github.com/rabizd/alumni, Go 1.22, pgx (PostgreSQL driver)
 ├── README.md
+├── DESIGN.md                   # how the pages should look: colors, type, components (DESIGN.md format)
 ├── DDD.md                      # Data Design Documentation: tables, columns, rules
 └── LICENSE
 ```
