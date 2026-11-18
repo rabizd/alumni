@@ -1,22 +1,50 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"unicode"
 
+	"github.com/rabizd/alumni/internal/model"
 	"github.com/rabizd/alumni/internal/view"
 )
 
+// homePage is what main.html needs: how many of each thing there are and the
+// newest postings and announcements. Live is false when the database could not
+// be read; the page then shows only its fixed text instead of failing.
+type homePage struct {
+	Live                                      bool
+	Graduates, Users, Postings, Announcements int
+	LatestPostings                            []model.JobPosting
+	LatestAnnouncements                       []model.Announcement
+}
+
+func home(w http.ResponseWriter) {
+	var p homePage
+	graduates, err1 := model.Graduates.List()
+	users, err2 := model.Users.List()
+	postings, err3 := model.JobPostings.List()
+	announcements, err4 := model.Announcements.List()
+	if err := errors.Join(err1, err2, err3, err4); err != nil {
+		log.Printf("home page without live data: %v", err)
+	} else {
+		p = homePage{true, len(graduates), len(users), len(postings), len(announcements),
+			postings[:min(3, len(postings))], announcements[:min(3, len(announcements))]}
+	}
+	view.HTML(w, http.StatusOK, "main.html", p)
+}
+
 // GET / -> the landing page
 func Root(w http.ResponseWriter, r *http.Request) {
-	view.HTML(w, http.StatusOK, "main.html", nil)
+	home(w)
 }
 
 // GET /main -> the page the temporary redirect points at
 func Main(w http.ResponseWriter, r *http.Request) {
-	view.HTML(w, http.StatusOK, "main.html", nil)
+	home(w)
 }
 
 // GET /about -> a temporary about page

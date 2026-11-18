@@ -113,6 +113,40 @@
   }
   .founding p{ margin:0; font-size:0.9rem; color:#d9cec0; max-width:30rem; }
 
+  /* --- hero buttons --- */
+  .actions{ display:flex; flex-wrap:wrap; gap:0.8rem; margin-top:1.8rem; }
+  .btn{
+    display:inline-block; padding:0.7rem 1.3rem; border-radius:var(--radius);
+    font-size:0.95rem; font-weight:500; text-decoration:none;
+    background:#e2c27c; color:var(--maroon-deep); border:1px solid #e2c27c;
+  }
+  .btn:hover{ background:#ecd297; }
+  .btn.ghost{ background:transparent; color:#f4ece2; border-color:rgba(244,236,226,0.5); }
+  .btn.ghost:hover{ border-color:#f4ece2; }
+
+  /* --- live numbers, straight from the database --- */
+  .stats{ background:var(--paper-deep); border-bottom:1px solid var(--line); }
+  .stats ul{
+    list-style:none; margin:0 auto; padding:0 1.5rem; max-width:56rem;
+    display:grid; grid-template-columns:repeat(4, 1fr);
+  }
+  .stats li + li{ border-left:1px solid var(--line); }
+  .stats a{ display:block; padding:1.4rem 1rem; text-decoration:none; color:var(--ink); }
+  .stats a:hover .num{ color:var(--maroon); }
+  .stats .num{ display:block; font-family:'Spectral', serif; font-size:2rem; font-weight:600; line-height:1; }
+  .stats .label{ display:block; margin-top:0.35rem; font-size:0.85rem; color:#5b5248; }
+
+  /* --- newest postings and announcements, side by side --- */
+  .latest .cols{ display:grid; grid-template-columns:1fr 1fr; gap:2.5rem; }
+  .latest h2{ font-size:1.3rem; margin-bottom:0.8rem; }
+  .latest ul{ list-style:none; margin:0; padding:0; }
+  .latest li{ padding:0.9rem 0; border-top:1px solid var(--line); }
+  .latest li a{ font-weight:600; text-decoration:none; }
+  .latest li a:hover{ text-decoration:underline; }
+  .latest .meta{ display:block; font-size:0.85rem; color:#5b5248; margin-top:0.15rem; }
+  .latest .more{ display:inline-block; margin-top:0.9rem; font-size:0.9rem; }
+  .latest .empty{ color:#5b5248; font-size:0.95rem; border-top:1px solid var(--line); padding-top:0.9rem; }
+
   /* --- ledger sections (registry style, no cards) --- */
   section{ padding:3rem 0; border-top:1px solid var(--line); }
   section > h2{ font-size:1.5rem; margin-bottom:0.4rem; }
@@ -178,6 +212,11 @@
   @media (max-width:640px){
     .hero h1{ font-size:2.1rem; }
     .ledger li{ grid-template-columns: 1.8rem 1fr; }
+    nav.top ul{ gap:1rem; }
+    .stats ul{ grid-template-columns:repeat(2, 1fr); }
+    .stats li:nth-child(3){ border-left:none; }
+    .stats li:nth-child(n+3){ border-top:1px solid var(--line); }
+    .latest .cols{ grid-template-columns:1fr; gap:2rem; }
   }
   @media (prefers-reduced-motion: reduce){
     html{ scroll-behavior:auto; }
@@ -194,8 +233,10 @@
   <div class="wrap">
     <a class="brand" href="/main"><b>İ.Ü.</b> Alumni</a>
     <ul>
+      <li><a href="/graduates">Mezunlar</a></li>
+      <li><a href="/job-postings">İlanlar</a></li>
+      <li><a href="/announcements">Duyurular</a></li>
       <li><a href="/about">Hakkında</a></li>
-      <li><a href="https://github.com/rabizd/alumni">Kaynak kod</a></li>
     </ul>
   </div>
 </nav>
@@ -210,6 +251,10 @@
       bir yandan aranabilir bir mezun rehberi, bir yandan da yalnızca doğrulanmış
       mezunların konuştuğu kapalı bir akış.
     </p>
+    <div class="actions">
+      <a class="btn" href="/graduates">Mezun rehberine göz at</a>
+      <a class="btn ghost" href="/job-postings">İş ve staj ilanları</a>
+    </div>
     <div class="founding">
       <span class="year">1453</span>
       <p>İstanbul Üniversitesi'nin kuruluş yılı — bu platform, o köklü camianın
@@ -217,6 +262,54 @@
     </div>
   </div>
 </header>
+
+{{if .Live}}
+<div class="stats">
+  <ul>
+    <li><a href="/graduates"><span class="num">{{.Graduates}}</span><span class="label">kayıtlı mezun</span></a></li>
+    <li><a href="/users"><span class="num">{{.Users}}</span><span class="label">kullanıcı</span></a></li>
+    <li><a href="/job-postings"><span class="num">{{.Postings}}</span><span class="label">iş ve staj ilanı</span></a></li>
+    <li><a href="/announcements"><span class="num">{{.Announcements}}</span><span class="label">duyuru</span></a></li>
+  </ul>
+</div>
+
+<section class="latest">
+  <div class="wrap cols">
+    <div>
+      <h2>Son ilanlar</h2>
+      {{with .LatestPostings}}
+      <ul>
+        {{range .}}
+        <li>
+          <a href="/job-postings/{{.ID}}">{{.Title}}</a>
+          <span class="meta">{{.Company}}{{with .Location}} · {{.}}{{end}} · {{template "employment_type" .EmploymentType}}</span>
+        </li>
+        {{end}}
+      </ul>
+      {{else}}
+      <p class="empty">Henüz ilan yok.</p>
+      {{end}}
+      <a class="more" href="/job-postings">Tüm ilanlar →</a>
+    </div>
+    <div>
+      <h2>Son duyurular</h2>
+      {{with .LatestAnnouncements}}
+      <ul>
+        {{range .}}
+        <li>
+          <a href="/announcements/{{.ID}}">{{.Title}}</a>
+          <span class="meta">{{.Author}} · {{.CreatedAt.Format "02.01.2006"}}</span>
+        </li>
+        {{end}}
+      </ul>
+      {{else}}
+      <p class="empty">Henüz duyuru yok.</p>
+      {{end}}
+      <a class="more" href="/announcements">Tüm duyurular →</a>
+    </div>
+  </div>
+</section>
+{{end}}
 
 <section>
   <div class="wrap">
