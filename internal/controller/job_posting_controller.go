@@ -22,6 +22,19 @@ type jobPostingRow struct {
 	Poster string
 }
 
+// Initials are the first letters of the company's first two words, for the
+// stamp the postings page draws in place of a logo: "Garanti BBVA" -> "GB".
+func (r jobPostingRow) Initials() string {
+	var out []rune
+	for _, word := range strings.Fields(r.Company) {
+		out = append(out, []rune(word)[0])
+		if len(out) == 2 {
+			break
+		}
+	}
+	return string(out)
+}
+
 // jobPostingPage is what job_posting.html needs.
 type jobPostingPage struct {
 	Posting      model.JobPosting
