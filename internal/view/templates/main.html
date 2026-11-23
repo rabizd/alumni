@@ -90,25 +90,24 @@
   .strip .item b{ display:block; font-weight:500; font-size:15px; }
   .strip .item small{ display:block; font-size:13px; color:rgba(244,236,226,0.7); margin-top:2px; }
 
-  /* --- growing photo: the window opens to full bleed while the stage sticks; --p goes 0 → 1 --- */
-  .reveal{ --p:0; --ix:36%; --iy:16%; height:260vh; position:relative; background:var(--ink); color:var(--cream); }
-  .reveal .stage{ position:sticky; top:0; height:100vh; overflow:hidden; display:grid; align-items:center; }
-  .reveal .window{ position:absolute; inset:0; overflow:hidden;
-    clip-path:inset(calc((1 - var(--p)) * var(--iy)) calc((1 - var(--p)) * var(--ix))); }
-  .reveal .window .img{ position:absolute; inset:0; background:url('/static/img/campus-3.jpg') center 40%/cover;
-    transform:scale(calc(1.18 - var(--p) * 0.18)); }
-  .reveal .window::after{ content:''; position:absolute; inset:0;
-    background:linear-gradient(0deg, rgba(24,16,14,0.75) 0%, rgba(24,16,14,0) 45%); opacity:var(--p); }
-  .reveal .wrap{ position:relative; width:100%; height:100%; display:grid; grid-template-columns:1fr 1.25fr 1fr; gap:18px; align-items:center; }
-  .reveal .side{ min-width:0; opacity:clamp(0, 1 - var(--p) * 2.2, 1); }
-  .reveal .left{ grid-column:1; }
-  .reveal .right{ grid-column:3; }
-  .reveal .left .label{ color:var(--gold-light); }
-  .reveal h2{ font-size:40px; line-height:1.1; margin-top:12px; }
-  .reveal .right p{ margin:0; font-size:18px; line-height:1.55; color:rgba(244,236,226,0.85); }
-  .reveal .caption{ position:absolute; left:0; right:0; bottom:64px; opacity:clamp(0, (var(--p) - 0.7) * 3.4, 1); }
-  .reveal .caption p{ margin:0; font:400 clamp(32px, 5vw, 56px)/1.05 var(--serif); max-width:16ch; }
-  .reveal .caption em{ color:var(--gold-light); }
+  /* --- the turning disk: a video of the disk turning, filling the screen while the stage sticks;
+     the scroll moves the video's playhead, and the caption steps once per third of the turn --- */
+  .turn{ height:240vh; position:relative; background:var(--ink); color:var(--cream); }
+  .turn .stage{ position:sticky; top:0; height:100vh; overflow:hidden; }
+  .turn .window{ position:absolute; inset:0; overflow:hidden; background:var(--ink); }
+  .turn video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .turn .window::after{ content:''; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(0deg, rgba(24,16,14,0.85) 0%, rgba(24,16,14,0) 45%); }
+  .turn .steps{ position:absolute; left:0; right:0; bottom:64px; }
+  .turn .steps .wrap{ display:block; height:auto; }
+  .turn .counter{ display:block; color:var(--gold-light); margin-bottom:16px; font-variant-numeric:tabular-nums; }
+  .turn .step-box{ display:grid; }
+  .turn .step{ grid-area:1 / 1; max-width:30rem; opacity:0; transform:translateY(16px);
+    transition:opacity .8s var(--ease), transform .8s var(--ease); }
+  .turn[data-step="0"] .step:nth-child(1), .turn[data-step="1"] .step:nth-child(2), .turn[data-step="2"] .step:nth-child(3){ opacity:1; transform:none; }
+  .turn .step p.big{ margin:0; font:400 clamp(36px, 5.5vw, 60px)/1.02 var(--serif); }
+  .turn .step p.big em{ color:var(--gold-light); }
+  .turn .step p.small{ margin:12px 0 0; font-size:17px; line-height:1.55; color:rgba(244,236,226,0.85); }
 
   /* --- section heads --- */
   .head{ display:grid; gap:12px; margin-bottom:48px; max-width:44rem; }
@@ -162,11 +161,8 @@
     .hero h1{ font-size:40px; }
     .hero p.lede{ font-size:16px; }
     .strip .tag{ display:none; }
-    .head h2, .maroon h2, .reveal h2{ font-size:28px; }
-    .reveal{ --ix:14%; --iy:24%; }
-    .reveal .wrap{ grid-template-columns:1fr; align-content:space-between; padding-top:56px; padding-bottom:32px; }
-    .reveal .left, .reveal .right{ grid-column:1; }
-    .reveal .right p{ font-size:15px; }
+    .head h2, .maroon h2{ font-size:28px; }
+    .turn .steps{ bottom:40px; }
     .ledger li{ grid-template-columns:40px 1fr; }
     .ledger h3{ font-size:20px; }
     .stats{ grid-template-columns:1fr 1fr; row-gap:32px; }
@@ -180,8 +176,9 @@
     .hero .slides span{ animation:none; }
     .hero .slides span:nth-child(1){ opacity:1; }
     .strip .viewport{ overflow-x:auto; }
-    .reveal{ --p:1 !important; height:auto; }
-    .reveal .stage{ position:relative; height:85vh; }
+    /* no turning: the disk stays on its front face with the first caption */
+    .turn{ height:auto; }
+    .turn .stage{ position:relative; height:85vh; }
   }
 </style>
 </head>
@@ -242,19 +239,22 @@
   {{end}}
 </header>
 
-<section class="reveal" id="kampus" aria-label="Kampüs">
+<section class="turn" id="disk" data-step="0" aria-label="Kampüsteki dönen mühür">
   <div class="stage">
-    <div class="window"><div class="img" role="img" aria-label="Akşam, kampüs kapısı ve bayrak, önde ışıklar"></div></div>
-    <div class="wrap">
-      <div class="side left">
-        <span class="label">Aynı sıralardan</span>
-        <h2>Bir mezun, bir sicil.</h2>
-      </div>
-      <div class="side right">
-        <p>Fakülteler, yıllar, şehirler değişir. Ağ, aynı kapıdan geçmiş herkesi yeniden bir araya getirir.</p>
+    <div class="window">
+      <video src="/static/video/disk.mp4" poster="/static/img/disk-poster.jpg" muted playsinline preload="auto"
+        aria-label="Rektörlük binasının önünde beton bir blok; içindeki taş disk, üzerinde İstanbul Üniversitesi mührüyle kendi ekseninde dönüyor"></video>
+    </div>
+    <div class="steps">
+      <div class="wrap">
+        <span class="counter label" aria-hidden="true"><span class="n">01</span> / 03</span>
+        <div class="step-box" aria-live="polite">
+          <div class="step"><p class="big">Okulun <em>mührü.</em></p><p class="small">1453'ten beri aynı mühür, aynı kapı.</p></div>
+          <div class="step"><p class="big">Kendi ekseninde <em>dönen bir taş.</em></p><p class="small">Rektörlük binasının önünde, beton bir bloğun içinde; bir itişle döner.{{if .Live}} Ağda şu an {{.Graduates}} kayıtlı mezun var.{{end}}</p></div>
+          <div class="step"><p class="big">Sıra <em>sende.</em></p><p class="small">Ağa katıl; aynı mührün altından geçmiş herkesle yeniden buluş.</p></div>
+        </div>
       </div>
     </div>
-    <div class="caption"><div class="wrap" style="display:block;height:auto"><p>Aynı kapı, <em>yıllar sonra.</em></p></div></div>
   </div>
 </section>
 
@@ -359,19 +359,26 @@
     track.classList.add('moving');
   })();
 
-  // Scroll progress of the growing-photo band: 0 at its top, 1 once its stage has scrolled through.
+  // The turning disk. p is the scroll progress through the band (0 → 1); it moves the video's
+  // playhead, so the disk turns as far as the visitor scrolls, both ways.
+  // The caption steps once per third of the turn.
   (function(){
-    var sec = document.getElementById('kampus');
+    var sec = document.getElementById('disk');
     if (!sec || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var video = sec.querySelector('video');
+    var counter = sec.querySelector('.counter .n');
     var queued = false;
     function update(){
       queued = false;
       var span = sec.offsetHeight - window.innerHeight;
-      var p = span > 0 ? Math.min(1, Math.max(0, -sec.getBoundingClientRect().top / span)) : 1;
-      sec.style.setProperty('--p', p.toFixed(3));
+      var turn = span > 0 ? Math.min(1, Math.max(0, -sec.getBoundingClientRect().top / span)) : 1;
+      if (video.duration) video.currentTime = turn * (video.duration - 0.05);
+      var step = Math.min(2, Math.floor(turn * 3));
+      if (sec.dataset.step !== String(step)){ sec.dataset.step = step; counter.textContent = '0' + (step + 1); }
     }
     window.addEventListener('scroll', function(){ if (!queued){ queued = true; requestAnimationFrame(update); } }, { passive:true });
     window.addEventListener('resize', update);
+    video.addEventListener('loadedmetadata', update);
     update();
   })();
 </script>
