@@ -1,11 +1,14 @@
 {{template "page_top"}}
-<h1>{{.Title}}</h1>
+<header class="page-head">
+  <p class="label kicker">Duyurular</p>
+  <h1>{{.Title}}</h1>
+</header>
 {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
 <form method="post" action="{{.Action}}">
   {{template "announcement_fields" .Announcement}}
   <div class="row">
     <button type="submit">Kaydet</button>
-    <a href="/announcements">Vazgeç</a>
+    <a class="btn ghost" href="/announcements">Vazgeç</a>
   </div>
 </form>
 {{template "page_bottom"}}

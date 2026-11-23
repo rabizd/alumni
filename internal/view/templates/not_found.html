@@ -1,7 +1,23 @@
 {{template "page_top"}}
-<p class="meta">404</p>
-<h1>Aradığın sayfa bulunamadı</h1>
-{{if .Reason}}<p>Sebep: <strong>{{.Reason}}</strong></p>{{end}}
-{{if .Path}}<p class="meta">İstenen adres: <code>{{.Path}}</code></p>{{end}}
-<p><a href="/main">← Ana sayfaya dön</a></p>
+<style>
+  .lost{ padding:32px 0 48px; }
+  .lost .label{ color:var(--gold); }
+  .lost .code{ font-family:var(--serif); font-size:clamp(96px, 22vw, 176px); line-height:0.9; color:var(--gold); margin:0 0 24px; }
+  .lost h1{ margin-bottom:16px; }
+  .lost p{ color:var(--muted); margin:0 0 12px; }
+  .lost p strong{ color:var(--ink); }
+  .lost code{ font-size:14px; background:var(--paper-deep); padding:2px 6px; }
+  .lost .row{ margin-top:32px; }
+</style>
+<section class="lost">
+  <p class="label">Sayfa bulunamadı</p>
+  <p class="code" aria-hidden="true">404</p>
+  <h1>Aradığın sayfa bulunamadı</h1>
+  {{if .Reason}}<p>Sebep: <strong>{{.Reason}}</strong></p>{{end}}
+  {{if .Path}}<p>İstenen adres: <code>{{.Path}}</code></p>{{end}}
+  <div class="row">
+    <a class="btn" href="/main">Ana sayfaya dön</a>
+    <a class="btn ghost" href="/graduates">Mezunlara göz at</a>
+  </div>
+</section>
 {{template "page_bottom"}}

@@ -1,5 +1,8 @@
 {{template "page_top"}}
-<h1>{{.Title}}</h1>
+<header class="page-head">
+  <p class="label kicker">İlanlar</p>
+  <h1>{{.Title}}</h1>
+</header>
 {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
 <form method="post" action="{{.Action}}">
   <label for="userId">İlanı açan</label>
@@ -37,7 +40,7 @@
   <input type="url" id="applyUrl" name="applyUrl" value="{{.Posting.ApplyURL}}" placeholder="https://">
   <div class="row">
     <button type="submit">Kaydet</button>
-    <a href="/job-postings">Vazgeç</a>
+    <a class="btn ghost" href="/job-postings">Vazgeç</a>
   </div>
 </form>
 {{template "page_bottom"}}

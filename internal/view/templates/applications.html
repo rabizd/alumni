@@ -1,14 +1,18 @@
 {{template "page_top"}}
-<h1>Başvurular</h1>
+<header class="page-head">
+  <p class="label kicker">İlanlar</p>
+  <h1>Başvurular</h1>
+  <p class="lede">İlanlara yapılan bütün başvurular ve durumları.</p>
+</header>
 {{if .Applications}}
 <table>
   <thead><tr><th>İlan</th><th>Başvuran</th><th>Tarih</th><th>Durum</th><th></th></tr></thead>
   <tbody>
   {{range .Applications}}
     <tr>
-      <td><a href="/job-postings/{{.JobPostingID}}">{{.PostingTitle}}</a></td>
+      <td><a class="name" href="/job-postings/{{.JobPostingID}}">{{.PostingTitle}}</a></td>
       <td>{{.Applicant}}</td>
-      <td>{{.CreatedAt.Format "02.01.2006"}}</td>
+      <td class="muted">{{.CreatedAt.Format "02.01.2006"}}</td>
       <td>{{template "status_label" .Status}}</td>
       <td class="actions">
         <form method="post" action="/applications/{{.ID}}">

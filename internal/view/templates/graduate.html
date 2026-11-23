@@ -1,5 +1,8 @@
 {{template "page_top"}}
-<h1>{{.Name}}</h1>
+<header class="page-head">
+  <p class="label kicker">Mezun</p>
+  <h1>{{.Name}}</h1>
+</header>
 <dl>
   <dt>Bölüm</dt><dd>{{.Department}}</dd>
   <dt>Mezuniyet</dt><dd>{{if .GraduationYear}}{{.GraduationYear}}{{else}}—{{end}}</dd>
@@ -9,6 +12,6 @@
   <form method="post" action="/graduates/{{.ID}}/delete">
     <button class="ghost" type="submit">Sil</button>
   </form>
-  <a href="/graduates">← tüm mezunlar</a>
+  <a class="back" href="/graduates">← tüm mezunlar</a>
 </div>
 {{template "page_bottom"}}

@@ -1,14 +1,18 @@
 {{template "page_top"}}
-<h1>Mezunlar</h1>
+<header class="page-head">
+  <p class="label kicker">Sicil defteri</p>
+  <h1>Mezunlar</h1>
+  <p class="lede">Ağa kayıtlı İstanbul Üniversitesi mezunları, bölümleri ve mezuniyet yıllarıyla.</p>
+</header>
 {{if .Graduates}}
 <table>
   <thead><tr><th>Ad</th><th>Bölüm</th><th>Mezuniyet</th><th></th></tr></thead>
   <tbody>
   {{range .Graduates}}
     <tr>
-      <td><a href="/graduates/{{.ID}}">{{.Name}}</a></td>
-      <td>{{.Department}}</td>
-      <td>{{if .GraduationYear}}{{.GraduationYear}}{{end}}</td>
+      <td><a class="name" href="/graduates/{{.ID}}">{{.Name}}</a></td>
+      <td class="muted">{{.Department}}</td>
+      <td class="num">{{if .GraduationYear}}{{.GraduationYear}}{{end}}</td>
       <td class="actions">
         <a class="btn ghost" href="/graduates/{{.ID}}/edit">Düzenle</a>
         <form method="post" action="/graduates/{{.ID}}/delete">
@@ -22,9 +26,11 @@
 {{else}}
 <p class="empty">Henüz mezun yok.</p>
 {{end}}
-<h2>Yeni mezun</h2>
-<form method="post" action="/graduates">
-  {{template "graduate_fields" .New}}
-  <button type="submit">Ekle</button>
-</form>
+<section class="add">
+  <h2>Yeni mezun</h2>
+  <form method="post" action="/graduates">
+    {{template "graduate_fields" .New}}
+    <button type="submit">Ekle</button>
+  </form>
+</section>
 {{template "page_bottom"}}
