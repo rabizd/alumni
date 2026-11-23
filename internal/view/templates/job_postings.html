@@ -1,28 +1,11 @@
 {{template "page_top"}}
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tinos:ital,wght@0,400;0,700;1,400&display=swap">
+{{template "gazette_head"}}
 <style>
   /* Job postings as a newspaper's classifieds page (after the Miranda reference):
      a nameplate between rules, the newest posting as the lead story, the rest flowing in ruled columns. */
-  /* newspaper type: Times New Roman where installed, Tinos (same metrics) elsewhere */
-  .gazette{ --news:"Times New Roman", Tinos, Times, serif; }
-  .gazette h1, .gazette h2{ font-family:var(--news); font-weight:700; }
-  .gazette{ position:relative; left:50%; transform:translateX(-50%); width:min(1080px, calc(100vw - 32px)); margin-top:-1.5rem; }
-  .gazette .dateline{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:4px 16px;
-    padding:8px 0; border-bottom:1px solid var(--ink);
-    font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); }
-  /* nameplate: a solid ink block with the letters left unprinted, so the paper shows through them */
-  .gazette .nameplate{ font-family:var(--news); font-weight:700; font-size:clamp(72px, 15vw, 168px);
-    line-height:1; letter-spacing:-0.02em; margin:16px 0 6px;
-    display:flex; justify-content:center; align-items:center; text-align:center;
-    background:var(--ink); color:var(--paper); padding:0.1em 0.2em 0.14em; }
-  .gazette .nameplate em{ font-weight:400; }
-  /* the classic newspaper double rule: thick over thin */
-  .gazette .rules{ border-top:4px solid var(--ink); border-bottom:1px solid var(--ink); height:7px; }
   .gazette .subhead{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px 24px; padding:12px 0 32px; }
   .gazette .subhead p{ margin:0; font-family:var(--news); font-style:italic; font-size:18px; color:var(--muted); }
-  .gazette .subhead .btn{ border-radius:999px; }
 
-  .gazette .label{ font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; color:var(--maroon); }
   .gazette .ad{ display:block; color:var(--ink); text-decoration:none; break-inside:avoid; padding:0 0 24px; margin:0 0 24px; border-bottom:1px solid var(--line); }
   .gazette .ad h2{ margin:8px 0 4px; font-size:26px; line-height:1.1; letter-spacing:-0.01em; }
   .gazette .ad:hover h2{ text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:4px; }
@@ -39,12 +22,6 @@
   .gazette .lead p.desc::first-letter{ float:left; font-family:var(--news); font-weight:500; font-size:68px; line-height:0.85; padding:6px 8px 0 0; color:var(--maroon); }
   .gazette .lead .foot{ margin-top:16px; }
 
-  /* stamp: the company's initials in a double-ruled square, standing in for a logo */
-  .gazette .masthead-row{ display:flex; gap:14px; align-items:flex-start; }
-  .gazette .masthead-row > div{ min-width:0; }
-  .gazette .stamp{ flex:none; display:grid; place-items:center; width:52px; height:52px;
-    border:3px double var(--ink); font-family:var(--news); font-weight:500; font-size:20px;
-    letter-spacing:-0.02em; color:var(--ink); background:#f1ece2; }
   .gazette .lead .stamp{ width:84px; height:84px; font-size:34px; border-width:5px; color:var(--maroon); border-color:var(--maroon); }
 
   /* newspaper photo: grayscale with a halftone dot screen over it */
@@ -75,7 +52,7 @@
 
 <div class="gazette">
   <div class="dateline">
-    <a href="/" style="color:inherit">← Ana sayfa</a>
+    <a href="/">← Ana sayfa</a>
     <span>İstanbul · Mezundan mezuna</span>
     <span>{{len .}} ilan</span>
   </div>

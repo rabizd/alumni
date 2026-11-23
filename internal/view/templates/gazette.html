@@ -1,0 +1,34 @@
+{{/* Shared look of the job-posting pages, which read like a newspaper (after the
+Miranda reference): Times New Roman type, a dateline, a knocked-out nameplate,
+the thick-over-thin double rule, section labels and the initials stamp that
+stands in for a company logo. Each page adds its own layout on top. */}}
+{{define "gazette_head"}}
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tinos:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+  /* newspaper type: Times New Roman where installed, Tinos (same metrics) elsewhere */
+  .gazette{ --news:"Times New Roman", Tinos, Times, serif; }
+  .gazette h1, .gazette h2, .gazette h3{ font-family:var(--news); font-weight:700; }
+  /* wider than the 44rem column the other pages use */
+  .gazette{ position:relative; left:50%; transform:translateX(-50%); width:min(1080px, calc(100vw - 32px)); margin-top:-1.5rem; }
+  .gazette .dateline{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:4px 16px;
+    padding:8px 0; border-bottom:1px solid var(--ink);
+    font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); }
+  .gazette .dateline a{ color:inherit; }
+  /* nameplate: a solid ink block with the letters left unprinted, so the paper shows through them */
+  .gazette .nameplate{ font-family:var(--news); font-weight:700; font-size:clamp(72px, 15vw, 168px);
+    line-height:1; letter-spacing:-0.02em; margin:16px 0 6px;
+    display:flex; justify-content:center; align-items:center; text-align:center;
+    background:var(--ink); color:var(--paper); padding:0.1em 0.2em 0.14em; }
+  .gazette .nameplate em{ font-weight:400; }
+  /* the classic newspaper double rule: thick over thin */
+  .gazette .rules{ border-top:4px solid var(--ink); border-bottom:1px solid var(--ink); height:7px; }
+  .gazette .label{ font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; color:var(--maroon); }
+  .gazette .btn, .gazette button{ border-radius:999px; }
+  /* stamp: the company's initials in a double-ruled square */
+  .gazette .masthead-row{ display:flex; gap:14px; align-items:flex-start; }
+  .gazette .masthead-row > div{ min-width:0; }
+  .gazette .stamp{ flex:none; display:grid; place-items:center; width:52px; height:52px;
+    border:3px double var(--ink); font-family:var(--news); font-weight:500; font-size:20px;
+    letter-spacing:-0.02em; color:var(--ink); background:#f1ece2; }
+</style>
+{{end}}

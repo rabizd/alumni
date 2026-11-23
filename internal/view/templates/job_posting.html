@@ -1,61 +1,144 @@
 {{template "page_top"}}
-<h1>{{.Posting.Title}}</h1>
-<p class="meta">{{.Posting.Company}}{{if .Posting.Location}} · {{.Posting.Location}}{{end}} · {{.Posting.CreatedAt.Format "02.01.2006"}}</p>
-<dl>
-  <dt>Tür</dt><dd>{{template "employment_type" .Posting.EmploymentType}}</dd>
-  <dt>İlanı açan</dt><dd>{{.Poster.Name}}{{if .Poster.Department}} · {{.Poster.Department}}{{end}}</dd>
-  <dt>Son gün</dt><dd>{{if .Posting.Deadline}}{{.Posting.Deadline}}{{else}}dolana kadar açık{{end}}</dd>
-  <dt>Başvuru</dt><dd>{{if .Posting.ApplyURL}}<a href="{{.Posting.ApplyURL}}" rel="noopener">{{.Posting.ApplyURL}}</a>{{else}}ilanı açana ya da aşağıdaki formdan{{end}}</dd>
-</dl>
-<p class="body">{{.Posting.Description}}</p>
-<div class="row">
-  <a class="btn" href="/job-postings/{{.Posting.ID}}/edit">Düzenle</a>
-  <form method="post" action="/job-postings/{{.Posting.ID}}/delete">
-    <button class="ghost" type="submit">Sil</button>
-  </form>
-  <a href="/job-postings">← tüm ilanlar</a>
-</div>
+{{template "gazette_head"}}
+<style>
+  /* One posting as a full-page newspaper story: running head, headline, byline bar,
+     the text in two columns with a drop cap, then the applications and a cut-out coupon to apply. */
+  .gazette .running{ font-family:var(--news); font-weight:700; font-size:28px; line-height:1; letter-spacing:-0.01em;
+    background:var(--ink); color:var(--paper); padding:10px 16px 12px; margin:16px 0 6px; display:flex; justify-content:space-between; align-items:baseline; gap:12px; }
+  .gazette .running a{ color:inherit; text-decoration:none; }
+  .gazette .running small{ font-family:'Inter', system-ui, sans-serif; font-weight:500; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; opacity:0.75; }
 
-<h2>Başvurular ({{len .Applications}})</h2>
-{{if .Applications}}
-<table>
-  <thead><tr><th>Başvuran</th><th>Tarih</th><th>Durum</th><th></th></tr></thead>
-  <tbody>
-  {{range .Applications}}
-    <tr>
-      <td>{{.Applicant}}{{if .CoverLetter}}<br><span class="empty">{{.CoverLetter}}</span>{{end}}</td>
-      <td>{{.CreatedAt.Format "02.01.2006"}}</td>
-      <td>{{template "status_label" .Status}}</td>
-      <td class="actions">
-        <form method="post" action="/applications/{{.ID}}">
-          <input type="hidden" name="back" value="/job-postings/{{.JobPostingID}}">
-          <select name="status" aria-label="Durum">
-            {{$current := .Status}}
-            {{range $.Statuses}}<option value="{{.}}"{{if eq . $current}} selected{{end}}>{{template "status_text" .}}</option>{{end}}
-          </select>
-          <button class="ghost" type="submit">Kaydet</button>
-        </form>
-      </td>
-    </tr>
+  .gazette .story-head{ padding:40px 0 24px; text-align:center; }
+  .gazette .story-head h1{ font-size:clamp(44px, 8vw, 96px); line-height:0.95; letter-spacing:-0.03em; margin:16px auto 20px; max-width:14ch; text-wrap:balance; }
+  .gazette .story-head .dek{ display:inline-flex; align-items:center; gap:14px; text-align:left; }
+  .gazette .story-head .company{ font-family:var(--news); font-style:italic; font-size:24px; color:var(--muted); }
+
+  /* byline bar between two rules */
+  .gazette .byline{ display:grid; grid-template-columns:repeat(3, 1fr); border-top:1px solid var(--ink); border-bottom:1px solid var(--ink); }
+  .gazette .byline > div{ min-width:0; padding:14px 16px; overflow-wrap:anywhere; }
+  .gazette .byline > div + div{ border-left:1px solid var(--line); }
+  .gazette .byline .label{ display:block; color:var(--muted); margin-bottom:4px; }
+  .gazette .byline b{ font-family:var(--news); font-size:18px; font-weight:700; }
+  .gazette .byline span.sub{ display:block; font-size:13px; color:var(--muted); }
+
+  .gazette .story{ columns:2; column-gap:40px; column-rule:1px solid var(--line); margin:32px 0;
+    font-family:var(--news); font-size:19px; line-height:1.55; white-space:pre-line; }
+  .gazette .story::first-letter{ float:left; font-weight:700; font-size:84px; line-height:0.8; padding:8px 10px 0 0; color:var(--maroon); }
+
+  .gazette .desk{ display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:16px 0; border-top:4px double var(--ink); }
+  .gazette .desk form{ display:inline; }
+  .gazette .desk .back{ margin-left:auto; }
+
+  .gazette h2.section{ font-size:36px; line-height:1; margin:48px 0 8px; display:flex; align-items:baseline; gap:12px; }
+  .gazette h2.section small{ font-family:'Inter', system-ui, sans-serif; font-weight:500; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted); }
+  .gazette .rules + table, .gazette .rules + p{ margin-top:8px; }
+  .gazette .applicants td:first-child b{ font-family:var(--news); font-size:18px; }
+  .gazette .applicants .note{ display:block; font-family:var(--news); font-style:italic; color:var(--muted); }
+
+  /* the apply form as a newspaper coupon to cut out */
+  .gazette .coupon{ position:relative; border:2px dashed var(--ink); padding:32px; margin:56px 0 16px; background:#f1ece2; }
+  .gazette .coupon::before{ content:'✂'; position:absolute; top:-15px; left:24px; font-size:22px; line-height:1; background:var(--paper); padding:0 6px; color:var(--ink); }
+  .gazette .coupon h2{ font-size:32px; line-height:1; margin:0 0 4px; }
+  .gazette .coupon p.hint{ margin:0 0 20px; font-family:var(--news); font-style:italic; color:var(--muted); }
+  .gazette .coupon input, .gazette .coupon select, .gazette .coupon textarea{ background:var(--paper); border-color:var(--ink); }
+
+  @media (max-width:640px){
+    .gazette .running{ font-size:22px; }
+    .gazette .byline{ grid-template-columns:1fr; }
+    .gazette .byline > div + div{ border-left:none; border-top:1px solid var(--line); }
+    .gazette .story{ columns:1; font-size:18px; }
+    .gazette .desk .back{ margin-left:0; }
+    .gazette .coupon{ padding:24px 16px; }
+  }
+</style>
+
+<div class="gazette">
+  <div class="dateline">
+    <a href="/job-postings">← Tüm ilanlar</a>
+    <span>İlan no. {{.Posting.ID}}</span>
+    <span>{{.Posting.CreatedAt.Format "02.01.2006"}}</span>
+  </div>
+  <div class="running"><a href="/job-postings">Alumni İlanları</a><small>İş ve staj</small></div>
+  <div class="rules" aria-hidden="true"></div>
+
+  <header class="story-head">
+    <span class="label">{{template "employment_type" .Posting.EmploymentType}}{{if .Posting.Location}} · {{.Posting.Location}}{{end}}</span>
+    <h1>{{.Posting.Title}}</h1>
+    <div class="dek">
+      <span class="stamp" aria-hidden="true">{{.Posting.Initials}}</span>
+      <span class="company">{{.Posting.Company}}</span>
+    </div>
+  </header>
+
+  <div class="byline">
+    <div>
+      <span class="label">İlanı veren</span>
+      <b>{{.Poster.Name}}</b>
+      {{if .Poster.Department}}<span class="sub">{{.Poster.Department}}</span>{{end}}
+    </div>
+    <div>
+      <span class="label">Son gün</span>
+      <b>{{if .Posting.Deadline}}{{.Posting.Deadline}}{{else}}Dolana kadar açık{{end}}</b>
+    </div>
+    <div>
+      <span class="label">Başvuru</span>
+      {{if .Posting.ApplyURL}}<b><a href="{{.Posting.ApplyURL}}" rel="noopener">Şirketin sayfasından →</a></b><span class="sub">{{.Posting.ApplyURL}}</span>{{else}}<b><a href="#basvur">Aşağıdaki kupondan ↓</a></b><span class="sub">ya da ilanı verene yazarak</span>{{end}}
+    </div>
+  </div>
+
+  <div class="story">{{.Posting.Description}}</div>
+
+  <div class="desk">
+    <a class="btn" href="/job-postings/{{.Posting.ID}}/edit">Düzenle</a>
+    <form method="post" action="/job-postings/{{.Posting.ID}}/delete">
+      <button class="ghost" type="submit">Sil</button>
+    </form>
+    <a class="back" href="/job-postings">← tüm ilanlar</a>
+  </div>
+
+  <h2 class="section">Başvurular <small>{{len .Applications}} başvuru</small></h2>
+  <div class="rules" aria-hidden="true"></div>
+  {{if .Applications}}
+  <table class="applicants">
+    <thead><tr><th>Başvuran</th><th>Tarih</th><th>Durum</th><th></th></tr></thead>
+    <tbody>
+    {{range .Applications}}
+      <tr>
+        <td><b>{{.Applicant}}</b>{{if .CoverLetter}}<span class="note">“{{.CoverLetter}}”</span>{{end}}</td>
+        <td>{{.CreatedAt.Format "02.01.2006"}}</td>
+        <td>{{template "status_label" .Status}}</td>
+        <td class="actions">
+          <form method="post" action="/applications/{{.ID}}">
+            <input type="hidden" name="back" value="/job-postings/{{.JobPostingID}}">
+            <select name="status" aria-label="Durum">
+              {{$current := .Status}}
+              {{range $.Statuses}}<option value="{{.}}"{{if eq . $current}} selected{{end}}>{{template "status_text" .}}</option>{{end}}
+            </select>
+            <button class="ghost" type="submit">Kaydet</button>
+          </form>
+        </td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p class="empty">Bu ilana henüz başvuru yok. İlk başvuran siz olun.</p>
   {{end}}
-  </tbody>
-</table>
-{{else}}
-<p class="empty">Bu ilana henüz başvuru yok.</p>
-{{end}}
 
-<div class="apply">
-  <h2>Başvur</h2>
-  {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
-  <form method="post" action="/job-postings/{{.Posting.ID}}/applications">
-    <label for="userId">Başvuran</label>
-    <select id="userId" name="userId" required>
-      <option value="">Bir kullanıcı seçin</option>
-      {{range .Users}}<option value="{{.ID}}"{{if eq .ID $.Apply.UserID}} selected{{end}}>{{.Name}} · {{.Department}}</option>{{end}}
-    </select>
-    <label for="coverLetter">Kısa not (isteğe bağlı)</label>
-    <textarea id="coverLetter" name="coverLetter">{{.Apply.CoverLetter}}</textarea>
-    <button type="submit">Başvur</button>
-  </form>
+  <div class="coupon" id="basvur">
+    <h2>Başvuru kuponu</h2>
+    <p class="hint">Doldurun, gönderin; ilanı veren mezuna ulaşır.</p>
+    {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
+    <form method="post" action="/job-postings/{{.Posting.ID}}/applications">
+      <label for="userId">Başvuran</label>
+      <select id="userId" name="userId" required>
+        <option value="">Bir kullanıcı seçin</option>
+        {{range .Users}}<option value="{{.ID}}"{{if eq .ID $.Apply.UserID}} selected{{end}}>{{.Name}} · {{.Department}}</option>{{end}}
+      </select>
+      <label for="coverLetter">Kısa not (isteğe bağlı)</label>
+      <textarea id="coverLetter" name="coverLetter">{{.Apply.CoverLetter}}</textarea>
+      <button type="submit">Başvur</button>
+    </form>
+  </div>
 </div>
 {{template "page_bottom"}}
