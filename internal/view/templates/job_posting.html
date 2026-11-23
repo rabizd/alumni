@@ -24,6 +24,8 @@
   .gazette .story{ columns:2; column-gap:40px; column-rule:1px solid var(--line); margin:32px 0;
     font-family:var(--news); font-size:19px; line-height:1.55; white-space:pre-line; }
   .gazette .story::first-letter{ float:left; font-weight:700; font-size:84px; line-height:0.8; padding:8px 10px 0 0; color:var(--maroon); }
+  /* a floated cap in two columns slips into the second column when the text is short; initial-letter does not */
+  @supports (initial-letter: 3){ .gazette .story::first-letter{ float:none; font-size:inherit; line-height:inherit; padding:0; initial-letter:3; margin-right:10px; } }
 
   .gazette .desk{ display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:16px 0; border-top:4px double var(--ink); }
   .gazette .desk form{ display:inline; }
