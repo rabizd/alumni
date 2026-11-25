@@ -213,7 +213,7 @@ button. */}}
       {{range menu}}<li><a href="{{.Href}}"{{if .Current}} aria-current="page"{{end}}>{{.Label}}</a></li>
       {{end}}
       {{with currentUser}}
-      <li><a href="/users/{{.ID}}">{{.Name}}</a></li>
+      <li><a href="/me"{{if eq requestPath "/me"}} aria-current="page"{{end}}>{{.Name}}</a></li>
       <li><form method="post" action="/logout"><button class="navlink" type="submit">Çıkış</button></form></li>
       {{end}}
 {{end}}

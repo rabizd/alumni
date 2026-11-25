@@ -1,0 +1,89 @@
+{{template "page_top"}}
+<header class="page-head">
+  <p class="label kicker">Hesabım · {{template "role_text" .User.Role}}</p>
+  <h1>{{.User.Name}}</h1>
+  <p class="meta">{{.User.Department}} · {{.User.StartYear}}–{{.User.GraduationYear}}</p>
+</header>
+<dl>
+  <dt>E-posta</dt><dd>{{.User.Email}}</dd>
+  <dt>Bölüm</dt><dd>{{.User.Department}}</dd>
+  <dt>ÇAP</dt><dd>{{if .User.DoubleMajor}}{{.User.DoubleMajor}}{{else}}yok{{end}}</dd>
+  <dt>Yandal</dt><dd>{{if .User.Minor}}{{.User.Minor}}{{else}}yok{{end}}</dd>
+  <dt>Danışman</dt><dd>{{if .User.Advisor}}{{.User.Advisor}}{{else}}belirtilmedi{{end}}</dd>
+</dl>
+<div class="row">
+  <a class="btn" href="/users/{{.User.ID}}/edit">Bilgilerimi düzenle</a>
+</div>
+
+{{if not (.User.HasRole "graduate")}}
+<section class="add">
+  <h2>Doğrulama bekleniyor</h2>
+  <p class="lede">Mezuniyetin henüz doğrulanmadı. Bir yönetici seni “Doğrulanmış mezun” yaptığında
+    mezun dizinini ve iş ilanlarını görebilir, ilan verip başvurabilirsin.</p>
+</section>
+{{else}}
+<section class="add">
+  <h2>Verdiğim ilanlar</h2>
+  {{if .Postings}}
+  <table>
+    <thead><tr><th>İlan</th><th>Şirket</th><th>Son gün</th></tr></thead>
+    <tbody>
+    {{range .Postings}}
+      <tr>
+        <td><a class="name" href="/job-postings/{{.ID}}">{{.Title}}</a></td>
+        <td class="muted">{{.Company}}</td>
+        <td class="muted">{{if .Deadline}}{{.Deadline}}{{else}}—{{end}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  {{else}}<p class="empty">Henüz ilan vermedin. <a href="/job-postings/new">İlan ver</a></p>{{end}}
+</section>
+
+<section class="add">
+  <h2>İlanlarıma gelen başvurular</h2>
+  {{if .Received}}
+  <table>
+    <thead><tr><th>Başvuran</th><th>İlan</th><th>Durum</th><th></th></tr></thead>
+    <tbody>
+    {{range .Received}}
+      <tr>
+        <td><b>{{.Applicant}}</b>{{if .CoverLetter}}<span class="note">“{{.CoverLetter}}”</span>{{end}}</td>
+        <td class="muted"><a href="/job-postings/{{.JobPostingID}}">{{.PostingTitle}}</a></td>
+        <td>{{template "status_label" .Status}}</td>
+        <td class="actions">
+          <form method="post" action="/applications/{{.ID}}">
+            <input type="hidden" name="back" value="/me">
+            <select name="status" aria-label="Durum">
+              {{$current := .Status}}
+              {{range $.Statuses}}<option value="{{.}}"{{if eq . $current}} selected{{end}}>{{template "status_text" .}}</option>{{end}}
+            </select>
+            <button class="ghost" type="submit">Kaydet</button>
+          </form>
+        </td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  {{else}}<p class="empty">İlanlarına henüz başvuru yok.</p>{{end}}
+</section>
+
+<section class="add">
+  <h2>Başvurularım</h2>
+  {{if .Sent}}
+  <table>
+    <thead><tr><th>İlan</th><th>Tarih</th><th>Durum</th></tr></thead>
+    <tbody>
+    {{range .Sent}}
+      <tr>
+        <td><a class="name" href="/job-postings/{{.JobPostingID}}">{{.PostingTitle}}</a></td>
+        <td class="muted">{{.CreatedAt.Format "02.01.2006"}}</td>
+        <td>{{template "status_label" .Status}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  {{else}}<p class="empty">Henüz bir ilana başvurmadın. <a href="/job-postings">İlanlara bak</a></p>{{end}}
+</section>
+{{end}}
+{{template "page_bottom"}}

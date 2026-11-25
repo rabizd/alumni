@@ -39,6 +39,9 @@ func Web(mux *http.ServeMux) {
 	mux.HandleFunc("POST /login", auth.Login)
 	mux.HandleFunc("POST /logout", auth.Logout)
 
+	// The signed-in user's own page: profile, postings, sent and received applications.
+	mux.HandleFunc("GET /me", middleware.RequireRole(model.RoleMember, controller.MeController{}.Show))
+
 	// Admin panel: counts, roles, and delete buttons for users, postings and announcements.
 	mux.HandleFunc("GET /admin", middleware.RequireRole(model.RoleAdmin, controller.AdminController{}.Index))
 

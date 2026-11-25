@@ -155,6 +155,7 @@ so they survive a restart and `docker compose down`.
 | `POST /users/{id}` | saves the edit form, then redirects to `/users/{id}` |
 | `POST /users/{id}/delete` | removes the user, then redirects to `/users` |
 | `POST /users/{id}/role` | sets the user's role (`member`, `graduate` or `admin`; anything else is `400`), then redirects to `/users/{id}`. Admin only |
+| `GET /me` | the signed-in user's own page (*Hesabım*, the name in the menu): profile, own job postings, applications received on them (with a status form), own applications and their status. A member sees a "verification pending" note instead. Everything is read with the id from the session, so nobody can open someone else's |
 | `GET /admin` | admin panel (admins only): users per role and other counts; every user with a role form and a delete button; job postings and announcements with edit and delete. Its forms post to the routes below with `back=/admin`, so each change returns to the panel |
 | `GET /login` | HTML sign-in form (email and password) |
 | `POST /login` | checks the password, starts a session (cookie `session`, 7 days), then redirects (`303`) to `/main`; `401` with the same message for an unknown email and a wrong password |
