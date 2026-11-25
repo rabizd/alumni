@@ -40,6 +40,8 @@
   .brand:hover{ text-decoration:none; }
   nav.top ul{ display:flex; flex-wrap:wrap; gap:8px 24px; list-style:none; margin:0; padding:0; }
   nav.top ul a{ color:var(--cream); }
+  nav.top button.navlink{ all:unset; cursor:pointer; color:var(--cream); }
+  nav.top button.navlink:focus-visible{ outline:2px solid var(--cream); outline-offset:3px; }
 
   /* --- hero: campus photos fade into each other, the strip sits at the bottom --- */
   .hero{ position:relative; isolation:isolate; overflow:hidden; min-height:100vh; min-height:100svh;
@@ -192,6 +194,13 @@
       <li><a href="/job-postings">İlanlar</a></li>
       <li><a href="/announcements">Duyurular</a></li>
       <li><a href="/about">Hakkında</a></li>
+      {{with currentUser}}
+      <li><a href="/users/{{.ID}}">{{.Name}}</a></li>
+      <li><form method="post" action="/logout"><button class="navlink" type="submit">Çıkış</button></form></li>
+      {{else}}
+      <li><a href="/login">Giriş</a></li>
+      <li><a href="/register">Kayıt ol</a></li>
+      {{end}}
     </ul>
   </div>
 </nav>

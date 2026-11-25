@@ -26,6 +26,13 @@ func Web(mux *http.ServeMux) {
 	// Images the pages use, e.g. the campus photos behind the main page.
 	mux.Handle("GET /static/", view.Static)
 
+	// Sign in and sign out. Signing out is a POST so a link or a prefetch
+	// cannot sign anyone out by accident.
+	auth := controller.AuthController{}
+	mux.HandleFunc("GET /login", auth.ShowLogin)
+	mux.HandleFunc("POST /login", auth.Login)
+	mux.HandleFunc("POST /logout", auth.Logout)
+
 	// Sign-up page: creates a user with a password.
 	register := controller.RegisterController{}
 	mux.HandleFunc("GET /register", register.Show)

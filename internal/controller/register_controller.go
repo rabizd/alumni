@@ -26,7 +26,7 @@ const minPasswordLength = 8
 
 // Show: GET /register -> an empty sign-up form
 func (RegisterController) Show(w http.ResponseWriter, r *http.Request) {
-	view.HTML(w, http.StatusOK, "register.html", registerForm{})
+	view.HTML(w, r, http.StatusOK, "register.html", registerForm{})
 }
 
 // Store: POST /register -> check the form, create the account, go to its page
@@ -36,7 +36,7 @@ func (RegisterController) Store(w http.ResponseWriter, r *http.Request) {
 
 	fail := func(status int, msg string) {
 		form.Error = msg
-		view.HTML(w, status, "register.html", form)
+		view.HTML(w, r, status, "register.html", form)
 	}
 
 	if err := form.User.Validate(); err != nil {

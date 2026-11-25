@@ -37,7 +37,7 @@ func (UserController) Index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	view.HTML(w, http.StatusOK, "users.html", userList{Users: list})
+	view.HTML(w, r, http.StatusOK, "users.html", userList{Users: list})
 }
 
 // Show: GET /users/{id} -> one user's page, or 404
@@ -57,12 +57,12 @@ func (UserController) Show(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	view.HTML(w, http.StatusOK, "user.html", u)
+	view.HTML(w, r, http.StatusOK, "user.html", u)
 }
 
 // Create: GET /users/new -> an empty form
 func (UserController) Create(w http.ResponseWriter, r *http.Request) {
-	view.HTML(w, http.StatusOK, "user_form.html", userForm{Title: "Yeni kullanıcı", Action: "/users"})
+	view.HTML(w, r, http.StatusOK, "user_form.html", userForm{Title: "Yeni kullanıcı", Action: "/users"})
 }
 
 // Store: POST /users -> create from the form, then go to the list
@@ -70,7 +70,7 @@ func (UserController) Store(w http.ResponseWriter, r *http.Request) {
 	u := userFromForm(r)
 	if err := u.Validate(); err != nil {
 		// Show the form again with what was typed, so nothing has to be re-entered.
-		view.HTML(w, http.StatusBadRequest, "user_form.html",
+		view.HTML(w, r, http.StatusBadRequest, "user_form.html",
 			userForm{Title: "Yeni kullanıcı", Action: "/users", User: u, Error: err.Error()})
 		return
 	}
@@ -100,7 +100,7 @@ func (UserController) Edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	view.HTML(w, http.StatusOK, "user_form.html",
+	view.HTML(w, r, http.StatusOK, "user_form.html",
 		userForm{Title: "Kullanıcıyı düzenle", Action: fmt.Sprintf("/users/%d", id), User: u})
 }
 
@@ -114,7 +114,7 @@ func (UserController) Update(w http.ResponseWriter, r *http.Request) {
 	u := userFromForm(r)
 	u.ID = id
 	if err := u.Validate(); err != nil {
-		view.HTML(w, http.StatusBadRequest, "user_form.html",
+		view.HTML(w, r, http.StatusBadRequest, "user_form.html",
 			userForm{Title: "Kullanıcıyı düzenle", Action: fmt.Sprintf("/users/%d", id), User: u, Error: err.Error()})
 		return
 	}

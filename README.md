@@ -155,6 +155,9 @@ so they survive a restart and `docker compose down`.
 | `POST /users/{id}` | saves the edit form, then redirects to `/users/{id}` |
 | `POST /users/{id}/delete` | removes the user, then redirects to `/users` |
 | `POST /users/{id}/role` | sets the user's role (`member`, `graduate` or `admin`; anything else is `400`), then redirects to `/users/{id}`. Not protected yet: sign-in comes first |
+| `GET /login` | HTML sign-in form (email and password) |
+| `POST /login` | checks the password, starts a session (cookie `session`, 7 days), then redirects (`303`) to `/main`; `401` with the same message for an unknown email and a wrong password |
+| `POST /logout` | ends the session and deletes the cookie, then redirects to `/main`. The menu shows the signed-in user's name and a *Çıkış* button, or *Giriş* and *Kayıt ol* |
 | `GET /register` | HTML sign-up form: basic info, education, terms checkbox |
 | `POST /register` | creates an account with a bcrypt-hashed password, then redirects (`303`) to `/users/{id}`; `400` for a broken rule (password under 8 characters, passwords differ, terms not accepted), `409` if the email is already registered |
 | `GET /announcements` | HTML page listing every announcement (newest first), with a form that posts to `POST /announcements` |
@@ -675,7 +678,7 @@ stopped. Try it with `docker compose stop db`, then `docker compose start db`.
 
 ### What is still on the way
 
-- **No Redis yet.** Sessions and caching arrive with sign-in.
+- **No Redis yet.** Sign-in sessions live in the Postgres `sessions` table for now; Redis comes with caching.
 
 ## Roadmap
 

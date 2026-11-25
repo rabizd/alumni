@@ -43,6 +43,9 @@ stored values into Turkish labels. */}}
   nav.top ul{ display:flex; flex-wrap:wrap; gap:8px 24px; list-style:none; margin:0; padding:0; }
   nav.top ul a{ color:var(--ink); }
   nav.top ul a:hover{ color:var(--maroon); }
+  nav.top button.navlink{ all:unset; cursor:pointer; color:var(--ink); }
+  nav.top button.navlink:hover{ color:var(--maroon); }
+  nav.top button.navlink:focus-visible{ outline:2px solid var(--maroon); outline-offset:3px; }
 
   main{ flex:1; padding:64px 0 96px; }
   /* every page opens with an uppercase kicker over a Spectral heading, then a dashed hairline */
@@ -139,7 +142,13 @@ stored values into Turkish labels. */}}
       <li><a href="/applications">Başvurular</a></li>
       <li><a href="/announcements">Duyurular</a></li>
       <li><a href="/users">Kullanıcılar</a></li>
+      {{with currentUser}}
+      <li><a href="/users/{{.ID}}">{{.Name}}</a></li>
+      <li><form method="post" action="/logout"><button class="navlink" type="submit">Çıkış</button></form></li>
+      {{else}}
+      <li><a href="/login">Giriş</a></li>
       <li><a href="/register">Kayıt ol</a></li>
+      {{end}}
     </ul>
   </div>
 </nav>

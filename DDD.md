@@ -17,6 +17,7 @@ section.
   - [alumni](#alumni)
   - [job_postings](#job_postings)
   - [applications](#applications)
+  - [sessions](#sessions)
 - [Migrations](#migrations)
 - [Seed data](#seed-data)
 - [Validation rules](#validation-rules)
@@ -98,6 +99,13 @@ erDiagram
         TEXT status
         TIMESTAMPTZ created_at
     }
+    sessions {
+        TEXT token PK
+        INTEGER user_id FK
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ expires_at
+    }
+    users ||--o{ sessions : "signs in with"
     users ||--o{ job_postings : posts
     job_postings ||--o{ applications : receives
     users ||--o{ applications : submits
@@ -202,6 +210,23 @@ Both foreign keys are `ON DELETE CASCADE`: deleting a posting deletes its applic
 deleting a user deletes the applications they made. The pair `(job_posting_id, user_id)` is
 `UNIQUE`, so a user can apply to the same posting only once. Lists are ordered newest first.
 
+### sessions
+
+One signed-in browser. Model: `internal/model/session.go` · Pages: `/login`, `POST /logout`
+
+| Column | Type | Null | Default | Meaning |
+| --- | --- | --- | --- | --- |
+| `token` | `TEXT` | no | — | primary key; 64 random hex characters, the value of the browser's `session` cookie |
+| `user_id` | `INTEGER` | no | — | foreign key → `users.id`, `ON DELETE CASCADE`: deleting a user signs them out everywhere |
+| `created_at` | `TIMESTAMPTZ` | no | `now()` | when they signed in |
+| `expires_at` | `TIMESTAMPTZ` | no | — | sign-in time + 7 days; an expired row no longer counts as signed in |
+
+Signing in (`POST /login`) checks the password against `users.password_hash` with bcrypt,
+inserts a row and sends the token as an `HttpOnly`, `SameSite=Lax` cookie. On every request the
+`Session` middleware looks the cookie's token up and, when it is valid, puts the user in the
+request's context, so pages can show who is signed in. Signing out (`POST /logout`) deletes the
+row and the cookie. The README plans sessions in Redis; until Redis is added they live here.
+
 ## Migrations
 
 The tables are not created by hand: each change to the schema is a numbered migration in
@@ -217,6 +242,7 @@ The tables are not created by hand: each change to the schema is a numbered migr
 | 5 | `create_applications` | creates `applications` with its foreign keys to `job_postings` and `users` | drops `applications` |
 | 6 | `add_users_password` | adds `users.password_hash` | drops the column |
 | 7 | `add_users_role` | adds `users.role`, `'member'` for every existing row | drops the column |
+| 8 | `create_sessions` | creates `sessions` with its foreign key to `users` | drops `sessions` |
 
 Postgres keeps a one-row table, `schema_migrations`, with the number of the last migration
 applied (`version`) and whether one failed halfway (`dirty`). `migrate up` compares it with the

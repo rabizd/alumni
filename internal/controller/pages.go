@@ -22,7 +22,7 @@ type homePage struct {
 	LatestAnnouncements                       []model.Announcement
 }
 
-func home(w http.ResponseWriter) {
+func home(w http.ResponseWriter, r *http.Request) {
 	var p homePage
 	graduates, err1 := model.Graduates.List()
 	users, err2 := model.Users.List()
@@ -34,28 +34,28 @@ func home(w http.ResponseWriter) {
 		p = homePage{true, len(graduates), len(users), len(postings), len(announcements),
 			postings[:min(6, len(postings))], announcements[:min(6, len(announcements))]}
 	}
-	view.HTML(w, http.StatusOK, "main.html", p)
+	view.HTML(w, r, http.StatusOK, "main.html", p)
 }
 
 // GET / -> the landing page
 func Root(w http.ResponseWriter, r *http.Request) {
-	home(w)
+	home(w, r)
 }
 
 // GET /main -> the page the temporary redirect points at
 func Main(w http.ResponseWriter, r *http.Request) {
-	home(w)
+	home(w, r)
 }
 
 // GET /about -> a temporary about page
 func About(w http.ResponseWriter, r *http.Request) {
-	view.HTML(w, http.StatusOK, "about.html", nil)
+	view.HTML(w, r, http.StatusOK, "about.html", nil)
 }
 
 // GET /404 -> the page browsers are redirected to when something is not found.
 // NotFoundGuardian puts the reason and the requested path in the query.
 func NotFound(w http.ResponseWriter, r *http.Request) {
-	view.HTML(w, http.StatusNotFound, "not_found.html", struct{ Reason, Path string }{
+	view.HTML(w, r, http.StatusNotFound, "not_found.html", struct{ Reason, Path string }{
 		r.URL.Query().Get("reason"), r.URL.Query().Get("path"),
 	})
 }

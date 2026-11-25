@@ -54,7 +54,7 @@ func (ApplicationController) Index(w http.ResponseWriter, r *http.Request) {
 	for i, a := range apps {
 		rows[i] = applicationRow{Application: a, Applicant: names[a.UserID], PostingTitle: titles[a.JobPostingID]}
 	}
-	view.HTML(w, http.StatusOK, "applications.html", applicationList{Applications: rows, Statuses: model.ApplicationStatuses})
+	view.HTML(w, r, http.StatusOK, "applications.html", applicationList{Applications: rows, Statuses: model.ApplicationStatuses})
 }
 
 // Store: POST /job-postings/{id}/applications -> apply to that posting, then
@@ -68,7 +68,7 @@ func (ApplicationController) Store(w http.ResponseWriter, r *http.Request) {
 	userID, _ := strconv.Atoi(r.FormValue("userId"))
 	a := model.Application{JobPostingID: id, UserID: userID, CoverLetter: r.FormValue("coverLetter")}
 	if err := a.Validate(); err != nil {
-		JobPostingController{}.renderPage(w, id, http.StatusBadRequest, a, err.Error())
+		JobPostingController{}.renderPage(w, r, id, http.StatusBadRequest, a, err.Error())
 		return
 	}
 
@@ -78,10 +78,10 @@ func (ApplicationController) Store(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no job posting with that id", http.StatusNotFound)
 		return
 	case errors.Is(err, model.ErrAlreadyApplied):
-		JobPostingController{}.renderPage(w, id, http.StatusConflict, a, "Bu kullanıcı bu ilana zaten başvurmuş.")
+		JobPostingController{}.renderPage(w, r, id, http.StatusConflict, a, "Bu kullanıcı bu ilana zaten başvurmuş.")
 		return
 	case errors.Is(err, model.ErrUserNotFound):
-		JobPostingController{}.renderPage(w, id, http.StatusBadRequest, a, err.Error())
+		JobPostingController{}.renderPage(w, r, id, http.StatusBadRequest, a, err.Error())
 		return
 	case err != nil:
 		dbError(w, err)
