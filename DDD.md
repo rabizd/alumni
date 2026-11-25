@@ -71,6 +71,8 @@ erDiagram
         TEXT minor
         TEXT advisor
         BOOLEAN prep_exempt
+        TEXT password_hash
+        TEXT role
     }
     announcements {
         SERIAL id PK
@@ -269,6 +271,10 @@ Migrations create empty tables; the **seeder** fills them. The README's
 Seeded rows go through the same `Validate()` and store methods as an API request, so the seeder
 can never put a row in the database that the API would reject.
 
+Seeded users get `role = 'member'` and an empty `password_hash`, so they cannot sign in; accounts
+that sign in are made on `/register`. `docker compose run --rm seed -admin <email>` adds nothing:
+it only sets that user's `role` to `admin`, which is how the first admin is made.
+
 ## Validation rules
 
 The database only guarantees that a column is present (`NOT NULL`). The content rules live in
@@ -316,8 +322,9 @@ Lengths count characters, not bytes, so a Turkish letter like `ş` counts as one
 
 ## Users and roles (authorization)
 
-**In code now:** the roles (`users.role`), sign-up, sign-in and sign-out (`sessions` table), and
-the role checks on the HTML pages (`internal/middleware/auth.go`; see the README's
+**In code now:** the roles (`users.role`, changed by an admin on `/admin`; the first admin with
+`seed -admin`), sign-up, sign-in and sign-out (`sessions` table), and the role checks on the HTML
+pages (`internal/middleware/auth.go`; see the README's
 [Who may open which page](README.md#who-may-open-which-page)). **Still planned:** the checks on
 the JSON API, the ownership rules ("own" in the table below), the JSON `401`/`403` answers, and
 the `verifications` table. Update this section when one of them is implemented.
