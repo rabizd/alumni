@@ -316,9 +316,11 @@ Lengths count characters, not bytes, so a Turkish letter like `ş` counts as one
 
 ## Users and roles (authorization)
 
-This section is the **planned** design: **none of it is in code yet**. Today every route is
-open to anyone who can reach the app. Like the planned job-posting rules above, update this
-section when a rule is implemented.
+**In code now:** the roles (`users.role`), sign-up, sign-in and sign-out (`sessions` table), and
+the role checks on the HTML pages (`internal/middleware/auth.go`; see the README's
+[Who may open which page](README.md#who-may-open-which-page)). **Still planned:** the checks on
+the JSON API, the ownership rules ("own" in the table below), the JSON `401`/`403` answers, and
+the `verifications` table. Update this section when one of them is implemented.
 
 Two words that are easy to mix up:
 
@@ -418,13 +420,13 @@ for convenience: a user can still send the request from Postman.
 
 ### Data the roles need
 
-Planned columns on `users` (a new migration):
+Columns on `users`:
 
-| Column | Type | Null | Default | Meaning |
-| --- | --- | --- | --- | --- |
-| `password_hash` | `TEXT` | no | — | bcrypt hash; the password itself is never stored |
-| `role` | `TEXT` | no | `'member'` | one of `member`, `graduate`, `admin` (`CHECK` constraint) |
-| `email` | — | — | — | becomes `UNIQUE`: it is the sign-in name |
+| Column | Type | Null | Default | Meaning | Status |
+| --- | --- | --- | --- | --- | --- |
+| `password_hash` | `TEXT` | no | `''` | bcrypt hash; the password itself is never stored | in code (migration 6) |
+| `role` | `TEXT` | no | `'member'` | one of `member`, `graduate`, `admin` (`CHECK` constraint) | in code (migration 7) |
+| `email` | — | — | — | becomes `UNIQUE`: it is the sign-in name. `/register` already refuses a taken email | not in the schema yet |
 
 Planned table `verifications`, one row per request (an audit trail, as in the README's
 [Data Model](README.md#data-model)):
