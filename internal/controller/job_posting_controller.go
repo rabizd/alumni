@@ -204,7 +204,7 @@ func (JobPostingController) Destroy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/job-postings", http.StatusSeeOther)
+	http.Redirect(w, r, backOr(r, "/job-postings"), http.StatusSeeOther)
 }
 
 func (JobPostingController) renderForm(w http.ResponseWriter, r *http.Request, status int, title, action string, p model.JobPosting, errMsg string) {

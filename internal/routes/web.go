@@ -39,6 +39,9 @@ func Web(mux *http.ServeMux) {
 	mux.HandleFunc("POST /login", auth.Login)
 	mux.HandleFunc("POST /logout", auth.Logout)
 
+	// Admin panel: counts, roles, and delete buttons for users, postings and announcements.
+	mux.HandleFunc("GET /admin", middleware.RequireRole(model.RoleAdmin, controller.AdminController{}.Index))
+
 	// Sign-up page: creates a user with a password.
 	register := controller.RegisterController{}
 	mux.HandleFunc("GET /register", register.Show)

@@ -1,0 +1,102 @@
+{{template "page_top"}}
+<header class="page-head">
+  <p class="label kicker">Yönetim paneli</p>
+  <h1>Ağın durumu</h1>
+  <p class="lede">Sadece yöneticiler görür. Buradaki her değişiklik doğrudan veritabanına yazılır.</p>
+</header>
+
+<table>
+  <thead><tr><th>Üye</th><th>Doğrulanmış mezun</th><th>Yönetici</th><th>İlan</th><th>Başvuru</th><th>Duyuru</th></tr></thead>
+  <tbody><tr>
+    <td class="num">{{index .RoleCounts "member"}}</td>
+    <td class="num">{{index .RoleCounts "graduate"}}</td>
+    <td class="num">{{index .RoleCounts "admin"}}</td>
+    <td class="num">{{len .Postings}}</td>
+    <td class="num">{{.Applications}}</td>
+    <td class="num">{{len .Announcements}}</td>
+  </tr></tbody>
+</table>
+
+<section class="add">
+  <h2>Kullanıcılar ve roller</h2>
+  <table>
+    <thead><tr><th>#</th><th>Ad</th><th>E-posta</th><th>Rol</th><th></th></tr></thead>
+    <tbody>
+    {{range .Users}}
+      <tr>
+        <td class="num">{{.ID}}</td>
+        <td><a class="name" href="/users/{{.ID}}">{{.Name}}</a></td>
+        <td class="muted">{{.Email}}</td>
+        <td class="actions" style="text-align:left">
+          <form method="post" action="/users/{{.ID}}/role">
+            <input type="hidden" name="back" value="/admin">
+            <select name="role" aria-label="{{.Name}} rolü">
+              {{$current := .Role}}
+              {{range $.Roles}}<option value="{{.}}"{{if eq . $current}} selected{{end}}>{{template "role_text" .}}</option>{{end}}
+            </select>
+            <button class="ghost" type="submit">Kaydet</button>
+          </form>
+        </td>
+        <td class="actions">
+          <form method="post" action="/users/{{.ID}}/delete" onsubmit="return confirm('{{.Name}} silinsin mi? İlanları ve başvuruları da silinir.')">
+            <input type="hidden" name="back" value="/admin">
+            <button class="ghost" type="submit">Sil</button>
+          </form>
+        </td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+
+<section class="add">
+  <h2>İş ilanları</h2>
+  <table>
+    <thead><tr><th>#</th><th>İlan</th><th>Şirket</th><th></th></tr></thead>
+    <tbody>
+    {{range .Postings}}
+      <tr>
+        <td class="num">{{.ID}}</td>
+        <td><a class="name" href="/job-postings/{{.ID}}">{{.Title}}</a></td>
+        <td class="muted">{{.Company}}</td>
+        <td class="actions">
+          <a class="btn ghost" href="/job-postings/{{.ID}}/edit">Düzenle</a>
+          <form method="post" action="/job-postings/{{.ID}}/delete" onsubmit="return confirm('Bu ilan silinsin mi?')">
+            <input type="hidden" name="back" value="/admin">
+            <button class="ghost" type="submit">Sil</button>
+          </form>
+        </td>
+      </tr>
+    {{else}}
+      <tr><td colspan="4" class="muted">İlan yok.</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+
+<section class="add">
+  <h2>Duyurular</h2>
+  <p><a class="btn" href="/announcements/new">Yeni duyuru</a></p>
+  <table>
+    <thead><tr><th>#</th><th>Duyuru</th><th>Yapan</th><th></th></tr></thead>
+    <tbody>
+    {{range .Announcements}}
+      <tr>
+        <td class="num">{{.ID}}</td>
+        <td><a class="name" href="/announcements/{{.ID}}">{{.Title}}</a></td>
+        <td class="muted">{{.Author}}</td>
+        <td class="actions">
+          <a class="btn ghost" href="/announcements/{{.ID}}/edit">Düzenle</a>
+          <form method="post" action="/announcements/{{.ID}}/delete" onsubmit="return confirm('Bu duyuru silinsin mi?')">
+            <input type="hidden" name="back" value="/admin">
+            <button class="ghost" type="submit">Sil</button>
+          </form>
+        </td>
+      </tr>
+    {{else}}
+      <tr><td colspan="4" class="muted">Duyuru yok.</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+{{template "page_bottom"}}

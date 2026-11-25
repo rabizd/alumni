@@ -147,7 +147,7 @@ func (AnnouncementController) Destroy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/announcements", http.StatusSeeOther)
+	http.Redirect(w, r, backOr(r, "/announcements"), http.StatusSeeOther)
 }
 
 func announcementFromForm(r *http.Request) model.Announcement {

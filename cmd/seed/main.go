@@ -19,11 +19,28 @@ func main() {
 	jobPostings := flag.Int("jobs", 10, "random job postings to add, each by a random existing user")
 	fresh := flag.Bool("fresh", false, "empty every table first")
 	randSeed := flag.Int64("seed", time.Now().UnixNano(), "random seed; the same number gives the same records")
+	admin := flag.String("admin", "", "make the user with this email an admin, then stop (adds nothing)")
 	flag.Parse()
 
 	ctx := context.Background()
 	if err := model.Connect(ctx); err != nil {
 		log.Fatalf("database: %v", err)
+	}
+
+	// Only an admin can change roles on the site, so the first admin is made here.
+	if *admin != "" {
+		u, _, found, err := model.Users.FindForLogin(*admin)
+		if err != nil {
+			log.Fatalf("admin: %v", err)
+		}
+		if !found {
+			log.Fatalf("admin: no user with the email %q; register on /register first", *admin)
+		}
+		if _, _, err := model.Users.SetRole(u.ID, model.RoleAdmin); err != nil {
+			log.Fatalf("admin: %v", err)
+		}
+		log.Printf("%s (%s, id %d) is now an admin", u.Name, u.Email, u.ID)
+		return
 	}
 
 	if *fresh {
