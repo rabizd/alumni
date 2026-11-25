@@ -152,6 +152,33 @@ func (UserController) Destroy(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/users", http.StatusSeeOther)
 }
 
+// SetRole: POST /users/{id}/role -> change the user's role, then go to their page.
+// Once sign-in exists, only an admin may do this (see DDD.md).
+func (UserController) SetRole(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r)
+	if !ok {
+		return
+	}
+
+	role := r.FormValue("role")
+	if !model.ValidRole(role) {
+		http.Error(w, "role must be member, graduate or admin", http.StatusBadRequest)
+		return
+	}
+
+	_, found, err := model.Users.SetRole(id, role)
+	if err != nil {
+		dbError(w, err)
+		return
+	}
+	if !found {
+		http.Error(w, "no user with that id", http.StatusNotFound)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/users/%d", id), http.StatusSeeOther)
+}
+
 // userFromForm reads the create and edit forms. A year that is empty or not a
 // number becomes 0, which User.Validate reports as missing. An unticked
 // checkbox is not sent at all, so PrepExempt is true only when it is ticked.

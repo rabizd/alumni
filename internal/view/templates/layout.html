@@ -207,6 +207,8 @@ stored values into Turkish labels. */}}
 
 {{define "status_label"}}<span class="tag {{.}}">{{template "status_text" .}}</span>{{end}}
 
+{{define "role_text"}}{{if eq . "admin"}}Yönetici{{else if eq . "graduate"}}Doğrulanmış mezun{{else}}Üye{{end}}{{end}}
+
 {{define "graduate_fields"}}
   <label for="name">Ad</label>
   <input type="text" id="name" name="name" value="{{.Name}}" required>

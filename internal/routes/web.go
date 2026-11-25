@@ -41,6 +41,7 @@ func Web(mux *http.ServeMux) {
 	mux.HandleFunc("GET /users/{id}/edit", user.Edit)
 	mux.HandleFunc("POST /users/{id}", user.Update)
 	mux.HandleFunc("POST /users/{id}/delete", user.Destroy)
+	mux.HandleFunc("POST /users/{id}/role", user.SetRole)
 
 	// Announcements as HTML pages: the interface to manage them.
 	announcement := controller.AnnouncementController{}

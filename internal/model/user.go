@@ -27,6 +27,31 @@ type User struct {
 	Advisor     string `json:"advisor"`
 	// PrepExempt is true when the user was exempt from the English prep year.
 	PrepExempt bool `json:"prepExempt"`
+	// Role is what the user may do: member, graduate or admin. The database
+	// gives every new account "member"; only SetRole changes it, so a role sent
+	// in a create or update body is ignored.
+	Role string `json:"role"`
+}
+
+// The roles a user can have. A visitor who is not signed in is a "guest", but
+// guests have no account, so that role is never stored.
+const (
+	RoleMember   = "member"   // signed up, graduation not verified yet
+	RoleGraduate = "graduate" // verified Istanbul University graduate
+	RoleAdmin    = "admin"    // runs the platform
+)
+
+// Roles lists every role a user can have, lowest first.
+var Roles = []string{RoleMember, RoleGraduate, RoleAdmin}
+
+// ValidRole reports whether r is one of Roles.
+func ValidRole(r string) bool {
+	for _, role := range Roles {
+		if r == role {
+			return true
+		}
+	}
+	return false
 }
 
 // firstYear is the earliest start year the form accepts.
@@ -130,12 +155,12 @@ type UserStore struct{}
 
 var Users = &UserStore{}
 
-const userColumns = "id, name, email, department, start_year, graduation_year, double_major, minor, advisor, prep_exempt"
+const userColumns = "id, name, email, department, start_year, graduation_year, double_major, minor, advisor, prep_exempt, role"
 
 func scanUser(row interface{ Scan(...any) error }) (User, error) {
 	var u User
 	err := row.Scan(&u.ID, &u.Name, &u.Email, &u.Department, &u.StartYear, &u.GraduationYear,
-		&u.DoubleMajor, &u.Minor, &u.Advisor, &u.PrepExempt)
+		&u.DoubleMajor, &u.Minor, &u.Advisor, &u.PrepExempt, &u.Role)
 	return u, err
 }
 
@@ -209,4 +234,11 @@ func (s *UserStore) Register(u User, passwordHash string) (User, error) {
 		`INSERT INTO users (name, email, department, start_year, graduation_year, double_major, minor, advisor, prep_exempt, password_hash)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING `+userColumns,
 		u.Name, u.Email, u.Department, u.StartYear, u.GraduationYear, u.DoubleMajor, u.Minor, u.Advisor, u.PrepExempt, passwordHash))
+}
+
+// SetRole changes the role of the user with the given id. The bool reports
+// whether such a user existed. The caller checks the role with ValidRole first.
+func (s *UserStore) SetRole(id int, role string) (User, bool, error) {
+	return foundUser(scanUser(db.QueryRow(context.Background(),
+		"UPDATE users SET role = $1 WHERE id = $2 RETURNING "+userColumns, role, id)))
 }

@@ -12,7 +12,19 @@
   <dt>Yandal</dt><dd>{{if .Minor}}{{.Minor}}{{else}}yok{{end}}</dd>
   <dt>Danışman</dt><dd>{{if .Advisor}}{{.Advisor}}{{else}}belirtilmedi{{end}}</dd>
   <dt>İng. hazırlık</dt><dd>{{if .PrepExempt}}muaf{{else}}muaf değil{{end}}</dd>
+  <dt>Rol</dt><dd>{{template "role_text" .Role}}</dd>
 </dl>
+{{/* Changing a role will be admin-only once sign-in exists (DDD.md). */}}
+<form class="row" method="post" action="/users/{{.ID}}/role">
+  <label for="role" style="margin:0">Rolü değiştir</label>
+  <select id="role" name="role" style="width:auto; margin:0">
+    {{$current := .Role}}
+    <option value="member"{{if eq $current "member"}} selected{{end}}>Üye</option>
+    <option value="graduate"{{if eq $current "graduate"}} selected{{end}}>Doğrulanmış mezun</option>
+    <option value="admin"{{if eq $current "admin"}} selected{{end}}>Yönetici</option>
+  </select>
+  <button class="ghost" type="submit">Kaydet</button>
+</form>
 <div class="row">
   <a class="btn" href="/users/{{.ID}}/edit">Düzenle</a>
   <form method="post" action="/users/{{.ID}}/delete">

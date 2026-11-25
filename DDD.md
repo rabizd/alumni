@@ -133,6 +133,7 @@ One account on the network. Model: `internal/model/user.go` · API: `/api/users`
 | `advisor` | `TEXT` | no | `''` | `advisor` | danışman; `''` means none |
 | `prep_exempt` | `BOOLEAN` | no | `false` | `prepExempt` | exempt from the English prep year |
 | `password_hash` | `TEXT` | no | `''` | — (never sent) | bcrypt hash of the password set on `/register`; `''` for users created any other way |
+| `role` | `TEXT` | no | `'member'` | `role` (read-only) | `member` (not verified yet), `graduate` (verified), `admin`; a `CHECK` constraint refuses any other value. Changed only by `POST /users/{id}/role` |
 
 ### announcements
 
@@ -215,6 +216,7 @@ The tables are not created by hand: each change to the schema is a numbered migr
 | 4 | `create_job_postings` | creates `job_postings` with its foreign key to `users` | drops `job_postings` |
 | 5 | `create_applications` | creates `applications` with its foreign keys to `job_postings` and `users` | drops `applications` |
 | 6 | `add_users_password` | adds `users.password_hash` | drops the column |
+| 7 | `add_users_role` | adds `users.role`, `'member'` for every existing row | drops the column |
 
 Postgres keeps a one-row table, `schema_migrations`, with the number of the last migration
 applied (`version`) and whether one failed halfway (`dirty`). `migrate up` compares it with the
