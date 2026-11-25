@@ -242,3 +242,19 @@ func (s *UserStore) SetRole(id int, role string) (User, bool, error) {
 	return foundUser(scanUser(db.QueryRow(context.Background(),
 		"UPDATE users SET role = $1 WHERE id = $2 RETURNING "+userColumns, role, id)))
 }
+
+// HasRole reports whether u has at least the given role. Roles are ordered
+// member < graduate < admin, so an admin may do everything a graduate may.
+func (u User) HasRole(role string) bool {
+	return roleRank(u.Role) >= roleRank(role)
+}
+
+// roleRank is the position of r in Roles, starting at 1; unknown roles are 0.
+func roleRank(r string) int {
+	for i, role := range Roles {
+		if r == role {
+			return i + 1
+		}
+	}
+	return 0
+}

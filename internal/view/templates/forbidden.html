@@ -1,0 +1,10 @@
+{{template "page_top"}}
+<header class="page-head">
+  <p class="label kicker">403 · Yetki yok</p>
+  <h1>Bu sayfa için yetkin yok</h1>
+  <p class="lede">Bu sayfa en az “{{template "role_text" .Need}}” rolü ister. Senin rolün: “{{template "role_text" .Have}}”.</p>
+</header>
+<div class="row">
+  <a class="btn" href="/main">Ana sayfaya dön</a>
+</div>
+{{template "page_bottom"}}
