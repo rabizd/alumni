@@ -149,7 +149,7 @@ func (UserController) Destroy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/users", http.StatusSeeOther)
+	http.Redirect(w, r, backOr(r, "/users"), http.StatusSeeOther)
 }
 
 // SetRole: POST /users/{id}/role -> change the user's role, then go to their page.
@@ -165,6 +165,11 @@ func (UserController) SetRole(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "role must be member, graduate or admin", http.StatusBadRequest)
 		return
 	}
+	// An admin who demoted themselves could leave the site with no admin at all.
+	if me, ok := model.CurrentUser(r.Context()); ok && me.ID == id && role != model.RoleAdmin {
+		http.Error(w, "you cannot take away your own admin role", http.StatusBadRequest)
+		return
+	}
 
 	_, found, err := model.Users.SetRole(id, role)
 	if err != nil {
@@ -176,7 +181,7 @@ func (UserController) SetRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/users/%d", id), http.StatusSeeOther)
+	http.Redirect(w, r, backOr(r, fmt.Sprintf("/users/%d", id)), http.StatusSeeOther)
 }
 
 // userFromForm reads the create and edit forms. A year that is empty or not a

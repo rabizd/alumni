@@ -143,6 +143,7 @@ stored values into Turkish labels. */}}
       <li><a href="/announcements">Duyurular</a></li>
       <li><a href="/users">Kullanıcılar</a></li>
       {{with currentUser}}
+      {{if .HasRole "admin"}}<li><a href="/admin">Yönetim</a></li>{{end}}
       <li><a href="/users/{{.ID}}">{{.Name}}</a></li>
       <li><form method="post" action="/logout"><button class="navlink" type="submit">Çıkış</button></form></li>
       {{else}}

@@ -155,6 +155,7 @@ so they survive a restart and `docker compose down`.
 | `POST /users/{id}` | saves the edit form, then redirects to `/users/{id}` |
 | `POST /users/{id}/delete` | removes the user, then redirects to `/users` |
 | `POST /users/{id}/role` | sets the user's role (`member`, `graduate` or `admin`; anything else is `400`), then redirects to `/users/{id}`. Admin only |
+| `GET /admin` | admin panel (admins only): users per role and other counts; every user with a role form and a delete button; job postings and announcements with edit and delete. Its forms post to the routes below with `back=/admin`, so each change returns to the panel |
 | `GET /login` | HTML sign-in form (email and password) |
 | `POST /login` | checks the password, starts a session (cookie `session`, 7 days), then redirects (`303`) to `/main`; `401` with the same message for an unknown email and a wrong password |
 | `POST /logout` | ends the session and deletes the cookie, then redirects to `/main`. The menu shows the signed-in user's name and a *Çıkış* button, or *Giriş* and *Kayıt ol* |
@@ -201,17 +202,21 @@ signed-in user whose role is too low gets a `403` page that names the role neede
 | `/users/{id}` (view, edit, delete) | your own page: any role · someone else's: `graduate` to view, `admin` to edit or delete |
 | `/users` list | `graduate` |
 | `/graduates`, `/job-postings`, `/applications` (read and write) | `graduate` |
-| new or edited users, graduates, announcements; `POST /users/{id}/role` | `admin` |
+| `/admin`; new or edited users, graduates, announcements; `POST /users/{id}/role` | `admin` |
 
 Not guarded yet: the JSON API (`/api/*`, `/alumni`) stays open so the Postman collection keeps
 working, and the "only your own posting or application" rules in DDD.md are not checked yet.
 
 Every new account is a `member`, and only an admin can change roles, so the **first admin is made
-by hand**, in Adminer or with:
+with the seeder**: register on `/register`, then
 
 ```bash
-docker compose exec db psql -U alumni -d alumni -c "UPDATE users SET role='admin' WHERE email='you@example.com'"
+docker compose run --rm seed -admin you@example.com
 ```
+
+It changes only that user's role and adds no records. After that, the admin opens **Yönetim**
+(`/admin`) in the menu and gives roles from there. An admin cannot take away their own admin
+role, so the site always keeps at least the one who is signed in.
 
 ### Keep the API documentation current
 

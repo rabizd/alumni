@@ -139,13 +139,18 @@ func (ApplicationController) Destroy(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, backTo(r), http.StatusSeeOther)
 }
 
-// backTo is where to go after a status change or delete: the page the form
-// was on, sent in the "back" field. Only a local path is accepted, so the
-// field cannot send the browser to another site.
+// backTo is where to go after an application's status change or delete.
 func backTo(r *http.Request) string {
+	return backOr(r, "/applications")
+}
+
+// backOr is where to go after a form: the page the form was on, sent in the
+// "back" field (the admin panel uses it), or fallback. Only a local path is
+// accepted, so the field cannot send the browser to another site.
+func backOr(r *http.Request, fallback string) string {
 	back := r.FormValue("back")
 	if len(back) > 1 && back[0] == '/' && back[1] != '/' && back[1] != '\\' {
 		return back
 	}
-	return "/applications"
+	return fallback
 }
