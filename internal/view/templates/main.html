@@ -6,76 +6,50 @@
 <title>Alumni — İstanbul Üniversitesi Mezun Ağı</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  /* Tokens and rules come from DESIGN.md. */
   :root{
-    --ink:#211c18;
-    --paper:#e9e4d8;
-    --paper-deep:#ddd6c4;
-    --maroon:#4a0e1a;
-    --maroon-deep:#320a12;
-    --gold:#a9832d;
-    --line: rgba(33,28,24,0.16);
-    --radius: 3px;
+    --paper:#e9e4d8; --paper-deep:#ddd6c4; --ink:#211c18; --muted:#5b5248;
+    --cream:#f4ece2; --maroon:#4a0e1a; --maroon-deep:#320a12;
+    --gold:#a9832d; --gold-light:#e2c27c;
+    --line:rgba(33,28,24,0.16); --line-dark:rgba(244,236,226,0.25);
+    --serif:'Spectral', Georgia, serif;
+    --sans:'Inter', system-ui, sans-serif;
+    --ease:cubic-bezier(0.19, 1, 0.22, 1);
   }
   *{ box-sizing:border-box; }
   html{ scroll-behavior:smooth; }
-  body{
-    margin:0;
-    background:var(--paper);
-    color:var(--ink);
-    font-family:'Inter', system-ui, sans-serif;
-    line-height:1.55;
-    -webkit-font-smoothing:antialiased;
-  }
-  h1,h2,h3, .display{
-    font-family:'Spectral', Georgia, serif;
-    font-weight:500;
-    line-height:1.15;
-    margin:0;
-  }
-  a{ color:var(--maroon); }
-  a:focus-visible, button:focus-visible, summary:focus-visible{
-    outline:2px solid var(--maroon);
-    outline-offset:3px;
-  }
-  .wrap{ max-width:56rem; margin:0 auto; padding:0 1.5rem; }
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans); font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3{ font-family:var(--serif); font-weight:500; margin:0; text-wrap:balance; }
+  a{ color:var(--maroon); text-decoration:none; transition:color .4s var(--ease); }
+  a:hover{ text-decoration:underline; }
+  a:focus-visible, button:focus-visible, summary:focus-visible{ outline:2px solid var(--maroon); outline-offset:3px; }
+  .wrap{ max-width:1080px; margin:0 auto; padding:0 24px; }
+  .label{ font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; line-height:1.2; }
+  .band{ padding:96px 0; }
+  .ink{ background:var(--ink); color:var(--cream); }
+  .ink a{ color:var(--gold-light); }
+  .ink a:focus-visible{ outline-color:var(--gold-light); }
 
-  /* --- nav --- */
-  nav.top{
-    border-bottom:1px solid var(--line);
-  }
-  nav.top .wrap{
-    display:flex; align-items:center; justify-content:space-between;
-    padding-top:1.1rem; padding-bottom:1.1rem;
-  }
-  .brand{
-    font-family:'Spectral', serif;
-    font-size:1.05rem;
-    letter-spacing:0.02em;
-    color:var(--ink);
-    text-decoration:none;
-  }
-  .brand b{ color:var(--maroon); font-weight:600; }
-  nav.top ul{ display:flex; gap:1.6rem; list-style:none; margin:0; padding:0; font-size:0.92rem; }
-  nav.top a{ color:var(--ink); text-decoration:none; }
-  nav.top a:hover{ color:var(--maroon); }
+  /* --- nav: transparent over the hero --- */
+  nav.top{ position:absolute; inset:0 0 auto; z-index:3; }
+  nav.top .wrap{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 24px; padding-top:20px; padding-bottom:20px; }
+  .brand{ font-family:var(--serif); font-size:17px; color:var(--cream) !important; }
+  .brand b{ color:var(--gold-light); font-weight:500; }
+  .brand:hover{ text-decoration:none; }
+  nav.top ul{ display:flex; flex-wrap:wrap; gap:8px 24px; list-style:none; margin:0; padding:0; }
+  nav.top ul a{ color:var(--cream); }
 
-  /* --- hero: campus photos fading one into the next, behind light text --- */
-  .hero{
-    position:relative; isolation:isolate; overflow:hidden;
-    padding:5.5rem 0 4rem; background:var(--ink); color:#f4ece2;
-  }
-  .hero .slides span{
-    position:absolute; inset:0; z-index:-2;
-    background-size:cover; background-position:center;
-    opacity:0; animation:slide 24s infinite;
-  }
+  /* --- hero: campus photos fade into each other, the strip sits at the bottom --- */
+  .hero{ position:relative; isolation:isolate; overflow:hidden; min-height:100vh; min-height:100svh;
+    display:grid; grid-template-rows:1fr auto; background:var(--ink); color:var(--cream); }
+  .hero .slides span{ position:absolute; inset:0; z-index:-2; background-size:cover; background-position:center;
+    opacity:0; animation:slide 24s infinite; }
   .hero .slides span:nth-child(1){ background-image:url('/static/img/campus-1.jpg'); background-position:center 30%; }
   .hero .slides span:nth-child(2){ background-image:url('/static/img/campus-2.jpg'); animation-delay:6s; }
   .hero .slides span:nth-child(3){ background-image:url('/static/img/campus-3.jpg'); background-position:center 62%; animation-delay:12s; }
   .hero .slides span:nth-child(4){ background-image:url('/static/img/campus-4.jpg'); animation-delay:18s; }
-  /* each photo shows for 6 of the 24 seconds, with a 1s crossfade, and drifts slightly closer */
   @keyframes slide{
     0%{ opacity:0; transform:scale(1); }
     4%{ opacity:1; }
@@ -83,108 +57,128 @@
     29%{ opacity:0; transform:scale(1.06); }
     100%{ opacity:0; }
   }
-  /* darkens the photos so the text stays readable, most on the left where it sits */
-  .hero::before{
-    content:''; position:absolute; inset:0; z-index:-1;
-    background:linear-gradient(90deg, rgba(24,16,14,0.86) 0%, rgba(24,16,14,0.62) 55%, rgba(24,16,14,0.4) 100%);
-  }
-  .hero .kicker{
-    display:flex; align-items:center; gap:0.6rem;
-    color:#e2c27c; font-size:0.85rem; margin-bottom:1.1rem;
-  }
-  .hero .kicker .dot{
-    width:6px; height:6px; border-radius:50%; background:#e2c27c;
-    display:inline-block;
-  }
-  .hero h1{ font-size:2.7rem; max-width:22ch; }
-  .hero h1 em{ font-style:italic; color:#e2c27c; }
-  .hero p.lede{
-    font-size:1.1rem; max-width:38rem; margin-top:1.2rem; color:#e6dccf;
-  }
-  .founding{
-    margin-top:2.3rem;
-    display:flex; align-items:baseline; gap:1rem;
-    border-top:1px solid rgba(244,236,226,0.25);
-    padding-top:1.3rem;
-  }
-  .founding .year{
-    font-family:'Spectral', serif; font-size:2.6rem; color:#e2c27c;
-    font-weight:600;
-  }
-  .founding p{ margin:0; font-size:0.9rem; color:#d9cec0; max-width:30rem; }
+  .hero::before{ content:''; position:absolute; inset:0; z-index:-1;
+    background:linear-gradient(90deg, rgba(24,16,14,0.88) 0%, rgba(24,16,14,0.62) 55%, rgba(24,16,14,0.4) 100%); }
+  .hero .intro{ align-self:center; padding-top:120px; padding-bottom:64px; }
+  .hero .kicker{ color:var(--gold-light); }
+  .hero h1{ font-size:64px; line-height:1.05; font-weight:400; max-width:16ch; margin-top:24px; }
+  .hero h1 em{ color:var(--gold-light); }
+  .hero p.lede{ font-size:18px; line-height:1.55; max-width:36rem; margin:24px 0 0; color:rgba(244,236,226,0.85); }
+  .actions{ display:flex; flex-wrap:wrap; gap:12px; margin-top:32px; }
 
-  /* --- ledger sections (registry style, no cards) --- */
-  section{ padding:3rem 0; border-top:1px solid var(--line); }
-  section > h2{ font-size:1.5rem; margin-bottom:0.4rem; }
-  section > p.section-lede{ color:#5b5248; max-width:36rem; margin:0 0 2rem; }
+  .btn{ display:inline-flex; align-items:center; min-height:44px; padding:12px 28px; border-radius:999px;
+    font:500 15px/1 var(--sans); border:1px solid transparent;
+    transition:background-color .4s var(--ease), border-color .4s var(--ease); }
+  .btn:hover{ text-decoration:none; }
+  .hero .btn.fill{ background:var(--gold-light); color:var(--maroon-deep); }
+  .hero .btn.fill:hover{ background:#ecd297; }
+  .hero .btn.ghost{ color:var(--cream); border-color:rgba(244,236,226,0.5); }
+  .hero .btn.ghost:hover{ border-color:var(--cream); }
 
-  .ledger{ list-style:none; margin:0; padding:0; }
-  .ledger li{
-    display:grid; grid-template-columns: 2.4rem 1fr; gap:0.9rem;
-    padding:1.15rem 0; border-top:1px solid var(--line);
-  }
-  .ledger li:first-child{ border-top:none; }
-  .ledger .mark{
-    font-family:'Spectral', serif; color:var(--gold); font-size:1.1rem; font-style:italic;
-  }
-  .ledger h3{ font-size:1.02rem; font-weight:600; margin-bottom:0.25rem; }
-  .ledger p{ margin:0; color:#5b5248; font-size:0.95rem; }
+  /* --- the strip: newest postings and announcements, sliding slowly --- */
+  .strip{ border-top:1px solid var(--line-dark); background:rgba(24,16,14,0.55); display:flex; align-items:stretch; }
+  .strip .tag{ flex:none; display:flex; align-items:center; padding:0 24px; border-right:1px solid var(--line-dark); color:var(--gold-light); }
+  .strip .viewport{ overflow:hidden; flex:1; min-width:0; }
+  .strip .track, .strip .copy{ display:flex; width:max-content; }
+  /* the script adds a second copy and .moving, so the loop has no gap; without it the strip just sits */
+  .strip .track.moving{ animation:marquee 70s linear infinite; }
+  .strip:hover .track, .strip:focus-within .track{ animation-play-state:paused; }
+  @keyframes marquee{ to{ transform:translateX(-50%); } }
+  .strip .item{ display:block; padding:20px 32px; border-right:1px solid var(--line-dark); color:var(--cream); white-space:nowrap; }
+  .strip .item:hover{ text-decoration:none; background:rgba(244,236,226,0.06); }
+  .strip .item .label{ display:block; color:var(--gold-light); margin-bottom:6px; }
+  .strip .item b{ display:block; font-weight:500; font-size:15px; }
+  .strip .item small{ display:block; font-size:13px; color:rgba(244,236,226,0.7); margin-top:2px; }
+
+  /* --- the turning disk: a video of the disk turning, filling the screen while the stage sticks;
+     the scroll moves the video's playhead, and the caption steps once per third of the turn --- */
+  .turn{ height:240vh; position:relative; background:var(--ink); color:var(--cream); }
+  .turn .stage{ position:sticky; top:0; height:100vh; overflow:hidden; }
+  .turn .window{ position:absolute; inset:0; overflow:hidden; background:var(--ink); }
+  .turn video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .turn .window::after{ content:''; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(0deg, rgba(24,16,14,0.85) 0%, rgba(24,16,14,0) 45%); }
+  .turn .steps{ position:absolute; left:0; right:0; bottom:64px; }
+  .turn .steps .wrap{ display:block; height:auto; }
+  .turn .counter{ display:block; color:var(--gold-light); margin-bottom:16px; font-variant-numeric:tabular-nums; }
+  .turn .step-box{ display:grid; }
+  .turn .step{ grid-area:1 / 1; max-width:30rem; opacity:0; transform:translateY(16px);
+    transition:opacity .8s var(--ease), transform .8s var(--ease); }
+  .turn[data-step="0"] .step:nth-child(1), .turn[data-step="1"] .step:nth-child(2), .turn[data-step="2"] .step:nth-child(3){ opacity:1; transform:none; }
+  .turn .step p.big{ margin:0; font:400 clamp(36px, 5.5vw, 60px)/1.02 var(--serif); }
+  .turn .step p.big em{ color:var(--gold-light); }
+  .turn .step p.small{ margin:12px 0 0; font-size:17px; line-height:1.55; color:rgba(244,236,226,0.85); }
+
+  /* --- section heads --- */
+  .head{ display:grid; gap:12px; margin-bottom:48px; max-width:44rem; }
+  .head .label{ color:var(--gold); }
+  .head h2{ font-size:40px; line-height:1.1; }
+  .head p{ margin:0; color:var(--muted); }
+
+  /* --- ledger: what is being built --- */
+  .ledger{ list-style:none; margin:0; padding:0; border-top:1px solid var(--line); }
+  .ledger li{ display:grid; grid-template-columns:64px 1fr; gap:16px; padding:24px 0; border-bottom:1px solid var(--line); }
+  .ledger .mark{ font-family:var(--serif); font-style:italic; font-size:26px; line-height:1.2; color:var(--gold); }
+  .ledger h3{ font-size:26px; line-height:1.2; }
+  .ledger p{ margin:4px 0 0; color:var(--muted); }
+
+  /* --- live numbers --- */
+  .stats{ display:grid; grid-template-columns:repeat(4, 1fr); }
+  .stats a{ display:block; padding:8px 24px 8px 0; color:var(--cream); }
+  .stats li + li a{ padding-left:24px; }
+  .stats li + li{ border-left:1px solid var(--line-dark); }
+  .stats a:hover{ text-decoration:none; }
+  .stats a:hover b{ color:var(--gold-light); }
+  .stats ul{ display:contents; }
+  .stats li{ list-style:none; }
+  .stats b{ display:block; font:400 64px/1 var(--serif); font-variant-numeric:tabular-nums; transition:color .4s var(--ease); }
+  .stats .label{ display:block; margin-top:12px; color:var(--gold-light); }
 
   /* --- the one bold moment --- */
-  .closed-network{ border-top:none; padding:2.5rem 0; }
-  .closed-network .panel{
-    background:var(--maroon);
-    color:#f2e9df;
-    border-radius:22px;
-    padding:3rem 3rem;
-  }
-  .closed-network h2{ color:#f2e9df; font-size:1.9rem; max-width:24ch; }
-  .closed-network p{
-    margin-top:1.1rem; max-width:38rem; color:#e7d3ce; font-size:1.05rem;
-  }
-  .closed-network .signature{
-    margin-top:1.6rem; font-family:'Spectral', serif; font-style:italic; color:var(--gold); font-size:0.95rem;
-  }
-  @media (max-width:640px){
-    .closed-network .panel{ padding:2.2rem 1.6rem; border-radius:16px; }
-  }
+  .maroon{ background:var(--maroon); color:var(--cream); }
+  .maroon h2{ font-size:40px; line-height:1.1; max-width:22ch; }
+  .maroon p{ max-width:38rem; margin:24px 0 0; font-size:18px; color:rgba(244,236,226,0.85); }
+  .maroon .sig{ font-family:var(--serif); font-style:italic; color:var(--gold-light); }
 
   /* --- dev drawer --- */
-  details.dev{
-    border-top:1px solid var(--line);
-  }
-  details.dev summary{
-    cursor:pointer; padding:1.4rem 0; font-size:0.9rem; color:#5b5248;
-    list-style:none; display:flex; align-items:center; gap:0.5rem;
-  }
+  details.dev{ border-top:1px dashed var(--line); }
+  details.dev summary{ cursor:pointer; padding:24px 0; font-size:14px; color:var(--muted); list-style:none; display:flex; align-items:center; gap:8px; }
   details.dev summary::-webkit-details-marker{ display:none; }
-  details.dev summary::before{
-    content:'▸'; color:var(--gold); transition:transform 0.15s ease;
-  }
+  details.dev summary::before{ content:'▸'; color:var(--gold); transition:transform .4s var(--ease); }
   details.dev[open] summary::before{ transform:rotate(90deg); }
-  .routes{
-    width:100%; border-collapse:collapse; font-family:ui-monospace, 'SF Mono', Consolas, monospace;
-    font-size:0.85rem; margin-bottom:2rem;
-  }
-  .routes th{ text-align:left; color:#5b5248; font-weight:500; padding:0.4rem 0; border-bottom:1px solid var(--line); }
-  .routes td{ padding:0.5rem 0; border-bottom:1px solid var(--line); }
-  .routes td:last-child{ color:#5b5248; }
-  .routes a{ text-decoration:none; }
-  .routes a:hover{ text-decoration:underline; }
+  .table-box{ overflow-x:auto; margin-bottom:32px; }
+  .routes{ width:100%; border-collapse:collapse; font:13px/1.5 ui-monospace, Consolas, monospace; }
+  .routes th{ text-align:left; color:var(--muted); font-weight:500; padding:8px 16px 8px 0; border-bottom:1px solid var(--line); }
+  .routes td{ padding:8px 16px 8px 0; border-bottom:1px solid var(--line); }
+  .routes td:last-child{ color:var(--muted); }
 
-  footer{ border-top:1px solid var(--line); padding:2rem 0; }
-  footer .wrap{ display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.6rem; font-size:0.85rem; color:#5b5248; }
+  footer{ border-top:1px solid var(--line); padding:32px 0; }
+  footer .wrap{ display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; font-size:14px; color:var(--muted); }
 
   @media (max-width:640px){
-    .hero h1{ font-size:2.1rem; }
-    .ledger li{ grid-template-columns: 1.8rem 1fr; }
+    .wrap{ padding:0 16px; }
+    .band{ padding:64px 0; }
+    .hero h1{ font-size:40px; }
+    .hero p.lede{ font-size:16px; }
+    .strip .tag{ display:none; }
+    .head h2, .maroon h2{ font-size:28px; }
+    .turn .steps{ bottom:40px; }
+    .ledger li{ grid-template-columns:40px 1fr; }
+    .ledger h3{ font-size:20px; }
+    .stats{ grid-template-columns:1fr 1fr; row-gap:32px; }
+    .stats li:nth-child(3){ border-left:none; }
+    .stats li:nth-child(3) a{ padding-left:0; }
+    .stats b{ font-size:48px; }
   }
   @media (prefers-reduced-motion: reduce){
     html{ scroll-behavior:auto; }
     *{ transition:none !important; }
-    /* no slideshow: the first photo stays */
     .hero .slides span{ animation:none; }
     .hero .slides span:nth-child(1){ opacity:1; }
+    .strip .viewport{ overflow-x:auto; }
+    /* no turning: the disk stays on its front face with the first caption */
+    .turn{ height:auto; }
+    .turn .stage{ position:relative; height:85vh; }
   }
 </style>
 </head>
@@ -193,85 +187,122 @@
 <nav class="top">
   <div class="wrap">
     <a class="brand" href="/main"><b>İ.Ü.</b> Alumni</a>
-    <ul>
+    <ul class="label">
+      <li><a href="/graduates">Mezunlar</a></li>
+      <li><a href="/job-postings">İlanlar</a></li>
+      <li><a href="/announcements">Duyurular</a></li>
       <li><a href="/about">Hakkında</a></li>
-      <li><a href="https://github.com/rabizd/alumni">Kaynak kod</a></li>
     </ul>
   </div>
 </nav>
 
 <header class="hero">
   <div class="slides" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
-  <div class="wrap">
-    <p class="kicker"><span class="dot"></span> geliştirme aşamasında</p>
+  <div class="wrap intro">
+    <p class="label kicker">İstanbul Üniversitesi mezun ağı · geliştirme aşamasında</p>
     <h1>Mezuniyet bir son değil, <em>yeni bir sicilin</em> başlangıcıdır.</h1>
     <p class="lede">
       Alumni, İstanbul Üniversitesi mezunlarını tek bir yerde toplayan bir ağ:
       bir yandan aranabilir bir mezun rehberi, bir yandan da yalnızca doğrulanmış
       mezunların konuştuğu kapalı bir akış.
     </p>
-    <div class="founding">
-      <span class="year">1453</span>
-      <p>İstanbul Üniversitesi'nin kuruluş yılı — bu platform, o köklü camianın
-      dağınık grup sohbetlerine ve eski Excel tablolarına bıraktığı boşluğu doldurmak için var.</p>
+    <div class="actions">
+      <a class="btn fill" href="/graduates">Mezun rehberine göz at</a>
+      <a class="btn ghost" href="/job-postings">İş ve staj ilanları</a>
     </div>
   </div>
+
+  {{if and .Live (or .LatestPostings .LatestAnnouncements)}}
+  <div class="strip" aria-label="Ağda son eklenenler">
+    <span class="tag label">Ağda şimdi</span>
+    <div class="viewport">
+      <div class="track">
+        <div class="copy">
+          {{range .LatestPostings}}
+          <a class="item" href="/job-postings/{{.ID}}">
+            <span class="label">İlan</span>
+            <b>{{.Title}}</b>
+            <small>{{.Company}} · {{template "employment_type" .EmploymentType}}</small>
+          </a>
+          {{end}}
+          {{range .LatestAnnouncements}}
+          <a class="item" href="/announcements/{{.ID}}">
+            <span class="label">Duyuru</span>
+            <b>{{.Title}}</b>
+            <small>{{.Author}} · {{.CreatedAt.Format "02.01.2006"}}</small>
+          </a>
+          {{end}}
+        </div>
+      </div>
+    </div>
+  </div>
+  {{end}}
 </header>
 
-<section>
+<section class="turn" id="disk" data-step="0" aria-label="Kampüsteki dönen mühür">
+  <div class="stage">
+    <div class="window">
+      <video src="/static/video/disk.mp4" poster="/static/img/disk-poster.jpg" muted playsinline preload="auto"
+        aria-label="Rektörlük binasının önünde beton bir blok; içindeki taş disk, üzerinde İstanbul Üniversitesi mührüyle kendi ekseninde dönüyor"></video>
+    </div>
+    <div class="steps">
+      <div class="wrap">
+        <span class="counter label" aria-hidden="true"><span class="n">01</span> / 03</span>
+        <div class="step-box" aria-live="polite">
+          <div class="step"><p class="big">Okulun <em>mührü.</em></p><p class="small">1453'ten beri aynı mühür, aynı kapı.</p></div>
+          <div class="step"><p class="big">Kendi ekseninde <em>dönen bir taş.</em></p><p class="small">Rektörlük binasının önünde, beton bir bloğun içinde; bir itişle döner.{{if .Live}} Ağda şu an {{.Graduates}} kayıtlı mezun var.{{end}}</p></div>
+          <div class="step"><p class="big">Sıra <em>sende.</em></p><p class="small">Ağa katıl; aynı mührün altından geçmiş herkesle yeniden buluş.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
   <div class="wrap">
-    <h2>Neler kuruluyor</h2>
-    <p class="section-lede">İlk sürüm henüz bunların hepsini yapmıyor — aşağıdaki liste, üzerinde çalışılan çekirdek.</p>
+    <div class="head">
+      <span class="label">Yol haritası</span>
+      <h2>Neler kuruluyor</h2>
+      <p>İlk sürüm henüz bunların hepsini yapmıyor; aşağıdaki liste, üzerinde çalışılan çekirdek.</p>
+    </div>
     <ul class="ledger">
-      <li>
-        <span class="mark">I.</span>
-        <div>
-          <h3>Mezun profilleri</h3>
-          <p>Fakülte, bölüm, mezuniyet yılı, şehir ve güncel pozisyon — tek bir sayfada.</p>
-        </div>
-      </li>
-      <li>
-        <span class="mark">II.</span>
-        <div>
-          <h3>Mezuniyet doğrulaması</h3>
-          <p>Bir profil ancak gerçekten mezun olduğu doğrulandığında güvenilirdir.</p>
-        </div>
-      </li>
-      <li>
-        <span class="mark">III.</span>
-        <div>
-          <h3>Arama ve filtreleme</h3>
-          <p>İsme, bölüme, mezuniyet yılına, şehre ya da çalıştığı kuruma göre.</p>
-        </div>
-      </li>
-      <li>
-        <span class="mark">IV.</span>
-        <div>
-          <h3>Fakülte ve bölüm çevreleri</h3>
-          <p>Herkes kendi okuduğu fakültenin akışını takip eder, sohbet oradan başlar.</p>
-        </div>
-      </li>
+      <li><span class="mark">I.</span><div><h3>Mezun profilleri</h3><p>Fakülte, bölüm, mezuniyet yılı, şehir ve güncel pozisyon, tek bir sayfada.</p></div></li>
+      <li><span class="mark">II.</span><div><h3>Mezuniyet doğrulaması</h3><p>Bir profil ancak gerçekten mezun olduğu doğrulandığında güvenilirdir.</p></div></li>
+      <li><span class="mark">III.</span><div><h3>Arama ve filtreleme</h3><p>İsme, bölüme, mezuniyet yılına, şehre ya da çalıştığı kuruma göre.</p></div></li>
+      <li><span class="mark">IV.</span><div><h3>Fakülte ve bölüm çevreleri</h3><p>Herkes kendi okuduğu fakültenin akışını takip eder, sohbet oradan başlar.</p></div></li>
     </ul>
   </div>
 </section>
 
-<section class="closed-network">
+{{if .Live}}
+<section class="band ink" aria-label="Ağ sayılarla">
+  <div class="wrap stats">
+    <ul>
+      <li><a href="/graduates"><b>{{.Graduates}}</b><span class="label">kayıtlı mezun</span></a></li>
+      <li><a href="/users"><b>{{.Users}}</b><span class="label">kullanıcı</span></a></li>
+      <li><a href="/job-postings"><b>{{.Postings}}</b><span class="label">iş ve staj ilanı</span></a></li>
+      <li><a href="/announcements"><b>{{.Announcements}}</b><span class="label">duyuru</span></a></li>
+    </ul>
+  </div>
+</section>
+{{end}}
+
+<section class="band maroon">
   <div class="wrap">
-    <div class="panel">
-      <h2>Akıştaki herkes, doğrulanmış bir İ.Ü. mezunu.</h2>
-      <p>
-        Bu tek kısıtlama, konuşmayı değerli kılan şey: bot yok, yabancı yok, gürültü yok.
-        Bir kıdemli mezunun "bölümümden iki stajyer arıyoruz" paylaşımı, herhangi bir
-        iş ilanı sitesindekinden daha anlamlı — çünkü okuyan herkes aynı okuldan.
-      </p>
-      <p class="signature">— aynı sıralarda oturmuş olmanın verdiği güven</p>
-    </div>
+    <h2>Akıştaki herkes, doğrulanmış bir İ.Ü. mezunu.</h2>
+    <p>
+      Bu tek kısıtlama, konuşmayı değerli kılan şey: bot yok, yabancı yok, gürültü yok.
+      Bir kıdemli mezunun "bölümümden iki stajyer arıyoruz" paylaşımı, herhangi bir
+      iş ilanı sitesindekinden daha anlamlı, çünkü okuyan herkes aynı okuldan.
+    </p>
+    <p class="sig">aynı sıralarda oturmuş olmanın verdiği güven</p>
   </div>
 </section>
 
+<div class="wrap">
 <details class="dev">
-  <summary>Geliştirici notu — çalışan route'lar</summary>
-  <div class="wrap" style="padding:0;">
+  <summary>Geliştirici notu: çalışan route'lar</summary>
+  <div class="table-box">
     <table class="routes">
       <thead><tr><th>Route</th><th>Yanıt</th></tr></thead>
       <tbody>
@@ -306,6 +337,7 @@
     </table>
   </div>
 </details>
+</div>
 
 <footer>
   <div class="wrap">
@@ -313,6 +345,43 @@
     <a href="https://github.com/rabizd/alumni">kaynak kod →</a>
   </div>
 </footer>
+
+<script>
+  // The strip slides by moving its track left by half its width, so it needs a second,
+  // hidden copy of the items to loop without a gap. Skipped when motion is reduced.
+  (function(){
+    var track = document.querySelector('.strip .track');
+    if (!track || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var copy = track.firstElementChild.cloneNode(true);
+    copy.setAttribute('aria-hidden', 'true');
+    copy.querySelectorAll('a').forEach(function(a){ a.tabIndex = -1; });
+    track.appendChild(copy);
+    track.classList.add('moving');
+  })();
+
+  // The turning disk. p is the scroll progress through the band (0 → 1); it moves the video's
+  // playhead, so the disk turns as far as the visitor scrolls, both ways.
+  // The caption steps once per third of the turn.
+  (function(){
+    var sec = document.getElementById('disk');
+    if (!sec || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var video = sec.querySelector('video');
+    var counter = sec.querySelector('.counter .n');
+    var queued = false;
+    function update(){
+      queued = false;
+      var span = sec.offsetHeight - window.innerHeight;
+      var turn = span > 0 ? Math.min(1, Math.max(0, -sec.getBoundingClientRect().top / span)) : 1;
+      if (video.duration) video.currentTime = turn * (video.duration - 0.05);
+      var step = Math.min(2, Math.floor(turn * 3));
+      if (sec.dataset.step !== String(step)){ sec.dataset.step = step; counter.textContent = '0' + (step + 1); }
+    }
+    window.addEventListener('scroll', function(){ if (!queued){ queued = true; requestAnimationFrame(update); } }, { passive:true });
+    window.addEventListener('resize', update);
+    video.addEventListener('loadedmetadata', update);
+    update();
+  })();
+</script>
 
 </body>
 </html>

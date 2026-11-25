@@ -1,8 +1,8 @@
-{{/* Shared parts of the /users, /announcements, /graduates, /job-postings and
-/applications pages: page_top and page_bottom wrap every page; user_fields,
-announcement_fields and graduate_fields are the inputs each resource's create
-and edit forms share; employment_type and status_label turn stored values
-into Turkish labels. */}}
+{{/* Shared parts of the /users, /announcements, /graduates, /job-postings,
+/applications, /about and 404 pages: page_top and page_bottom wrap every page;
+user_fields, announcement_fields and graduate_fields are the inputs each
+resource's create and edit forms share; employment_type and status_label turn
+stored values into Turkish labels. */}}
 {{define "page_top"}}<!doctype html>
 <html lang="tr">
 <head>
@@ -11,95 +11,135 @@ into Turkish labels. */}}
 <title>Alumni</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  /* Tokens and rules come from DESIGN.md, same as the main page. */
   :root{
-    --ink:#211c18;
-    --paper:#e9e4d8;
-    --maroon:#4a0e1a;
-    --gold:#a9832d;
-    --line: rgba(33,28,24,0.16);
-    --muted:#5b5248;
+    --paper:#e9e4d8; --paper-deep:#ddd6c4; --ink:#211c18; --muted:#5b5248;
+    --cream:#f4ece2; --maroon:#4a0e1a; --maroon-deep:#320a12;
+    --gold:#a9832d; --gold-light:#e2c27c;
+    --line:rgba(33,28,24,0.16); --line-dark:rgba(244,236,226,0.25);
+    --serif:'Spectral', Georgia, serif;
+    --sans:'Inter', system-ui, sans-serif;
+    --ease:cubic-bezier(0.19, 1, 0.22, 1);
   }
   *{ box-sizing:border-box; }
-  body{
-    margin:0; background:var(--paper); color:var(--ink);
-    font-family:'Inter', system-ui, sans-serif; line-height:1.6;
-    -webkit-font-smoothing:antialiased;
-  }
-  h1{ font-family:'Spectral', Georgia, serif; font-weight:500; line-height:1.2; margin:0 0 1.5rem; font-size:2rem; }
-  h2{ font-family:'Spectral', Georgia, serif; font-weight:500; margin:2.5rem 0 1rem; font-size:1.3rem; }
-  a{ color:var(--maroon); }
+  body{ margin:0; min-height:100vh; display:flex; flex-direction:column; background:var(--paper); color:var(--ink); font-family:var(--sans); font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3{ font-family:var(--serif); font-weight:500; margin:0; text-wrap:balance; }
+  h1{ font-size:40px; line-height:1.1; }
+  h2{ font-size:26px; line-height:1.2; margin:0 0 24px; }
+  a{ color:var(--maroon); text-decoration:none; transition:color .4s var(--ease); }
+  a:hover{ text-decoration:underline; }
   a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{ outline:2px solid var(--maroon); outline-offset:3px; }
-  .wrap{ max-width:44rem; margin:0 auto; padding:0 1.5rem; }
+  .wrap{ max-width:720px; margin:0 auto; padding:0 24px; }
+  .label{ font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; line-height:1.2; }
 
+  /* --- nav: wordmark left, uppercase labels right, a hairline under it --- */
   nav.top{ border-bottom:1px solid var(--line); }
-  nav.top .wrap{ display:flex; align-items:center; justify-content:space-between; padding-top:1.1rem; padding-bottom:1.1rem; }
-  .brand{ font-family:'Spectral', serif; font-size:1.05rem; color:var(--ink); text-decoration:none; }
-  .brand b{ color:var(--maroon); font-weight:600; }
-  nav.top a.link{ color:var(--ink); text-decoration:none; font-size:0.92rem; }
-  nav.top a.link:hover{ color:var(--maroon); }
+  nav.top .wrap{ max-width:1080px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 24px; padding-top:20px; padding-bottom:20px; }
+  .brand{ font-family:var(--serif); font-size:17px; color:var(--ink); }
+  .brand b{ color:var(--maroon); font-weight:500; }
+  .brand:hover{ text-decoration:none; }
+  nav.top ul{ display:flex; flex-wrap:wrap; gap:8px 24px; list-style:none; margin:0; padding:0; }
+  nav.top ul a{ color:var(--ink); }
+  nav.top ul a:hover{ color:var(--maroon); }
 
-  main{ padding:3rem 0 4rem; }
-  table{ width:100%; border-collapse:collapse; margin-bottom:1.5rem; }
-  th{ text-align:left; color:var(--muted); font-weight:500; font-size:0.85rem; padding:0.5rem 0; border-bottom:1px solid var(--line); }
-  td{ padding:0.7rem 0; border-bottom:1px solid var(--line); vertical-align:middle; }
-  td.actions{ text-align:right; white-space:nowrap; }
+  main{ flex:1; padding:64px 0 96px; }
+  /* every page opens with an uppercase kicker over a Spectral heading, then a dashed hairline */
+  .page-head{ padding-bottom:32px; margin-bottom:32px; border-bottom:1px dashed var(--line); }
+  .page-head .kicker{ color:var(--gold); margin:0 0 16px; }
+  .page-head p.lede{ font-size:18px; line-height:1.55; color:var(--muted); margin:16px 0 0; }
+  .meta{ color:var(--muted); font-size:14px; margin:12px 0 0; }
+
+  /* lists of records: ruled rows, the name in 600, uppercase column labels */
+  table{ width:100%; border-collapse:collapse; }
+  th{ text-align:left; color:var(--muted); font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; padding:0 12px 12px 0; border-bottom:1px solid var(--ink); }
+  td{ padding:16px 12px 16px 0; border-bottom:1px solid var(--line); vertical-align:middle; }
+  td a.name{ color:var(--ink); font-weight:600; }
+  td a.name:hover{ color:var(--maroon); }
+  td.num{ color:var(--gold); font-family:var(--serif); font-size:18px; }
+  td.muted{ color:var(--muted); font-size:14px; }
+  td.actions{ text-align:right; white-space:nowrap; padding-right:0; }
   td.actions form{ display:inline; }
 
-  dl{ display:grid; grid-template-columns:7rem 1fr; gap:0.6rem 1rem; margin:0 0 2rem; }
-  dt{ color:var(--muted); }
-  dd{ margin:0; }
+  /* a record's own page: uppercase labels left, values right, a hairline under each */
+  dl{ display:grid; grid-template-columns:9rem 1fr; margin:0 0 48px; }
+  dt, dd{ padding:12px 0; border-bottom:1px solid var(--line); margin:0; }
+  dt{ color:var(--muted); font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; line-height:1.9; }
+  .body{ white-space:pre-line; font-size:18px; line-height:1.7; margin:0 0 48px; }
 
-  label{ display:block; font-size:0.9rem; color:var(--muted); margin-bottom:0.3rem; }
+  /* the "new ..." form under a list sits in its own section, after a dashed hairline */
+  section.add{ margin-top:96px; padding-top:48px; border-top:1px dashed var(--line); }
+
+  label{ display:block; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); margin-bottom:8px; }
   input[type=text], input[type=email], input[type=number], input[type=url], input[type=date], select, textarea{
-    width:100%; padding:0.6rem 0.7rem; margin-bottom:1.1rem;
+    width:100%; min-height:44px; padding:10px 12px; margin-bottom:24px;
     font:inherit; color:var(--ink); background:#f6f2ea;
-    border:1px solid var(--line); border-radius:3px;
+    border:1px solid var(--line); border-radius:0;
   }
-  textarea{ min-height:8rem; resize:vertical; }
-  .body{ white-space:pre-line; margin:0 0 2rem; }
-  .meta{ color:var(--muted); font-size:0.9rem; margin:-1rem 0 1.5rem; }
-  .pair{ display:grid; grid-template-columns:1fr 1fr; gap:0 1rem; }
-  fieldset{ border:1px solid var(--line); border-radius:3px; padding:1rem 1rem 0.2rem; margin:0 0 1.2rem; }
-  legend{ color:var(--muted); font-size:0.85rem; padding:0 0.4rem; }
-  label.check{ display:flex; align-items:center; gap:0.5rem; color:var(--ink); margin-bottom:1.1rem; }
-  .error{ background:#f3dcd8; color:var(--maroon); padding:0.7rem 0.9rem; border-radius:3px; margin-bottom:1.2rem; }
+  input:focus-visible, select:focus-visible, textarea:focus-visible{ outline-offset:0; }
+  textarea{ min-height:10rem; resize:vertical; }
+  .pair{ display:grid; grid-template-columns:1fr 1fr; gap:0 16px; }
+  fieldset{ border:1px dashed var(--line); padding:24px 16px 0; margin:0 0 24px; }
+  legend{ font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; color:var(--gold); padding:0 8px; }
+  label.check{ display:flex; align-items:center; gap:12px; min-height:44px; font-size:16px; font-weight:400; text-transform:none; letter-spacing:0; color:var(--ink); margin-bottom:24px; }
+  label.check input{ width:18px; height:18px; accent-color:var(--maroon); }
+  .error{ background:#f3dcd8; color:var(--maroon); padding:12px 16px; border-left:3px solid var(--maroon); margin:0 0 24px; }
 
+  /* buttons: the only rounded things; one filled maroon pill per section, the rest ghosts */
   .btn, button{
-    display:inline-block; font:inherit; font-size:0.92rem; cursor:pointer;
-    padding:0.5rem 1rem; border-radius:3px; text-decoration:none;
-    background:var(--maroon); color:#f2e9df; border:1px solid var(--maroon);
+    display:inline-flex; align-items:center; min-height:44px; padding:12px 28px; border-radius:999px;
+    font:500 15px/1 var(--sans); cursor:pointer; text-decoration:none;
+    background:var(--maroon); color:var(--cream); border:1px solid var(--maroon);
+    transition:background-color .4s var(--ease), border-color .4s var(--ease), color .4s var(--ease);
   }
-  .btn.ghost, button.ghost{ background:transparent; color:var(--maroon); }
-  .row{ display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center; }
-  .empty{ color:var(--muted); }
+  .btn:hover, button:hover{ background:var(--maroon-deep); border-color:var(--maroon-deep); text-decoration:none; }
+  .btn.ghost, button.ghost{ background:transparent; color:var(--ink); border-color:var(--ink); }
+  .btn.ghost:hover, button.ghost:hover{ background:transparent; color:var(--maroon); border-color:var(--maroon); }
+  td.actions .btn, td.actions button{ min-height:36px; padding:8px 16px; font-size:13px; border-color:var(--line); }
+  .row{ display:flex; gap:12px 16px; flex-wrap:wrap; align-items:center; }
+  .row a.back{ margin-left:auto; font-size:14px; }
+  .empty{ color:var(--muted); font-family:var(--serif); font-style:italic; font-size:20px; padding:32px 0; margin:0; }
 
-  .tag{ display:inline-block; font-size:0.78rem; padding:0.1rem 0.5rem; border-radius:3px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
+  .tag{ display:inline-block; font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; padding:4px 10px; border-radius:999px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
   .tag.accepted{ background:#dfe8d6; color:#2f4a1f; border-color:transparent; }
   .tag.rejected{ background:#f3dcd8; color:var(--maroon); border-color:transparent; }
-  td.actions select{ width:auto; margin:0; padding:0.35rem 0.4rem; font-size:0.85rem; }
-  .apply{ border-top:1px solid var(--line); padding-top:0.5rem; }
-  nav.top .row{ gap:0.4rem 1rem; justify-content:flex-end; }
+  td.actions select{ width:auto; min-height:36px; margin:0; padding:6px 8px; font-size:13px; }
+  .apply{ border-top:1px solid var(--line); padding-top:8px; }
+
+  footer{ border-top:1px solid var(--line); padding:32px 0; }
+  footer .wrap{ max-width:1080px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; font-size:14px; color:var(--muted); }
+
   @media (max-width:640px){
-    nav.top .wrap{ flex-direction:column; align-items:flex-start; gap:0.5rem; }
-    nav.top .row{ justify-content:flex-start; }
-    table{ display:block; overflow-x:auto; }
+    .wrap{ padding:0 16px; }
+    main{ padding:48px 0 64px; }
+    h1{ font-size:28px; }
+    /* on phones each record is a short block: name, meta lines, then its buttons */
+    table, tbody, tr, td{ display:block; }
+    thead{ display:none; }
+    tr{ padding:16px 0; border-bottom:1px solid var(--line); }
+    td{ border:none; padding:2px 0; }
+    td.actions{ text-align:left; padding-top:12px; white-space:normal; }
     .pair{ grid-template-columns:1fr; }
+    dl{ grid-template-columns:1fr; }
+    dt{ border-bottom:none; padding-bottom:0; }
+    dd{ padding-top:4px; }
+    section.add{ margin-top:64px; }
   }
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; } }
 </style>
 </head>
 <body>
 <nav class="top">
   <div class="wrap">
     <a class="brand" href="/main"><b>İ.Ü.</b> Alumni</a>
-    <span class="row">
-      <a class="link" href="/users">Kullanıcılar</a>
-      <a class="link" href="/announcements">Duyurular</a>
-      <a class="link" href="/graduates">Mezunlar</a>
-      <a class="link" href="/job-postings">İlanlar</a>
-      <a class="link" href="/applications">Başvurular</a>
-    </span>
+    <ul class="label">
+      <li><a href="/graduates">Mezunlar</a></li>
+      <li><a href="/job-postings">İlanlar</a></li>
+      <li><a href="/applications">Başvurular</a></li>
+      <li><a href="/announcements">Duyurular</a></li>
+      <li><a href="/users">Kullanıcılar</a></li>
+    </ul>
   </div>
 </nav>
 <main>
@@ -109,6 +149,12 @@ into Turkish labels. */}}
 {{define "page_bottom"}}
   </div>
 </main>
+<footer>
+  <div class="wrap">
+    <span>İstanbul Üniversitesi mezunları için inşa edildi</span>
+    <a href="https://github.com/rabizd/alumni">kaynak kod →</a>
+  </div>
+</footer>
 </body>
 </html>
 {{end}}

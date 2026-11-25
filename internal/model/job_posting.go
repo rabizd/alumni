@@ -83,6 +83,19 @@ func isEmploymentType(s string) bool {
 	return false
 }
 
+// Initials are the first letters of the company's first two words, for the
+// stamp the postings pages draw in place of a logo: "Garanti BBVA" -> "GB".
+func (p JobPosting) Initials() string {
+	var out []rune
+	for _, word := range strings.Fields(p.Company) {
+		out = append(out, []rune(word)[0])
+		if len(out) == 2 {
+			break
+		}
+	}
+	return string(out)
+}
+
 // Poster returns the user who posted p (the "belongs to" side of the relation).
 func (p JobPosting) Poster() (User, bool, error) {
 	return Users.Find(p.UserID)

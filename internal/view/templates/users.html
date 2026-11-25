@@ -1,15 +1,19 @@
 {{template "page_top"}}
-<h1>Kullanıcılar</h1>
+<header class="page-head">
+  <p class="label kicker">Hesaplar</p>
+  <h1>Kullanıcılar</h1>
+  <p class="lede">Ağda hesabı olan mezunlar: ilan açanlar, başvuranlar, duyuru yapanlar.</p>
+</header>
 {{if .Users}}
 <table>
   <thead><tr><th>#</th><th>Ad</th><th>Bölüm</th><th>Yıllar</th><th></th></tr></thead>
   <tbody>
   {{range .Users}}
     <tr>
-      <td>{{.ID}}</td>
-      <td><a href="/users/{{.ID}}">{{.Name}}</a></td>
-      <td>{{.Department}}</td>
-      <td>{{.StartYear}}–{{.GraduationYear}}</td>
+      <td class="num">{{.ID}}</td>
+      <td><a class="name" href="/users/{{.ID}}">{{.Name}}</a></td>
+      <td class="muted">{{.Department}}</td>
+      <td class="muted">{{.StartYear}}–{{.GraduationYear}}</td>
       <td class="actions">
         <a class="btn ghost" href="/users/{{.ID}}/edit">Düzenle</a>
         <form method="post" action="/users/{{.ID}}/delete">
@@ -23,11 +27,13 @@
 {{else}}
 <p class="empty">Henüz kullanıcı yok.</p>
 {{end}}
-<h2>Yeni kullanıcı</h2>
-{{/* Posts straight to POST /users (UserController.Store), so the listing and
-the creating route both live on this page. */}}
-<form method="post" action="/users">
-  {{template "user_fields" .New}}
-  <button type="submit">Ekle</button>
-</form>
+<section class="add">
+  <h2>Yeni kullanıcı</h2>
+  {{/* Posts straight to POST /users (UserController.Store), so the listing and
+  the creating route both live on this page. */}}
+  <form method="post" action="/users">
+    {{template "user_fields" .New}}
+    <button type="submit">Ekle</button>
+  </form>
+</section>
 {{template "page_bottom"}}
