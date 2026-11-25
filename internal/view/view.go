@@ -23,6 +23,7 @@ var templateFiles embed.FS
 var templates = template.Must(template.New("").Funcs(template.FuncMap{
 	"currentUser": func() *model.User { return nil },
 	"menu":        func() []MenuItem { return nil },
+	"requestPath": func() string { return "" },
 }).ParseFS(templateFiles, "templates/*.html"))
 
 // The OpenAPI document is baked in the same way, so the running server always
@@ -57,6 +58,7 @@ func HTML(w http.ResponseWriter, r *http.Request, status int, page string, data 
 	t.Funcs(template.FuncMap{
 		"currentUser": func() *model.User { return me },
 		"menu":        func() []MenuItem { return items },
+		"requestPath": func() string { return r.URL.Path },
 	})
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
