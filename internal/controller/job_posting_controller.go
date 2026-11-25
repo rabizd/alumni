@@ -60,7 +60,7 @@ func (JobPostingController) Index(w http.ResponseWriter, r *http.Request) {
 	for i, p := range list {
 		rows[i] = jobPostingRow{JobPosting: p, Poster: names[p.UserID]}
 	}
-	view.HTML(w, http.StatusOK, "job_postings.html", rows)
+	view.HTML(w, r, http.StatusOK, "job_postings.html", rows)
 }
 
 // Show: GET /job-postings/{id} -> one posting with its applications and an apply form, or 404
@@ -69,12 +69,12 @@ func (c JobPostingController) Show(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	c.renderPage(w, id, http.StatusOK, model.Application{}, "")
+	c.renderPage(w, r, id, http.StatusOK, model.Application{}, "")
 }
 
 // renderPage shows a posting's page. Apply and errMsg refill the apply form
 // when an application could not be saved.
-func (JobPostingController) renderPage(w http.ResponseWriter, id, status int, apply model.Application, errMsg string) {
+func (JobPostingController) renderPage(w http.ResponseWriter, r *http.Request, id, status int, apply model.Application, errMsg string) {
 	p, found, err := model.JobPostings.Find(id)
 	if err != nil {
 		dbError(w, err)
@@ -104,7 +104,7 @@ func (JobPostingController) renderPage(w http.ResponseWriter, id, status int, ap
 		dbError(w, err)
 		return
 	}
-	view.HTML(w, status, "job_posting.html", jobPostingPage{
+	view.HTML(w, r, status, "job_posting.html", jobPostingPage{
 		Posting: p, Poster: poster, Applications: rows, Users: users,
 		Statuses: model.ApplicationStatuses, Apply: apply, Error: errMsg,
 	})
@@ -112,20 +112,20 @@ func (JobPostingController) renderPage(w http.ResponseWriter, id, status int, ap
 
 // Create: GET /job-postings/new -> an empty form
 func (c JobPostingController) Create(w http.ResponseWriter, r *http.Request) {
-	c.renderForm(w, http.StatusOK, "Yeni ilan", "/job-postings", model.JobPosting{}, "")
+	c.renderForm(w, r, http.StatusOK, "Yeni ilan", "/job-postings", model.JobPosting{}, "")
 }
 
 // Store: POST /job-postings -> create from the form, then go to the new posting
 func (c JobPostingController) Store(w http.ResponseWriter, r *http.Request) {
 	p := jobPostingFromForm(r)
 	if err := p.Validate(); err != nil {
-		c.renderForm(w, http.StatusBadRequest, "Yeni ilan", "/job-postings", p, err.Error())
+		c.renderForm(w, r, http.StatusBadRequest, "Yeni ilan", "/job-postings", p, err.Error())
 		return
 	}
 
 	created, err := model.JobPostings.Add(p)
 	if errors.Is(err, model.ErrUserNotFound) {
-		c.renderForm(w, http.StatusBadRequest, "Yeni ilan", "/job-postings", p, err.Error())
+		c.renderForm(w, r, http.StatusBadRequest, "Yeni ilan", "/job-postings", p, err.Error())
 		return
 	}
 	if err != nil {
@@ -152,7 +152,7 @@ func (c JobPostingController) Edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.renderForm(w, http.StatusOK, "İlanı düzenle", fmt.Sprintf("/job-postings/%d", id), p, "")
+	c.renderForm(w, r, http.StatusOK, "İlanı düzenle", fmt.Sprintf("/job-postings/%d", id), p, "")
 }
 
 // Update: POST /job-postings/{id} -> save the edit form, then go to the posting
@@ -166,13 +166,13 @@ func (c JobPostingController) Update(w http.ResponseWriter, r *http.Request) {
 	p.ID = id
 	action := fmt.Sprintf("/job-postings/%d", id)
 	if err := p.Validate(); err != nil {
-		c.renderForm(w, http.StatusBadRequest, "İlanı düzenle", action, p, err.Error())
+		c.renderForm(w, r, http.StatusBadRequest, "İlanı düzenle", action, p, err.Error())
 		return
 	}
 
 	_, found, err := model.JobPostings.Replace(id, p)
 	if errors.Is(err, model.ErrUserNotFound) {
-		c.renderForm(w, http.StatusBadRequest, "İlanı düzenle", action, p, err.Error())
+		c.renderForm(w, r, http.StatusBadRequest, "İlanı düzenle", action, p, err.Error())
 		return
 	}
 	if err != nil {
@@ -207,13 +207,13 @@ func (JobPostingController) Destroy(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/job-postings", http.StatusSeeOther)
 }
 
-func (JobPostingController) renderForm(w http.ResponseWriter, status int, title, action string, p model.JobPosting, errMsg string) {
+func (JobPostingController) renderForm(w http.ResponseWriter, r *http.Request, status int, title, action string, p model.JobPosting, errMsg string) {
 	_, users, err := userNames()
 	if err != nil {
 		dbError(w, err)
 		return
 	}
-	view.HTML(w, status, "job_posting_form.html", jobPostingForm{
+	view.HTML(w, r, status, "job_posting_form.html", jobPostingForm{
 		Title: title, Action: action, Posting: p, Users: users, Types: model.EmploymentTypes, Error: errMsg,
 	})
 }

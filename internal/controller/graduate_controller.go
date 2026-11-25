@@ -38,7 +38,7 @@ func (GraduateController) Index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	view.HTML(w, http.StatusOK, "graduates.html", graduateList{Graduates: list})
+	view.HTML(w, r, http.StatusOK, "graduates.html", graduateList{Graduates: list})
 }
 
 // Show: GET /graduates/{id} -> one graduate's page, or 404
@@ -58,12 +58,12 @@ func (GraduateController) Show(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	view.HTML(w, http.StatusOK, "graduate.html", a)
+	view.HTML(w, r, http.StatusOK, "graduate.html", a)
 }
 
 // Create: GET /graduates/new -> an empty form
 func (GraduateController) Create(w http.ResponseWriter, r *http.Request) {
-	view.HTML(w, http.StatusOK, "graduate_form.html",
+	view.HTML(w, r, http.StatusOK, "graduate_form.html",
 		graduateForm{Title: "Yeni mezun", Action: "/graduates"})
 }
 
@@ -71,7 +71,7 @@ func (GraduateController) Create(w http.ResponseWriter, r *http.Request) {
 func (GraduateController) Store(w http.ResponseWriter, r *http.Request) {
 	a := graduateFromForm(r)
 	if err := a.Validate(); err != nil {
-		view.HTML(w, http.StatusBadRequest, "graduate_form.html",
+		view.HTML(w, r, http.StatusBadRequest, "graduate_form.html",
 			graduateForm{Title: "Yeni mezun", Action: "/graduates", Graduate: a, Error: err.Error()})
 		return
 	}
@@ -100,7 +100,7 @@ func (GraduateController) Edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	view.HTML(w, http.StatusOK, "graduate_form.html",
+	view.HTML(w, r, http.StatusOK, "graduate_form.html",
 		graduateForm{Title: "Mezunu düzenle", Action: fmt.Sprintf("/graduates/%d", id), Graduate: a})
 }
 
@@ -114,7 +114,7 @@ func (GraduateController) Update(w http.ResponseWriter, r *http.Request) {
 	a := graduateFromForm(r)
 	a.ID = id
 	if err := a.Validate(); err != nil {
-		view.HTML(w, http.StatusBadRequest, "graduate_form.html",
+		view.HTML(w, r, http.StatusBadRequest, "graduate_form.html",
 			graduateForm{Title: "Mezunu düzenle", Action: fmt.Sprintf("/graduates/%d", id), Graduate: a, Error: err.Error()})
 		return
 	}

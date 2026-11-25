@@ -8,6 +8,8 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+
+	"github.com/rabizd/alumni/internal/model"
 )
 
 // The HTML lives in its own files; go:embed bakes them into the binary at
@@ -16,7 +18,11 @@ import (
 //go:embed templates/*.html
 var templateFiles embed.FS
 
-var templates = template.Must(template.ParseFS(templateFiles, "templates/*.html"))
+// currentUser is a placeholder here: HTML swaps in the signed-in user of each
+// request, so the menu in layout.html can show their name or a sign-in link.
+var templates = template.Must(template.New("").Funcs(template.FuncMap{
+	"currentUser": func() *model.User { return nil },
+}).ParseFS(templateFiles, "templates/*.html"))
 
 // The OpenAPI document is baked in the same way, so the running server always
 // serves the spec that was built alongside it.
@@ -35,10 +41,22 @@ var Static = http.FileServerFS(staticFiles)
 
 // HTML renders one page from templates/ with the given status code. data is
 // what the page shows; pages that show nothing take nil.
-func HTML(w http.ResponseWriter, status int, page string, data any) {
+func HTML(w http.ResponseWriter, r *http.Request, status int, page string, data any) {
+	var me *model.User
+	if u, ok := model.CurrentUser(r.Context()); ok {
+		me = &u
+	}
+	t, err := templates.Clone()
+	if err != nil {
+		log.Printf("rendering %s: %v", page, err)
+		http.Error(w, "page could not be drawn", http.StatusInternalServerError)
+		return
+	}
+	t.Funcs(template.FuncMap{"currentUser": func() *model.User { return me }})
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
-	if err := templates.ExecuteTemplate(w, page, data); err != nil {
+	if err := t.ExecuteTemplate(w, page, data); err != nil {
 		log.Printf("rendering %s: %v", page, err)
 	}
 }

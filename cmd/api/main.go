@@ -43,7 +43,7 @@ func main() {
 
 	addr := ":" + port
 	fmt.Println("listening on http://localhost" + addr) // not an error, so not log
-	if err := http.ListenAndServe(addr, middleware.Logger(middleware.ServerErrorGuardian(middleware.NotFoundGuardian(mux)))); err != nil {
+	if err := http.ListenAndServe(addr, middleware.Logger(middleware.ServerErrorGuardian(middleware.NotFoundGuardian(middleware.Session(mux))))); err != nil {
 		log.Fatal(err)
 	}
 }

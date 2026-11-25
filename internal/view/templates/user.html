@@ -12,7 +12,21 @@
   <dt>Yandal</dt><dd>{{if .Minor}}{{.Minor}}{{else}}yok{{end}}</dd>
   <dt>Danışman</dt><dd>{{if .Advisor}}{{.Advisor}}{{else}}belirtilmedi{{end}}</dd>
   <dt>İng. hazırlık</dt><dd>{{if .PrepExempt}}muaf{{else}}muaf değil{{end}}</dd>
+  <dt>Rol</dt><dd>{{template "role_text" .Role}}</dd>
 </dl>
+{{/* Only an admin may change a role (DDD.md), so only an admin sees the form.
+Inside "with" the dot is the signed-in user; $ is still the user on the page. */}}
+{{with currentUser}}{{if .HasRole "admin"}}
+<form class="row" method="post" action="/users/{{$.ID}}/role">
+  <label for="role" style="margin:0">Rolü değiştir</label>
+  <select id="role" name="role" style="width:auto; margin:0">
+    <option value="member"{{if eq $.Role "member"}} selected{{end}}>Üye</option>
+    <option value="graduate"{{if eq $.Role "graduate"}} selected{{end}}>Doğrulanmış mezun</option>
+    <option value="admin"{{if eq $.Role "admin"}} selected{{end}}>Yönetici</option>
+  </select>
+  <button class="ghost" type="submit">Kaydet</button>
+</form>
+{{end}}{{end}}
 <div class="row">
   <a class="btn" href="/users/{{.ID}}/edit">Düzenle</a>
   <form method="post" action="/users/{{.ID}}/delete">

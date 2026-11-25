@@ -36,7 +36,7 @@ func (AnnouncementController) Index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	view.HTML(w, http.StatusOK, "announcements.html", announcementList{Announcements: list})
+	view.HTML(w, r, http.StatusOK, "announcements.html", announcementList{Announcements: list})
 }
 
 // Show: GET /announcements/{id} -> one announcement's page, or 404
@@ -56,12 +56,12 @@ func (AnnouncementController) Show(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	view.HTML(w, http.StatusOK, "announcement.html", a)
+	view.HTML(w, r, http.StatusOK, "announcement.html", a)
 }
 
 // Create: GET /announcements/new -> an empty form
 func (AnnouncementController) Create(w http.ResponseWriter, r *http.Request) {
-	view.HTML(w, http.StatusOK, "announcement_form.html",
+	view.HTML(w, r, http.StatusOK, "announcement_form.html",
 		announcementForm{Title: "Yeni duyuru", Action: "/announcements"})
 }
 
@@ -69,7 +69,7 @@ func (AnnouncementController) Create(w http.ResponseWriter, r *http.Request) {
 func (AnnouncementController) Store(w http.ResponseWriter, r *http.Request) {
 	a := announcementFromForm(r)
 	if err := a.Validate(); err != nil {
-		view.HTML(w, http.StatusBadRequest, "announcement_form.html",
+		view.HTML(w, r, http.StatusBadRequest, "announcement_form.html",
 			announcementForm{Title: "Yeni duyuru", Action: "/announcements", Announcement: a, Error: err.Error()})
 		return
 	}
@@ -98,7 +98,7 @@ func (AnnouncementController) Edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	view.HTML(w, http.StatusOK, "announcement_form.html",
+	view.HTML(w, r, http.StatusOK, "announcement_form.html",
 		announcementForm{Title: "Duyuruyu düzenle", Action: fmt.Sprintf("/announcements/%d", id), Announcement: a})
 }
 
@@ -112,7 +112,7 @@ func (AnnouncementController) Update(w http.ResponseWriter, r *http.Request) {
 	a := announcementFromForm(r)
 	a.ID = id
 	if err := a.Validate(); err != nil {
-		view.HTML(w, http.StatusBadRequest, "announcement_form.html",
+		view.HTML(w, r, http.StatusBadRequest, "announcement_form.html",
 			announcementForm{Title: "Duyuruyu düzenle", Action: fmt.Sprintf("/announcements/%d", id), Announcement: a, Error: err.Error()})
 		return
 	}

@@ -154,6 +154,12 @@ so they survive a restart and `docker compose down`.
 | `GET /users/{id}/edit` | HTML form filled in with the user's current values |
 | `POST /users/{id}` | saves the edit form, then redirects to `/users/{id}` |
 | `POST /users/{id}/delete` | removes the user, then redirects to `/users` |
+| `POST /users/{id}/role` | sets the user's role (`member`, `graduate` or `admin`; anything else is `400`), then redirects to `/users/{id}`. Admin only |
+| `GET /login` | HTML sign-in form (email and password) |
+| `POST /login` | checks the password, starts a session (cookie `session`, 7 days), then redirects (`303`) to `/main`; `401` with the same message for an unknown email and a wrong password |
+| `POST /logout` | ends the session and deletes the cookie, then redirects to `/main`. The menu shows the signed-in user's name and a *Çıkış* button, or *Giriş* and *Kayıt ol* |
+| `GET /register` | HTML sign-up form: basic info, education, terms checkbox |
+| `POST /register` | creates an account with a bcrypt-hashed password, then redirects (`303`) to `/users/{id}`; `400` for a broken rule (password under 8 characters, passwords differ, terms not accepted), `409` if the email is already registered |
 | `GET /announcements` | HTML page listing every announcement (newest first), with a form that posts to `POST /announcements` |
 | `GET /announcements/new`, `GET /announcements/{id}`, `GET /announcements/{id}/edit` | empty form, one announcement, edit form |
 | `POST /announcements`, `POST /announcements/{id}`, `POST /announcements/{id}/delete` | create, save an edit, delete; each redirects (`303`) |
@@ -182,6 +188,30 @@ the VS Code REST Client extension.
 refuse (bad id, broken JSON, missing field, wrong method, unknown route…), each with a test for
 the expected status code. In Postman: **Import** → pick the file → open the collection →
 **Run**. Every test should pass.
+
+### Who may open which page
+
+The HTML pages are guarded by two middlewares in `internal/middleware/auth.go`, attached route by
+route in `internal/routes/web.go`. A guest who opens a guarded page is sent to `/login`; a
+signed-in user whose role is too low gets a `403` page that names the role needed.
+
+| Pages | Needs |
+| --- | --- |
+| `/`, `/main`, `/about`, `/404`, `/login`, `/register`, announcements (read) | nobody: open to guests |
+| `/users/{id}` (view, edit, delete) | your own page: any role · someone else's: `graduate` to view, `admin` to edit or delete |
+| `/users` list | `graduate` |
+| `/graduates`, `/job-postings`, `/applications` (read and write) | `graduate` |
+| new or edited users, graduates, announcements; `POST /users/{id}/role` | `admin` |
+
+Not guarded yet: the JSON API (`/api/*`, `/alumni`) stays open so the Postman collection keeps
+working, and the "only your own posting or application" rules in DDD.md are not checked yet.
+
+Every new account is a `member`, and only an admin can change roles, so the **first admin is made
+by hand**, in Adminer or with:
+
+```bash
+docker compose exec db psql -U alumni -d alumni -c "UPDATE users SET role='admin' WHERE email='you@example.com'"
+```
 
 ### Keep the API documentation current
 
@@ -672,7 +702,7 @@ stopped. Try it with `docker compose stop db`, then `docker compose start db`.
 
 ### What is still on the way
 
-- **No Redis yet.** Sessions and caching arrive with sign-in.
+- **No Redis yet.** Sign-in sessions live in the Postgres `sessions` table for now; Redis comes with caching.
 
 ## Roadmap
 
