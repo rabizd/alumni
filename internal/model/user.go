@@ -194,3 +194,19 @@ func foundUser(u User, err error) (User, bool, error) {
 	}
 	return u, err == nil, err
 }
+
+// EmailTaken reports whether a user already has this email, ignoring case.
+func (s *UserStore) EmailTaken(email string) (bool, error) {
+	var taken bool
+	err := db.QueryRow(context.Background(),
+		"SELECT EXISTS (SELECT 1 FROM users WHERE lower(email) = lower($1))", email).Scan(&taken)
+	return taken, err
+}
+
+// Register stores a new user together with the bcrypt hash of their password.
+func (s *UserStore) Register(u User, passwordHash string) (User, error) {
+	return scanUser(db.QueryRow(context.Background(),
+		`INSERT INTO users (name, email, department, start_year, graduation_year, double_major, minor, advisor, prep_exempt, password_hash)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING `+userColumns,
+		u.Name, u.Email, u.Department, u.StartYear, u.GraduationYear, u.DoubleMajor, u.Minor, u.Advisor, u.PrepExempt, passwordHash))
+}

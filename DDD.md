@@ -132,6 +132,7 @@ One account on the network. Model: `internal/model/user.go` · API: `/api/users`
 | `minor` | `TEXT` | no | `''` | `minor` | yandal; `''` means none |
 | `advisor` | `TEXT` | no | `''` | `advisor` | danışman; `''` means none |
 | `prep_exempt` | `BOOLEAN` | no | `false` | `prepExempt` | exempt from the English prep year |
+| `password_hash` | `TEXT` | no | `''` | — (never sent) | bcrypt hash of the password set on `/register`; `''` for users created any other way |
 
 ### announcements
 
@@ -213,6 +214,7 @@ The tables are not created by hand: each change to the schema is a numbered migr
 | 3 | `create_alumni` | creates `alumni` | drops `alumni` |
 | 4 | `create_job_postings` | creates `job_postings` with its foreign key to `users` | drops `job_postings` |
 | 5 | `create_applications` | creates `applications` with its foreign keys to `job_postings` and `users` | drops `applications` |
+| 6 | `add_users_password` | adds `users.password_hash` | drops the column |
 
 Postgres keeps a one-row table, `schema_migrations`, with the number of the last migration
 applied (`version`) and whether one failed halfway (`dirty`). `migrate up` compares it with the
@@ -244,6 +246,8 @@ returns `400 Bad Request` and nothing is written.
 | `users`, `announcements` | every text field is trimmed of surrounding spaces | `Validate()` |
 | `users` | `name`, `email`, `department`, `startYear`, `graduationYear` are required | `User.Validate()` |
 | `users` | `startYear` between 1900 and the current year | `User.Validate()` |
+| `users` (sign-up) | password at least 8 characters, typed twice the same; terms accepted | `RegisterController.Store` |
+| `users` (sign-up) | no second account with the same email, ignoring case → `409 Conflict` | `UserStore.EmailTaken` |
 | `users` | `graduationYear` not before `startYear` and not in the future | `User.Validate()` |
 | `users` | a PATCH must change at least one field, and the patched user must pass every rule above | `UserPatch.Validate()`, then `User.Validate()` |
 | `announcements` | `title`, `body`, `author` are required | `Announcement.Validate()` |

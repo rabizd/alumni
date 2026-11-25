@@ -26,6 +26,11 @@ func Web(mux *http.ServeMux) {
 	// Images the pages use, e.g. the campus photos behind the main page.
 	mux.Handle("GET /static/", view.Static)
 
+	// Sign-up page: creates a user with a password.
+	register := controller.RegisterController{}
+	mux.HandleFunc("GET /register", register.Show)
+	mux.HandleFunc("POST /register", register.Store)
+
 	// Users as HTML pages. HTML forms can only send GET and POST, so update
 	// and delete are POSTs here.
 	user := controller.UserController{}

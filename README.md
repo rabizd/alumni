@@ -154,6 +154,8 @@ so they survive a restart and `docker compose down`.
 | `GET /users/{id}/edit` | HTML form filled in with the user's current values |
 | `POST /users/{id}` | saves the edit form, then redirects to `/users/{id}` |
 | `POST /users/{id}/delete` | removes the user, then redirects to `/users` |
+| `GET /register` | HTML sign-up form: basic info, education, terms checkbox |
+| `POST /register` | creates an account with a bcrypt-hashed password, then redirects (`303`) to `/users/{id}`; `400` for a broken rule (password under 8 characters, passwords differ, terms not accepted), `409` if the email is already registered |
 | `GET /announcements` | HTML page listing every announcement (newest first), with a form that posts to `POST /announcements` |
 | `GET /announcements/new`, `GET /announcements/{id}`, `GET /announcements/{id}/edit` | empty form, one announcement, edit form |
 | `POST /announcements`, `POST /announcements/{id}`, `POST /announcements/{id}/delete` | create, save an edit, delete; each redirects (`303`) |
