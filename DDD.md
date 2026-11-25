@@ -22,6 +22,12 @@ section.
 - [Seed data](#seed-data)
 - [Validation rules](#validation-rules)
   - [Planned rules for job postings](#planned-rules-for-job-postings)
+- [Users and roles (authorization)](#users-and-roles-authorization)
+  - [Roles](#roles)
+  - [What each role may do](#what-each-role-may-do)
+  - [Ownership rules](#ownership-rules)
+  - [How a request is checked](#how-a-request-is-checked)
+  - [Data the roles need](#data-the-roles-need)
 - [From a request to a row](#from-a-request-to-a-row)
 - [Design decisions](#design-decisions)
 - [Known limits and next steps](#known-limits-and-next-steps)
@@ -307,6 +313,133 @@ Lengths count characters, not bytes, so a Turkish letter like `ş` counts as one
 | applying | no application after the posting's `deadline` | not in code yet |
 | applying | a user cannot apply to their own posting | not in code yet |
 | edit / delete | only the user who posted it may change or delete a posting (needs sign-in first) | not in code yet |
+
+## Users and roles (authorization)
+
+This section is the **planned** design: **none of it is in code yet**. Today every route is
+open to anyone who can reach the app. Like the planned job-posting rules above, update this
+section when a rule is implemented.
+
+Two words that are easy to mix up:
+
+- **Authentication** answers *who are you?* The user signs in with email and password and gets
+  a session (Redis, see the README's [Tech Stack](README.md#tech-stack)).
+- **Authorization** answers *what may you do?* The app looks at the signed-in user's **role**,
+  and sometimes at whether they **own** the row, before it runs the action.
+
+### Roles
+
+Every account has exactly one role, stored in `users.role`. A visitor who is not signed in has
+no account row, so "guest" is not stored anywhere: it is simply "no session".
+
+| Role | Who | How they get it |
+| --- | --- | --- |
+| `guest` | anyone not signed in | — (no account) |
+| `member` | signed up, graduation **not verified yet** | default role at sign-up |
+| `graduate` | a verified Istanbul University graduate | an admin approves their verification request |
+| `admin` | runs the platform: verification, moderation, institutional announcements | set by another admin; the first admin is created by the seeder |
+
+The roles are ordered: `guest` < `member` < `graduate` < `admin`. A higher role can do everything
+a lower one can, unless a row below says otherwise. That is why the platform stays closed:
+the directory and the job board need `graduate` (README: *everyone in the feed is a verified
+Istanbul University graduate*).
+
+### What each role may do
+
+✅ allowed · ❌ refused · **own** = only their own rows (see [Ownership rules](#ownership-rules))
+
+| Resource | Action | guest | member | graduate | admin |
+| --- | --- | --- | --- | --- | --- |
+| pages | home, about, 404 | ✅ | ✅ | ✅ | ✅ |
+| account | sign up, sign in | ✅ | — | — | — |
+| account | sign out | — | ✅ | ✅ | ✅ |
+| `users` | list, view profiles | ❌ | own | ✅ | ✅ |
+| `users` | edit, delete | ❌ | own | own | ✅ |
+| `users` | change `role` | ❌ | ❌ | ❌ | ✅ |
+| `alumni` (`/graduates`) | list, view | ❌ | ❌ | ✅ | ✅ |
+| `alumni` | create, edit, delete | ❌ | ❌ | ❌ | ✅ |
+| `announcements` | list, view | ✅ | ✅ | ✅ | ✅ |
+| `announcements` | create, edit, delete | ❌ | ❌ | ❌ | ✅ |
+| `job_postings` | list, view | ❌ | ❌ | ✅ | ✅ |
+| `job_postings` | create | ❌ | ❌ | ✅ | ✅ |
+| `job_postings` | edit | ❌ | ❌ | own | ❌ |
+| `job_postings` | delete | ❌ | ❌ | own | ✅ |
+| `applications` | apply | ❌ | ❌ | ✅ | ❌ |
+| `applications` | list, view | ❌ | ❌ | own + to own postings | ✅ |
+| `applications` | change `status` | ❌ | ❌ | to own postings | ❌ |
+| `applications` | withdraw (delete) | ❌ | ❌ | own | ✅ |
+| verification requests | review, approve, reject | ❌ | ❌ | ❌ | ✅ |
+
+Why some rows are shaped the way they are:
+
+- **Announcements are readable by guests.** They are the public face of the network
+  ("Kariyer günleri başvuruları açıldı"), and they hold no personal data.
+- **Admins cannot edit someone else's posting or decide an application.** They can delete for
+  moderation, but the content and the hiring decision belong to the poster.
+- **Admins do not apply to postings.** An admin account is for running the platform; an admin
+  who is also a graduate uses a separate `graduate` account.
+
+### Ownership rules
+
+"own" in the table above means:
+
+| Resource | The user owns a row when |
+| --- | --- |
+| `users` | `users.id` = the signed-in user's id |
+| `job_postings` | `job_postings.user_id` = the signed-in user's id |
+| `applications` (as applicant) | `applications.user_id` = the signed-in user's id |
+| `applications` (as poster) | the application's posting has `job_postings.user_id` = the signed-in user's id |
+
+Because the owner comes from the session, **the client never sends `userId`** when it creates a
+posting or an application: the app fills it in. Today the API still takes `userId` from the
+body; that field goes away with sign-in.
+
+### How a request is checked
+
+```
+ request ─▶ Logger ─▶ guardians ─▶ Auth (read session) ─▶ role check ─▶ ownership check ─▶ handler
+                                       │                     │                 │
+                                       ▼                     ▼                 ▼
+                                 401 not signed in     403 role too low    403 not yours
+```
+
+| Answer | When | Example reason |
+| --- | --- | --- |
+| `401 Unauthorized` | the route needs sign-in and there is no valid session | `sign in first` |
+| `403 Forbidden` | signed in, but the role is too low | `only verified graduates can see job postings` |
+| `403 Forbidden` | right role, but the row belongs to someone else | `you can only edit your own posting` |
+
+The answers use the same JSON shape as the guardians (`{status, error, reason, path}`). A
+browser (`Accept: text/html`) that gets a `401` is redirected to the sign-in page instead, the
+same way a `404` is redirected to `/404` today.
+
+The role check happens **on the server, on every request**. Hiding a button in the page is only
+for convenience: a user can still send the request from Postman.
+
+### Data the roles need
+
+Planned columns on `users` (a new migration):
+
+| Column | Type | Null | Default | Meaning |
+| --- | --- | --- | --- | --- |
+| `password_hash` | `TEXT` | no | — | bcrypt hash; the password itself is never stored |
+| `role` | `TEXT` | no | `'member'` | one of `member`, `graduate`, `admin` (`CHECK` constraint) |
+| `email` | — | — | — | becomes `UNIQUE`: it is the sign-in name |
+
+Planned table `verifications`, one row per request (an audit trail, as in the README's
+[Data Model](README.md#data-model)):
+
+| Column | Type | Meaning |
+| --- | --- | --- |
+| `id` | `SERIAL` | primary key |
+| `user_id` | `INTEGER` → `users.id` | who asks to be verified |
+| `proof` | `TEXT` | e.g. the e-Devlet graduation document's verification code |
+| `status` | `TEXT` | `pending`, `approved`, `rejected` |
+| `reviewer_id` | `INTEGER` → `users.id`, nullable | the admin who decided |
+| `created_at`, `decided_at` | `TIMESTAMPTZ` | when it was sent and decided |
+
+Approving a request sets `verifications.status = 'approved'` and `users.role = 'graduate'` in
+one transaction, so the two can never disagree.
 
 ## From a request to a row
 
