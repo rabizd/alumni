@@ -43,6 +43,7 @@ stored values into Turkish labels. */}}
   nav.top ul{ display:flex; flex-wrap:wrap; gap:8px 24px; list-style:none; margin:0; padding:0; }
   nav.top ul a{ color:var(--ink); }
   nav.top ul a:hover{ color:var(--maroon); }
+  nav.top ul a[aria-current]{ color:var(--maroon); }
   nav.top button.navlink{ all:unset; cursor:pointer; color:var(--ink); }
   nav.top button.navlink:hover{ color:var(--maroon); }
   nav.top button.navlink:focus-visible{ outline:2px solid var(--maroon); outline-offset:3px; }
@@ -137,19 +138,7 @@ stored values into Turkish labels. */}}
   <div class="wrap">
     <a class="brand" href="/main"><b>İ.Ü.</b> Alumni</a>
     <ul class="label">
-      <li><a href="/graduates">Mezunlar</a></li>
-      <li><a href="/job-postings">İlanlar</a></li>
-      <li><a href="/applications">Başvurular</a></li>
-      <li><a href="/announcements">Duyurular</a></li>
-      <li><a href="/users">Kullanıcılar</a></li>
-      {{with currentUser}}
-      {{if .HasRole "admin"}}<li><a href="/admin">Yönetim</a></li>{{end}}
-      <li><a href="/users/{{.ID}}">{{.Name}}</a></li>
-      <li><form method="post" action="/logout"><button class="navlink" type="submit">Çıkış</button></form></li>
-      {{else}}
-      <li><a href="/login">Giriş</a></li>
-      <li><a href="/register">Kayıt ol</a></li>
-      {{end}}
+      {{template "nav_items"}}
     </ul>
   </div>
 </nav>
@@ -216,6 +205,18 @@ stored values into Turkish labels. */}}
 {{define "status_text"}}{{if eq . "accepted"}}Kabul edildi{{else if eq . "rejected"}}Reddedildi{{else}}Beklemede{{end}}{{end}}
 
 {{define "status_label"}}<span class="tag {{.}}">{{template "status_text" .}}</span>{{end}}
+
+{{/* nav_items is the top menu, shared by every page: the links the signed-in
+user's role may see (internal/view/menu.go), then their name and the sign-out
+button. */}}
+{{define "nav_items"}}
+      {{range menu}}<li><a href="{{.Href}}"{{if .Current}} aria-current="page"{{end}}>{{.Label}}</a></li>
+      {{end}}
+      {{with currentUser}}
+      <li><a href="/users/{{.ID}}">{{.Name}}</a></li>
+      <li><form method="post" action="/logout"><button class="navlink" type="submit">Çıkış</button></form></li>
+      {{end}}
+{{end}}
 
 {{define "role_text"}}{{if eq . "admin"}}Yönetici{{else if eq . "graduate"}}Doğrulanmış mezun{{else}}Üye{{end}}{{end}}
 

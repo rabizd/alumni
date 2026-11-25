@@ -190,18 +190,7 @@
   <div class="wrap">
     <a class="brand" href="/main"><b>İ.Ü.</b> Alumni</a>
     <ul class="label">
-      <li><a href="/graduates">Mezunlar</a></li>
-      <li><a href="/job-postings">İlanlar</a></li>
-      <li><a href="/announcements">Duyurular</a></li>
-      <li><a href="/about">Hakkında</a></li>
-      {{with currentUser}}
-      {{if .HasRole "admin"}}<li><a href="/admin">Yönetim</a></li>{{end}}
-      <li><a href="/users/{{.ID}}">{{.Name}}</a></li>
-      <li><form method="post" action="/logout"><button class="navlink" type="submit">Çıkış</button></form></li>
-      {{else}}
-      <li><a href="/login">Giriş</a></li>
-      <li><a href="/register">Kayıt ol</a></li>
-      {{end}}
+      {{template "nav_items"}}
     </ul>
   </div>
 </nav>

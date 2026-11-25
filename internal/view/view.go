@@ -18,10 +18,11 @@ import (
 //go:embed templates/*.html
 var templateFiles embed.FS
 
-// currentUser is a placeholder here: HTML swaps in the signed-in user of each
-// request, so the menu in layout.html can show their name or a sign-in link.
+// currentUser and menu are placeholders here: HTML swaps in the signed-in
+// user of each request and the menu links their role may see (menu.go).
 var templates = template.Must(template.New("").Funcs(template.FuncMap{
 	"currentUser": func() *model.User { return nil },
+	"menu":        func() []MenuItem { return nil },
 }).ParseFS(templateFiles, "templates/*.html"))
 
 // The OpenAPI document is baked in the same way, so the running server always
@@ -52,7 +53,11 @@ func HTML(w http.ResponseWriter, r *http.Request, status int, page string, data 
 		http.Error(w, "page could not be drawn", http.StatusInternalServerError)
 		return
 	}
-	t.Funcs(template.FuncMap{"currentUser": func() *model.User { return me }})
+	items := menuFor(me, r.URL.Path)
+	t.Funcs(template.FuncMap{
+		"currentUser": func() *model.User { return me },
+		"menu":        func() []MenuItem { return items },
+	})
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
