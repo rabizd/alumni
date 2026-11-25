@@ -23,6 +23,7 @@
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
 - [What Works Today](#what-works-today)
+- [Auth](#auth)
 - [Data Model](#data-model)
 - [Design](DESIGN.md) ↗
 - [Data Design Documentation](DDD.md) ↗
@@ -191,41 +192,6 @@ refuse (bad id, broken JSON, missing field, wrong method, unknown route…), eac
 the expected status code. In Postman: **Import** → pick the file → open the collection →
 **Run**. Every test should pass.
 
-### Who may open which page
-
-The HTML pages are guarded by two middlewares in `internal/middleware/auth.go`, attached route by
-route in `internal/routes/web.go`. A guest who opens a guarded page is sent to `/login`; a
-signed-in user whose role is too low gets a `403` page that names the role needed.
-
-| Pages | Needs |
-| --- | --- |
-| `/`, `/main`, `/about`, `/404`, `/login`, `/register`, announcements (read) | nobody: open to guests |
-| `/users/{id}` (view, edit, delete) | your own page: any role · someone else's: `graduate` to view, `admin` to edit or delete |
-| `/users` list | `graduate` |
-| `/graduates`, `/job-postings`, `/applications` (read and write) | `graduate` |
-| `/admin`; new or edited users, graduates, announcements; `POST /users/{id}/role` | `admin` |
-
-**The menu follows the same table.** `internal/view/menu.go` lists every menu link with the role
-it needs; each page draws only the links the signed-in user's role may open, so nobody sees a
-link that would answer `403`. A guest sees *Duyurular, Hakkında, Giriş, Kayıt ol*; a member
-adds nothing but their name and *Çıkış*; a graduate also sees *Mezunlar, İlanlar, Başvurular,
-Kullanıcılar*; an admin also sees *Yönetim*. The link of the page being shown is marked
-`aria-current="page"` and drawn in maroon.
-
-Not guarded yet: the JSON API (`/api/*`, `/alumni`) stays open so the Postman collection keeps
-working, and the "only your own posting or application" rules in DDD.md are not checked yet.
-
-Every new account is a `member`, and only an admin can change roles, so the **first admin is made
-with the seeder**: register on `/register`, then
-
-```bash
-docker compose run --rm seed -admin you@example.com
-```
-
-It changes only that user's role and adds no records. After that, the admin opens **Yönetim**
-(`/admin`) in the menu and gives roles from there. An admin cannot take away their own admin
-role, so the site always keeps at least the one who is signed in.
-
 ### Keep the API documentation current
 
 `internal/view/openapi.json` describes the API in the [OpenAPI 3](https://swagger.io/specification/)
@@ -271,6 +237,108 @@ Get-Content logs\error.log -Wait      # only the errors, live (PowerShell)
 
 Log times are Istanbul time: Compose sets `TZ=Europe/Istanbul`, and the binary embeds the time
 zone data because the alpine image has none.
+
+## Auth
+
+Who you are (**authentication**: sign-up, sign-in, sessions) and what you may do
+(**authorization**: roles, guarded pages). The full role design, including the parts not built
+yet, is in [DDD.md → Users and roles](DDD.md#users-and-roles-authorization).
+
+### Roles
+
+Every account has one role in `users.role`; a visitor who is not signed in is a *guest* and has
+no row. Roles are ordered, and a higher role may do everything a lower one may.
+
+| Role | Who | Gets it |
+| --- | --- | --- |
+| guest | not signed in | — |
+| `member` | signed up, graduation not verified yet | automatically at sign-up |
+| `graduate` | verified Istanbul University graduate | an admin sets it on `/admin` |
+| `admin` | runs the platform | an admin sets it; the first one with `seed -admin` |
+
+### Sign-up, sign-in, sign-out
+
+| Route | What happens |
+| --- | --- |
+| `GET`/`POST /register` | name, email, password twice, education, terms. The password must be 8+ characters; a taken email (any case) is refused with `409`. Only a **bcrypt hash** of the password is stored (`users.password_hash`) |
+| `GET`/`POST /login` | email + password, checked with bcrypt. On success a random 64-character token is stored in the `sessions` table and sent as the `session` cookie (`HttpOnly`, `SameSite=Lax`, 7 days). A wrong password and an unknown email get the same `401` message |
+| `POST /logout` | deletes the session row and the cookie. It is a form button, not a link, so a prefetch cannot sign anyone out |
+
+Users added by the seeder or the `/users` form have no password and cannot sign in; register on
+`/register` to get an account that can.
+
+### How a request is checked
+
+```
+request ─▶ Logger ─▶ ServerErrorGuardian ─▶ NotFoundGuardian ─▶ Session ─▶ RequireRole ─▶ controller
+                                                                  │            │
+                                               cookie → user in context   guest → 303 /login
+                                                                           role too low → 403 page
+```
+
+| Middleware | File | Job |
+| --- | --- | --- |
+| `Session` | `internal/middleware/session.go` | on every request, reads the `session` cookie, finds the user and puts them in the request's context (`model.CurrentUser`) |
+| `RequireRole(role, …)` | `internal/middleware/auth.go` | lets the request through only with at least that role |
+| `RequireSelfOrRole(role, …)` | `internal/middleware/auth.go` | the same, but users always reach their own `/users/{id}` pages |
+
+The checks run on the server for every request; hiding a link only keeps the menu tidy.
+
+### Who may open which page
+
+The guards are attached route by route in `internal/routes/web.go`. A guest who opens a guarded
+page is sent to `/login`; a signed-in user whose role is too low gets a `403` page that names the
+role needed.
+
+| Pages | Needs |
+| --- | --- |
+| `/`, `/main`, `/about`, `/404`, `/login`, `/register`, announcements (read) | nobody: open to guests |
+| `/me`, `POST /logout` | signed in, any role |
+| `/users/{id}` (view, edit, delete) | your own page: any role · someone else's: `graduate` to view, `admin` to edit or delete |
+| `/users` list | `graduate` |
+| `/graduates`, `/job-postings`, `/applications` (read and write) | `graduate` |
+| `/admin`; new or edited users, graduates, announcements; `POST /users/{id}/role` | `admin` |
+
+### Menu by role
+
+The menu follows the same table. `internal/view/menu.go` lists every menu link with the role
+it needs; each page draws only the links the signed-in user's role may open, so nobody sees a
+link that would answer `403`. A guest sees *Duyurular, Hakkında, Giriş, Kayıt ol*; a member
+adds nothing but their name and *Çıkış*; a graduate also sees *Mezunlar, İlanlar, Başvurular,
+Kullanıcılar*; an admin also sees *Yönetim*. The link of the page being shown is marked
+`aria-current="page"` and drawn in maroon.
+
+### User-specific pages
+
+`/me` (*Hesabım*, the user's name in the menu) shows only the signed-in user's data: profile and
+role, own job postings, applications received on them (with a status form) and own
+applications with their status. It reads the user's id from the session, never from the URL.
+A member sees a "verification pending" note instead.
+
+### The admin panel and the first admin
+
+`/admin` (*Yönetim*, admins only): users per role and other counts, every user with a role form
+and a delete button, job postings and announcements with edit and delete.
+
+Every new account is a `member`, and only an admin can change roles, so the **first admin is made
+with the seeder**: register on `/register`, then
+
+```bash
+docker compose run --rm seed -admin you@example.com
+```
+
+It changes only that user's role and adds no records. After that, the admin opens **Yönetim**
+(`/admin`) in the menu and gives roles from there. An admin cannot take away their own admin
+role, so the site always keeps at least the one who is signed in.
+
+### Not done yet
+
+- **The JSON API is open.** `/api/*` and `/alumni` stay unguarded so the Postman collection keeps
+  working.
+- **Ownership is not checked.** Any graduate can edit any posting; DDD.md's "only your own" rules come next.
+- **No Redis, no JWT.** Sessions live in Postgres for now (the README's original plan was JWT + Redis).
+- **Email is not `UNIQUE` in the schema.** `/register` refuses a taken email, but the `/users` form and the API do not.
+
 
 ## Data Model
 
@@ -734,7 +802,7 @@ stopped. Try it with `docker compose stop db`, then `docker compose start db`.
 - [ ] Redis in `docker-compose.yml`
 
 **Phase 2 — a usable core**
-- [ ] Sign-up, sign-in, and Redis-backed sessions
+- [x] Sign-up, sign-in, sign-out, roles and role-guarded pages ([Auth](#auth); sessions in Postgres, Redis later)
 - [ ] Alumni profile create / read / update
 - [ ] Graduate verification flow
 - [ ] Search and filtering
