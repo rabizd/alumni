@@ -204,6 +204,13 @@ signed-in user whose role is too low gets a `403` page that names the role neede
 | `/graduates`, `/job-postings`, `/applications` (read and write) | `graduate` |
 | `/admin`; new or edited users, graduates, announcements; `POST /users/{id}/role` | `admin` |
 
+**The menu follows the same table.** `internal/view/menu.go` lists every menu link with the role
+it needs; each page draws only the links the signed-in user's role may open, so nobody sees a
+link that would answer `403`. A guest sees *Duyurular, Hakkında, Giriş, Kayıt ol*; a member
+adds nothing but their name and *Çıkış*; a graduate also sees *Mezunlar, İlanlar, Başvurular,
+Kullanıcılar*; an admin also sees *Yönetim*. The link of the page being shown is marked
+`aria-current="page"` and drawn in maroon.
+
 Not guarded yet: the JSON API (`/api/*`, `/alumni`) stays open so the Postman collection keeps
 working, and the "only your own posting or application" rules in DDD.md are not checked yet.
 
